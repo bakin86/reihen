@@ -331,10 +331,10 @@ export default function TournamentPage({
           {qpayPending && (
             <div className="mt-6 border border-black p-6 max-w-md">
               <h4 className="display text-sm mb-4">QPAY ТӨЛБӨР</h4>
-              {qpayPending.qrImage && (
+              {(qpayPending.qrImage || qpayPending.shortUrl) && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={qpayPending.qrImage}
+                  src={qpayPending.qrImage || qpayPending.shortUrl}
                   alt="QPay QR"
                   className="w-48 h-48 mx-auto mb-4"
                 />
