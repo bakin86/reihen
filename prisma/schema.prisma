@@ -1,0 +1,451 @@
+// Reihen — PC Gaming Center Booking & Management
+// Prisma schema for MariaDB
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────
+
+enum Role {
+  PLAYER
+  STAFF
+  OWNER
+  ADMIN
+}
+
+enum SeatStatus {
+  OPEN
+  CLOSED
+  REPAIR
+  WAITING
+  OCCUPIED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  NOSHOW
+}
+
+enum PaymentMethod {
+  QPAY
+  BALANCE
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+}
+
+enum RefundPolicy {
+  FULL
+  PARTIAL
+  NONE
+}
+
+enum SubPlan {
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum SubStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum TournamentStatus {
+  UPCOMING
+  REGISTRATION_CLOSED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+// ─── Models ───────────────────────────────────────────────
+
+model User {
+  id                  String    @id @default(cuid())
+  name                String
+  email               String    @unique
+  password            String    // bcrypt hash
+  phone               String    @unique
+  role                Role      @default(PLAYER)
+  balance             Int       @default(0)
+  noShowCount         Int       @default(0)
+  isRestricted        Boolean   @default(false)
+  restrictionReason   String?
+  restrictedUntil     DateTime?
+  restrictedByOwnerId String?
+  totalPlayHours      Float     @default(0)
+  avatarUrl           String?
+  isActive            Boolean   @default(true)
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  ownedCenters    PCCenter[]         @relation("CenterOwner")
+  staffCenters    CenterStaff[]
+  favorites       FavoriteCenter[]
+  bookings        Booking[]
+  reviews         Review[]
+  pushSubs              PushSubscription[]
+  subscription          Subscription?
+  refreshTokens         RefreshToken[]
+  passwordResetTokens   PasswordResetToken[]
+  tournamentTeams       TournamentTeam[]
+  tournamentMemberships TournamentMember[]
+
+  @@index([email])
+  @@index([role])
+  @@index([phone])
+  @@index([isRestricted])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique  // SHA-256 hash of the token (never store plaintext)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique @db.VarChar(500)
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Subscription {
+  id            String         @id @default(cuid())
+  userId        String         @unique
+  plan          SubPlan        @default(STARTER)
+  status        SubStatus      @default(ACTIVE)
+  maxCenters    Int            @default(1)
+  maxSeats      Int            @default(30)
+  monthlyPrice  Int
+  reference     String?
+  paymentMethod PaymentMethod?
+  startsAt      DateTime       @default(now())
+  expiresAt     DateTime
+  cancelledAt   DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PCCenter {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  district    String
+  description String?  @db.Text
+  images      Json     @default("[]")
+  rating      Float    @default(0)
+  ownerId     String
+  isVerified  Boolean  @default(false)
+  lat         Float?   // GPS latitude for distance search
+  lng         Float?   // GPS longitude for distance search
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner        User          @relation("CenterOwner", fields: [ownerId], references: [id])
+  favorites    FavoriteCenter[]
+  floors       Floor[]
+  seatTypes    SeatType[]
+  seats        Seat[]
+  bookings     Booking[]
+  reviews      Review[]
+  cancelPolicy CancelPolicy?
+  tournaments  Tournament[]
+  staff        CenterStaff[]
+  staffInvites StaffInvite[]
+
+  @@index([ownerId])
+  @@index([district])
+  @@index([isVerified])
+  @@index([lat, lng])
+}
+
+model CenterStaff {
+  id        String   @id @default(cuid())
+  userId    String
+  centerId  String
+  canCheckin  Boolean @default(true)
+  canSeatStatus Boolean @default(true)
+  canViewBookings Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  center PCCenter @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, centerId])
+  @@index([centerId])
+}
+
+model StaffInvite {
+  id        String   @id @default(cuid())
+  centerId  String
+  phone     String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  center PCCenter @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  @@index([centerId])
+  @@index([phone])
+}
+
+model Floor {
+  id          String   @id @default(cuid())
+  centerId    String
+  floorNumber Int
+  name        String
+  createdAt   DateTime @default(now())
+
+  center PCCenter @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  seats  Seat[]
+
+  @@unique([centerId, floorNumber])
+  @@index([centerId])
+}
+
+model SeatType {
+  id            String   @id @default(cuid())
+  centerId      String
+  name          String
+  pricePerHour  Int
+  peakHourPrice Int?     // nullable — if set, used during peak hours
+  description   String?  @db.Text
+  images        Json     @default("[]")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  center PCCenter @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  seats  Seat[]
+
+  @@index([centerId])
+}
+
+model Seat {
+  id        String     @id @default(cuid())
+  centerId  String
+  floorId   String
+  typeId    String
+  number    String
+  status    SeatStatus @default(OPEN)
+  freeAt    DateTime?
+  posX      Int?       // grid column position (0-based)
+  posY      Int?       // grid row position (0-based)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  center       PCCenter      @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  floor        Floor         @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  type         SeatType      @relation(fields: [typeId], references: [id])
+  bookingSeats BookingSeat[]
+
+  @@unique([centerId, number])
+  @@index([centerId])
+  @@index([floorId])
+  @@index([typeId])
+  @@index([status])
+}
+
+model Booking {
+  id             String        @id @default(cuid())
+  code           String        @unique // #BK + 4 digits
+  userId         String
+  centerId       String
+  startTime      DateTime
+  endTime        DateTime
+  hours          Float
+  totalPrice     Int
+  status         BookingStatus @default(PENDING)
+  paymentMethod  PaymentMethod
+  paymentStatus  PaymentStatus @default(UNPAID)
+  paymentRef     String?       // gateway reference
+  qpayInvoiceId  String?       // QPay invoice_id for check/cancel
+  qpayPaymentId  String?       // QPay payment_id for refund/ebarimt
+  ebarimtId      String?       // e-barimt receipt ID
+  cancelledAt    DateTime?
+  cancelReason   String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id])
+  center       PCCenter      @relation(fields: [centerId], references: [id])
+  bookingSeats BookingSeat[]
+  review       Review?
+
+  @@index([userId])
+  @@index([centerId])
+  @@index([status])
+  @@index([centerId, status, startTime])
+  @@index([paymentStatus])
+  @@index([startTime, endTime])
+  @@index([code])
+}
+
+// 1 Booking : N Seats — олон суудал нэг захиалгаар
+model BookingSeat {
+  id        String   @id @default(cuid())
+  bookingId String
+  seatId    String
+  createdAt DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  seat    Seat    @relation(fields: [seatId], references: [id])
+
+  @@unique([bookingId, seatId])
+  @@index([bookingId])
+  @@index([seatId])
+}
+
+model CancelPolicy {
+  id                 String       @id @default(cuid())
+  centerId           String       @unique
+  cancelMinutes      Int          @default(30)
+  noShowMinutes      Int          @default(60)
+  maxSeatsPerBooking Int          @default(10)
+  refundPolicy       RefundPolicy @default(FULL)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  center PCCenter @relation(fields: [centerId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  userId     String
+  centerId   String
+  bookingId  String   @unique
+  rating     Int      // 1-5
+  comment    String?  @db.Text
+  ownerReply String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id])
+  center  PCCenter @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  booking Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([centerId])
+  @@index([rating])
+}
+
+// ─── Tournaments ─────────────────────────────────────────
+
+model Tournament {
+  id               String           @id @default(cuid())
+  centerId         String
+  name             String
+  description      String?          @db.Text
+  game             String
+  images           Json             @default("[]")
+  startTime        DateTime
+  endTime          DateTime?
+  maxTeams         Int
+  teamSize         Int              @default(1) // 1 = solo
+  entryFee         Int              @default(0)
+  prizePool        Int              @default(0)
+  prizeDescription String?          @db.Text
+  rules            String?          @db.Text
+  status           TournamentStatus @default(UPCOMING)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  center PCCenter         @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  teams  TournamentTeam[]
+
+  @@index([centerId])
+  @@index([status, startTime])
+}
+
+model TournamentTeam {
+  id            String         @id @default(cuid())
+  tournamentId  String
+  name          String
+  captainId     String
+  paymentMethod PaymentMethod?
+  paymentRef    String?
+  paymentStatus PaymentStatus  @default(UNPAID)
+  qpayPaymentId String?
+  createdAt     DateTime       @default(now())
+
+  tournament Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  captain    User               @relation(fields: [captainId], references: [id])
+  members    TournamentMember[]
+
+  @@unique([tournamentId, captainId])
+  @@index([tournamentId])
+  @@index([captainId])
+}
+
+model TournamentMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  team TournamentTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User           @relation(fields: [userId], references: [id])
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+}
+
+model FavoriteCenter {
+  id        String   @id @default(cuid())
+  userId    String
+  centerId  String
+  createdAt DateTime @default(now())
+
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  center PCCenter @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, centerId])
+  @@index([userId])
+  @@index([centerId])
+}

@@ -1,0 +1,282 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { prisma } from "@/lib/prisma";
+import { authErrorResponse, getSession } from "@/lib/auth";
+import { generateBookingCode } from "@/lib/booking-code";
+import { processPayment, processRefund, cancelQPayInvoice } from "@/lib/payment";
+import { sendPushToUser } from "@/lib/push";
+import { emitSeatUpdate } from "@/lib/socket";
+import { sendBookingConfirm } from "@/lib/sms";
+
+const schema = z.object({
+  seatIds: z.array(z.string().min(1)).min(1),
+  startTime: z.coerce.date(),
+  hours: z.number().int().min(1).max(24),
+  paymentMethod: z.enum(["QPAY", "BALANCE"]),
+});
+
+// POST /api/bookings — create booking (multi-seat)
+export async function POST(req: Request) {
+  try {
+    const session = await getSession(req);
+    const parsed = schema.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid input", issues: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const { seatIds, startTime, hours, paymentMethod } = parsed.data;
+
+    const bookingUser = await prisma.user.findUnique({
+      where: { id: session.sub },
+      select: { isRestricted: true, restrictionReason: true, restrictedUntil: true },
+    });
+    if (
+      bookingUser?.isRestricted &&
+      (!bookingUser.restrictedUntil || bookingUser.restrictedUntil > new Date())
+    ) {
+      return NextResponse.json(
+        {
+          error: bookingUser.restrictionReason
+            ? `Booking restricted: ${bookingUser.restrictionReason}`
+            : "This account is restricted from booking",
+        },
+        { status: 403 }
+      );
+    }
+    if (bookingUser?.isRestricted && bookingUser.restrictedUntil && bookingUser.restrictedUntil <= new Date()) {
+      await prisma.user.update({
+        where: { id: session.sub },
+        data: { isRestricted: false, restrictionReason: null, restrictedUntil: null, restrictedByOwnerId: null },
+      });
+    }
+
+    // Deduplicate
+    const uniqueSeatIds = [...new Set(seatIds)];
+
+    // Align to hour boundaries
+    const start = new Date(startTime);
+    start.setMinutes(0, 0, 0);
+    const end = new Date(start.getTime() + hours * 3_600_000);
+
+    if (start < new Date(Date.now() - 60_000)) {
+      return NextResponse.json({ error: "Start time is in the past" }, { status: 400 });
+    }
+
+    // Fetch all seats — must be same center
+    const seats = await prisma.seat.findMany({
+      where: { id: { in: uniqueSeatIds } },
+      include: {
+        type: true,
+        center: {
+          include: { cancelPolicy: true },
+        },
+      },
+    });
+
+    if (seats.length !== uniqueSeatIds.length) {
+      return NextResponse.json({ error: "One or more seats not found" }, { status: 404 });
+    }
+
+    // All seats must be from the same center
+    const centerIds = new Set(seats.map((s) => s.centerId));
+    if (centerIds.size !== 1) {
+      return NextResponse.json({ error: "All seats must be from the same center" }, { status: 400 });
+    }
+
+    const center = seats[0].center;
+
+    // Check maxSeatsPerBooking from CancelPolicy
+    const maxSeats = center.cancelPolicy?.maxSeatsPerBooking ?? 10;
+    if (uniqueSeatIds.length > maxSeats) {
+      return NextResponse.json(
+        { error: `Max ${maxSeats} seats per booking (this center's policy)` },
+        { status: 400 }
+      );
+    }
+
+    // Check each seat is available
+    for (const seat of seats) {
+      if (seat.status === "CLOSED" || seat.status === "REPAIR") {
+        return NextResponse.json(
+          { error: `Seat ${seat.number} is ${seat.status.toLowerCase()}` },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Calculate total price: apply peak rate per individual hour, not per booking.
+    // Peak window is 18:00–22:59 (hour 18..22 inclusive).
+    const now = new Date();
+    const totalPrice = seats.reduce((sum, seat) => {
+      let seatTotal = 0;
+      for (let h = 0; h < hours; h++) {
+        const hour = (start.getHours() + h) % 24;
+        const isPeak = hour >= 18 && hour < 23;
+        seatTotal += (isPeak && seat.type.peakHourPrice) ? seat.type.peakHourPrice : seat.type.pricePerHour;
+      }
+      return sum + seatTotal;
+    }, 0);
+
+    const code = await generateBookingCode();
+
+    // Process payment
+    const payment = await processPayment(session.sub, totalPrice, paymentMethod, code);
+    if (!payment.ok) {
+      return NextResponse.json(
+        { error: payment.error ?? "Payment failed" },
+        { status: 402 }
+      );
+    }
+
+    const isPending = !!payment.pending;
+
+    // Overlap check + create inside a single transaction to prevent race conditions.
+    // If the transaction throws (overlap), we refund the payment before returning 409.
+    let booking;
+    try {
+    booking = await prisma.$transaction(async (tx) => {
+      // Re-check overlaps inside transaction (serializable)
+      const overlaps = await tx.bookingSeat.findMany({
+        where: {
+          seatId: { in: uniqueSeatIds },
+          booking: {
+            status: { in: ["PENDING", "CONFIRMED"] },
+            startTime: { lt: end },
+            endTime: { gt: start },
+          },
+        },
+        include: {
+          seat: { select: { number: true } },
+        },
+      });
+
+      if (overlaps.length > 0) {
+        const conflictSeats = overlaps.map((o) => o.seat.number).join(", ");
+        throw new Error(`OVERLAP:${conflictSeats}`);
+      }
+
+      const b = await tx.booking.create({
+        data: {
+          code,
+          userId: session.sub,
+          centerId: center.id,
+          startTime: start,
+          endTime: end,
+          hours,
+          totalPrice,
+          status: isPending ? "PENDING" : "CONFIRMED",
+          paymentMethod,
+          paymentStatus: isPending ? "UNPAID" : "PAID",
+          paymentRef: payment.reference,
+          qpayInvoiceId: payment.invoiceId ?? null,
+          bookingSeats: {
+            create: uniqueSeatIds.map((seatId) => ({ seatId })),
+          },
+        },
+        include: {
+          bookingSeats: { include: { seat: { select: { id: true, number: true } } } },
+        },
+      });
+
+      // Update seat statuses for immediate payments
+      if (!isPending && start <= now && end > now) {
+        await tx.seat.updateMany({
+          where: { id: { in: uniqueSeatIds } },
+          data: { status: "OCCUPIED", freeAt: end },
+        });
+      }
+
+      return b;
+    });
+    } catch (txErr: any) {
+      // Transaction failed — refund the payment that was already processed
+      if (txErr?.message?.startsWith("OVERLAP:")) {
+        if (paymentMethod === "BALANCE") {
+          await processRefund(session.sub, totalPrice, "BALANCE").catch(() => {});
+        } else if (payment.invoiceId) {
+          await cancelQPayInvoice(payment.invoiceId).catch(() => {});
+        }
+        const conflictSeats = txErr.message.replace("OVERLAP:", "");
+        return NextResponse.json(
+          { error: `Seats already booked for this slot: ${conflictSeats}` },
+          { status: 409 }
+        );
+      }
+      throw txErr;
+    }
+
+    const seatNumbers = booking.bookingSeats.map((bs) => bs.seat.number).join(", ");
+
+    if (!isPending) {
+      // Emit realtime updates for each seat
+      for (const bs of booking.bookingSeats) {
+        emitSeatUpdate(center.id, { id: bs.seatId, status: "OCCUPIED", code: bs.seat.number });
+      }
+
+      // Fire-and-forget: don't block response for push/SMS
+      void (async () => {
+        sendPushToUser(center.ownerId, {
+          title: "Шинэ захиалга",
+          body: `${booking.code} · ${center.name} · ${seatNumbers} (${uniqueSeatIds.length} суудал)`,
+          url: `/dashboard/bookings/${booking.id}`,
+          tag: booking.id,
+        }).catch(() => {});
+
+        // Notify staff at this center — batched, non-blocking
+        const staffUsers = await prisma.centerStaff.findMany({
+          where: { centerId: center.id, canViewBookings: true },
+          select: { userId: true },
+        });
+        const timeStr = start.toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" });
+        await Promise.allSettled(
+          staffUsers.map((s) =>
+            sendPushToUser(s.userId, {
+              title: "Шинэ захиалга",
+              body: `${booking.code} · ${seatNumbers} · ${timeStr}`,
+              url: "/staff",
+              tag: `staff-booking-${booking.id}`,
+            })
+          )
+        );
+
+        const user = await prisma.user.findUnique({ where: { id: session.sub }, select: { phone: true } });
+        if (user?.phone) {
+          const timeStr = start.toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" });
+          sendBookingConfirm(user.phone, code, center.name, seatNumbers, timeStr).catch(() => {});
+        }
+      })();
+    }
+
+    return NextResponse.json({ booking, payment }, { status: 201 });
+  } catch (e: any) {
+    return authErrorResponse(e);
+  }
+}
+
+// GET /api/bookings — current user's bookings
+export async function GET(req: Request) {
+  try {
+    const session = await getSession(req);
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(1, Number(searchParams.get("page") ?? 1));
+    const limit = Math.min(50, Math.max(1, Number(searchParams.get("limit") ?? 20)));
+
+    const bookings = await prisma.booking.findMany({
+      where: { userId: session.sub },
+      include: {
+        bookingSeats: {
+          include: { seat: { select: { number: true, id: true } } },
+        },
+        center: { select: { id: true, name: true, address: true } },
+      },
+      orderBy: { startTime: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return NextResponse.json({ bookings, page, limit });
+  } catch (e) {
+    return authErrorResponse(e);
+  }
+}
