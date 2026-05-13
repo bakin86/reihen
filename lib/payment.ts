@@ -125,7 +125,7 @@ export async function processBalance(userId: string, amount: number): Promise<Pa
     // Use transaction with row-level lock to prevent double-deduct race condition
     const ok = await prisma.$transaction(async (tx) => {
       // SELECT ... FOR UPDATE locks the row until transaction commits
-      const rows: { balance: number }[] = await tx.$queryRaw`SELECT balance FROM User WHERE id = ${userId} FOR UPDATE`;
+      const rows: { balance: number }[] = await tx.$queryRaw`SELECT balance FROM "User" WHERE id = ${userId} FOR UPDATE`;
       if (!rows.length || rows[0].balance < amount) return false;
       await tx.user.update({
         where: { id: userId },
