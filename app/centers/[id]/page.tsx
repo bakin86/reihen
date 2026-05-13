@@ -912,9 +912,14 @@ export default function CenterPage({ params }: { params: { id: string } }) {
               Захиалга баталгаажсаны дараа та{" "}
               <span className="text-white font-bold">{center.noShowMinutes} минутын</span> дотор ирэх ёстой.
             </p>
-            <p className="text-sm text-white/50 leading-relaxed mb-6">
+            <p className="text-sm text-white/50 leading-relaxed mb-4">
               Хэрэв та заасан хугацаанд амжиж ирэхгүй тохиолдолд бид хариуцлага хүлээхгүй бөгөөд захиалга цуцлагдана.
             </p>
+            <div className="border border-white/[0.08] bg-white/[0.03] px-4 py-3 mb-6">
+              <p className="text-[10px] text-white/30 leading-relaxed">
+                💡 Таны төлбөрийн <span className="text-white/60 font-semibold">50%</span> нь тухайн PC центрт шилжихийг анхаарна уу.
+              </p>
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowWarning(false)}
