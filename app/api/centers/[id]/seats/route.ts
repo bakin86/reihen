@@ -10,7 +10,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       id: true, name: true, images: true, district: true,
       address: true, description: true, rating: true, lat: true, lng: true,
       seatTypes: { select: { id: true, name: true, pricePerHour: true, peakHourPrice: true } },
-      cancelPolicy: { select: { maxSeatsPerBooking: true } },
+      cancelPolicy: { select: { maxSeatsPerBooking: true, noShowMinutes: true, cancelMinutes: true } },
       _count: { select: { reviews: true } },
     },
   });
@@ -76,7 +76,13 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   const { _count, cancelPolicy, ...centerData } = center;
   const res = NextResponse.json({
-    center: { ...centerData, reviewCount: _count.reviews, maxSeatsPerBooking: cancelPolicy?.maxSeatsPerBooking ?? 10 },
+    center: {
+      ...centerData,
+      reviewCount: _count.reviews,
+      maxSeatsPerBooking: cancelPolicy?.maxSeatsPerBooking ?? 10,
+      noShowMinutes: cancelPolicy?.noShowMinutes ?? 15,
+      cancelMinutes: cancelPolicy?.cancelMinutes ?? 30,
+    },
     seats: shaped,
     isPeakHour,
   });

@@ -42,6 +42,8 @@ interface CenterInfo {
   reviewCount: number;
   seatTypes: { id: string; name: string; pricePerHour: number; peakHourPrice: number | null }[];
   maxSeatsPerBooking: number;
+  noShowMinutes: number;
+  cancelMinutes: number;
 }
 
 const HOURS = Array.from({ length: 14 }, (_, i) => `${String(10 + i).padStart(2, "0")}:00`);
@@ -57,12 +59,19 @@ export default function CenterPage({ params }: { params: { id: string } }) {
   const [copied, setCopied] = useState(false);
   const [isFav, setIsFav] = useState(false);
 
+  // Star rating
+  const [myUnreviewedBookingId, setMyUnreviewedBookingId] = useState<string | null>(null);
+  const [hoverStar, setHoverStar] = useState(0);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [ratingPending, setRatingPending] = useState(false);
+
   // Multi-seat selection + booking
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [start, setStart] = useState<string | null>(null);
   const [hours, setHoursVal] = useState(1);
   const [method, setMethod] = useState<"QPAY" | "BALANCE">("QPAY");
   const [submitting, setSubmitting] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
   const [error, setError] = useState("");
   const [bookingCode, setBookingCode] = useState<string | null>(null);
 
@@ -84,8 +93,11 @@ export default function CenterPage({ params }: { params: { id: string } }) {
         if (s.length) setFloor(s[0].floor.floorNumber);
       })
       .catch(() => {});
-    apiFetch<{ reviews: Review[] }>(`/api/centers/${params.id}/reviews`)
-      .then(({ reviews: r }) => setReviews(r))
+    apiFetch<{ reviews: Review[]; myUnreviewedBookingId: string | null }>(`/api/centers/${params.id}/reviews`, { token: token ?? undefined })
+      .then(({ reviews: r, myUnreviewedBookingId: bid }) => {
+        setReviews(r);
+        setMyUnreviewedBookingId(bid);
+      })
       .catch(() => {});
     apiFetch<{ tournaments: typeof tournaments }>(`/api/centers/${params.id}/tournaments`)
       .then(({ tournaments: t }) => setTournaments(t))
@@ -175,7 +187,13 @@ export default function CenterPage({ params }: { params: { id: string } }) {
     });
   };
 
+  const confirmBooking = () => {
+    if (!canSubmit || !start) return;
+    setShowWarning(true);
+  };
+
   const submitBooking = async () => {
+    setShowWarning(false);
     if (!canSubmit || !start) return;
     setError("");
     setSubmitting(true);
@@ -702,7 +720,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                   </Link>
                 ) : (
                   <button
-                    onClick={submitBooking}
+                    onClick={confirmBooking}
                     disabled={!canSubmit}
                     className="btn-pop w-full rounded-xl bg-white py-4 text-xs uppercase tracking-[0.3em] text-black disabled:opacity-40 hover:bg-white/90 transition-colors"
                   >
@@ -799,20 +817,64 @@ export default function CenterPage({ params }: { params: { id: string } }) {
       )}
 
       {/* ─── REVIEWS ─── */}
-      {reviews.length > 0 && (
-        <section className="border-t border-white/10 bg-[#0a0a0a]">
-          <div className="flex items-center justify-between px-6 py-5 md:px-8">
-            <h2 className="display text-2xl text-white md:text-4xl">REVIEWS</h2>
+      <section className="border-t border-white/10 bg-[#0a0a0a]">
+        <div className="flex items-center justify-between px-6 py-5 md:px-8">
+          <h2 className="display text-2xl text-white md:text-4xl">REVIEWS</h2>
+          {center && (
             <div className="flex items-center gap-3">
               <span className="mono text-sm text-white">{center.rating.toFixed(1)} ★</span>
               <span className="text-[10px] text-white/30">{reviews.length} REVIEWS</span>
             </div>
+          )}
+        </div>
+
+        {/* Star rating widget — only for users with unreviewed completed bookings */}
+        {myUnreviewedBookingId && !ratingSubmitted && (
+          <div className="mx-4 mb-4 flex items-center gap-4 border border-white/10 bg-white/[0.03] px-5 py-4 md:mx-8">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-white/40 shrink-0">ҮНЭЛЭХ</span>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <button
+                  key={s}
+                  disabled={ratingPending}
+                  onMouseEnter={() => setHoverStar(s)}
+                  onMouseLeave={() => setHoverStar(0)}
+                  onClick={async () => {
+                    if (ratingPending) return;
+                    setRatingPending(true);
+                    try {
+                      await apiFetch("/api/reviews", {
+                        method: "POST", token,
+                        body: JSON.stringify({ bookingId: myUnreviewedBookingId, rating: s }),
+                      });
+                      setRatingSubmitted(true);
+                      setCenter((c) => c ? { ...c, rating: parseFloat(((c.rating * reviews.length + s) / (reviews.length + 1)).toFixed(2)) } : c);
+                    } catch { /* ignore */ } finally {
+                      setRatingPending(false);
+                    }
+                  }}
+                  className={`text-2xl transition-colors ${s <= (hoverStar || 0) ? "text-yellow-400" : "text-white/15"}`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <span className="text-[10px] text-white/25">Та энэ газрыг үнэлнэ үү</span>
           </div>
+        )}
+        {ratingSubmitted && (
+          <div className="mx-4 mb-4 flex items-center gap-3 border border-white/10 bg-white/[0.03] px-5 py-4 md:mx-8">
+            <span className="text-yellow-400 text-lg">★</span>
+            <span className="text-[11px] text-white/40">Үнэлгээ илгээгдлээ. Баярлалаа!</span>
+          </div>
+        )}
+
+        {reviews.length > 0 && (
           <div className="columns-1 gap-3 px-4 pb-6 md:columns-2 lg:columns-3">
             {reviews.slice(0, 12).map((r, i) => (
               <div
                 key={r.id}
-                className="anim-fade-up mb-3 break-inside-avoid rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4"
+                className="anim-fade-up mb-3 break-inside-avoid border border-white/[0.06] bg-white/[0.03] p-4"
                 style={{ animationDelay: `${i * 0.05}s` }}
               >
                 <div className="flex items-center gap-3">
@@ -829,9 +891,6 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                     </span>
                   </div>
                 </div>
-                {r.comment && (
-                  <p className="mt-3 text-sm leading-relaxed text-white/50">{r.comment}</p>
-                )}
                 {r.ownerReply && (
                   <div className="mt-3 border-l-2 border-white/10 pl-3">
                     <span className="text-[9px] uppercase tracking-[0.2em] text-white/25">Эзний хариу</span>
@@ -841,7 +900,37 @@ export default function CenterPage({ params }: { params: { id: string } }) {
               </div>
             ))}
           </div>
-        </section>
+        )}
+      </section>
+
+      {/* ─── NO-SHOW WARNING MODAL ─── */}
+      {showWarning && center && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
+          <div className="w-full max-w-sm border border-white/10 bg-[#111] p-6">
+            <p className="text-[9px] uppercase tracking-[0.3em] text-white/30 mb-3">АНХААРУУЛГА</p>
+            <p className="text-sm text-white/70 leading-relaxed mb-2">
+              Захиалга баталгаажсаны дараа та{" "}
+              <span className="text-white font-bold">{center.noShowMinutes} минутын</span> дотор ирэх ёстой.
+            </p>
+            <p className="text-sm text-white/50 leading-relaxed mb-6">
+              Хэрэв та заасан хугацаанд амжиж ирэхгүй тохиолдолд бид хариуцлага хүлээхгүй бөгөөд захиалга цуцлагдана.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowWarning(false)}
+                className="flex-1 border border-white/10 py-3 text-[10px] uppercase tracking-[0.25em] text-white/30 hover:text-white transition-colors"
+              >
+                БУЦАХ
+              </button>
+              <button
+                onClick={submitBooking}
+                className="flex-1 bg-white py-3 text-[10px] uppercase tracking-[0.25em] text-black hover:bg-white/90 transition-colors"
+              >
+                ЗӨВШӨӨРЧ ЗАХИАЛАХ
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ─── BOTTOM CTA ─── */}

@@ -55,6 +55,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.5",
     "postcss": "^8.4.40",
+    "pptxgenjs": "^4.0.1",
     "tailwindcss": "^3.4.7",
     "tsx": "^4.21.0"
   }

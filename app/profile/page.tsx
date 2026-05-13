@@ -8,7 +8,7 @@ import { apiFetch } from "@/lib/api";
 import { useBookingHistory } from "@/lib/hooks/useBookingHistory";
 import { getMainImage } from "@/lib/image-types";
 
-interface ReviewModal {
+interface _ReviewModal_unused {
   bookingId: string;
   centerName: string;
 }
@@ -63,25 +63,7 @@ export default function ProfilePage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [tab, setTab] = useState<"stats" | "history" | "favorites">("stats");
-  const [reviewModal, setReviewModal] = useState<ReviewModal | null>(null);
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewComment, setReviewComment] = useState("");
   const qc = useQueryClient();
-
-  const reviewMutation = useMutation({
-    mutationFn: ({ bookingId, rating, comment }: { bookingId: string; rating: number; comment: string }) =>
-      apiFetch("/api/reviews", {
-        method: "POST", token,
-        body: JSON.stringify({ bookingId, rating, comment: comment || undefined }),
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["bookingHistory"] });
-      qc.invalidateQueries({ queryKey: ["me", "stats"] });
-      setReviewModal(null);
-      setReviewRating(5);
-      setReviewComment("");
-    },
-  });
 
   const { data: activeData } = useQuery<{ bookings: Booking[] }>({
     queryKey: ["activeBookings"],
@@ -400,17 +382,8 @@ export default function ProfilePage() {
                 </div>
                 <div className="text-right shrink-0 flex flex-col items-end gap-2">
                   <div className="mono text-sm text-white/60">{b.totalPrice.toLocaleString()}₮</div>
-                  {b.status === "CONFIRMED" && new Date(b.endTime) < new Date() && (
-                    b.review ? (
-                      <span className="mono text-[9px] text-yellow-400/60">{"★".repeat(b.review.rating)}</span>
-                    ) : (
-                      <button
-                        onClick={() => setReviewModal({ bookingId: b.id, centerName: b.center.name })}
-                        className="text-[9px] uppercase tracking-[0.2em] text-white/25 hover:text-white border border-white/10 hover:border-white/30 px-2 py-1 transition-colors"
-                      >
-                        ҮНЭЛЭХ
-                      </button>
-                    )
+                  {b.status === "CONFIRMED" && new Date(b.endTime) < new Date() && b.review && (
+                    <span className="mono text-[9px] text-yellow-400/60">{"★".repeat(b.review.rating)}</span>
                   )}
                 </div>
               </div>
@@ -500,59 +473,6 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* ── REVIEW MODAL ── */}
-      {reviewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
-          <div className="w-full max-w-md border border-white/10 bg-[#111] p-6">
-            <div className="mb-5">
-              <p className="text-[9px] uppercase tracking-[0.3em] text-white/30">ҮНЭЛГЭЭ ҮЛДЭЭХ</p>
-              <h3 className="display mt-1 text-2xl">{reviewModal.centerName.toUpperCase()}</h3>
-            </div>
-
-            {/* Star picker */}
-            <div className="flex gap-2 mb-5">
-              {[1, 2, 3, 4, 5].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setReviewRating(s)}
-                  className={`text-2xl transition-colors ${s <= reviewRating ? "text-yellow-400" : "text-white/15 hover:text-white/40"}`}
-                >
-                  ★
-                </button>
-              ))}
-            </div>
-
-            {/* Comment textarea */}
-            <textarea
-              value={reviewComment}
-              onChange={(e) => setReviewComment(e.target.value)}
-              placeholder="Сэтгэгдэл бичих (заавал биш)..."
-              maxLength={500}
-              rows={4}
-              className="w-full resize-none bg-white/[0.04] border border-white/10 px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/30 mb-5"
-            />
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setReviewModal(null); setReviewRating(5); setReviewComment(""); }}
-                className="flex-1 border border-white/10 py-3 text-[10px] uppercase tracking-[0.25em] text-white/30 hover:text-white transition-colors"
-              >
-                ЦУЦЛАХ
-              </button>
-              <button
-                disabled={reviewMutation.isPending}
-                onClick={() => reviewMutation.mutate({ bookingId: reviewModal.bookingId, rating: reviewRating, comment: reviewComment })}
-                className="flex-1 bg-white py-3 text-[10px] uppercase tracking-[0.25em] text-black hover:bg-white/90 disabled:opacity-40 transition-colors"
-              >
-                {reviewMutation.isPending ? "..." : "ИЛГЭЭХ"}
-              </button>
-            </div>
-            {reviewMutation.isError && (
-              <p className="mt-3 text-xs text-red-400">Алдаа гарлаа. Дахин оролдоно уу.</p>
-            )}
-          </div>
-        </div>
-      )}
     </main>
   );
 }
