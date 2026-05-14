@@ -7,6 +7,7 @@ import { NavBar } from "@/components/NavBar";
 import { LazyImage } from "@/components/LazyImage";
 import { InView } from "@/components/InView";
 import { Counter } from "@/components/SplitFlap";
+import { CenterRowSkeleton } from "@/components/Skeleton";
 import { useCenters } from "@/lib/hooks/useCenters";
 import { useFavorites } from "@/lib/hooks/useFavorites";
 import { useDebounce } from "@/lib/hooks/useDebounce";
@@ -250,17 +251,13 @@ export default function HomePage() {
         </div>
         <div className="h-px bg-black/[0.07]" />
 
-        {/* Loading skeleton */}
+        {/* Loading skeleton — matches actual center row layout */}
         {loading && centers.length === 0 && (
           <div>
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-stretch" style={{ minHeight: 200 }}>
-                <div className="flex-1 animate-pulse px-6 py-10 md:px-12">
-                  <div className="mb-4 h-1.5 w-10 bg-black/[0.04]" />
-                  <div className="h-8 w-2/3 bg-black/[0.03]" />
-                  <div className="mt-4 h-1.5 w-1/3 bg-black/[0.025]" />
-                </div>
-                <div className="hidden w-[38%] animate-pulse bg-black/[0.015] md:block" />
+              <div key={i}>
+                <CenterRowSkeleton index={i} />
+                {i < 3 && <div className="mx-6 h-px bg-black/[0.04] md:mx-0" />}
               </div>
             ))}
           </div>

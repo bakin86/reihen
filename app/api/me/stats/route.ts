@@ -1,11 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, authErrorResponse } from "@/lib/auth";
+import { cacheGet, cacheSet } from "@/lib/redis";
 
 // GET /api/me/stats — aggregated user stats
 export async function GET(req: Request) {
   try {
     const session = await getSession(req);
+
+    // Serve from cache if fresh (60s per user)
+    const cacheKey = `user:stats:${session.sub}`;
+    const cached = await cacheGet<object>(cacheKey);
+    if (cached) {
+      const res = NextResponse.json(cached);
+      res.headers.set("X-Cache", "HIT");
+      return res;
+    }
 
     const [user, bookingAgg, topCenters, monthlyRaw, favoritesCount] = await Promise.all([
       prisma.user.findUnique({
@@ -71,7 +81,7 @@ export async function GET(req: Request) {
       months.push({ month: key, total: Number(found?.total ?? 0) });
     }
 
-    return NextResponse.json({
+    const payload = {
       totalHours: user?.totalPlayHours ?? 0,
       totalSpent: bookingAgg._sum.totalPrice ?? 0,
       bookingCount: bookingAgg._count,
@@ -80,7 +90,13 @@ export async function GET(req: Request) {
       favoritesCount,
       topCenters: topCentersWithNames,
       monthlySpending: months,
-    });
+    };
+
+    await cacheSet(cacheKey, payload, 60);
+
+    const res = NextResponse.json(payload);
+    res.headers.set("X-Cache", "MISS");
+    return res;
   } catch (e) {
     return authErrorResponse(e);
   }

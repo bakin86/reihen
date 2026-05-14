@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { DashStatSkeleton } from "@/components/Skeleton";
 import { SeatCell, SeatLegend, type SeatStatus } from "@/components/SeatCell";
 import { BlueprintSeatMap } from "@/components/BlueprintSeatMap";
 import { Counter } from "@/components/SplitFlap";
@@ -227,8 +228,21 @@ export default function OwnerDashboard() {
 
   if (authLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
-        <span className="text-sm text-white/30 animate-pulse">LOADING...</span>
+      <main className="min-h-screen bg-[#080808] text-white">
+        <header className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4 md:px-8">
+          <div className="h-2 w-14 animate-pulse bg-white/[0.06]" />
+          <div className="h-3 w-24 animate-pulse bg-white/[0.06]" />
+          <div className="h-2 w-10 animate-pulse bg-white/[0.06]" />
+        </header>
+        <div className="p-4 md:p-6 lg:p-8">
+          <div className="grid auto-rows-[minmax(140px,auto)] grid-cols-2 gap-2 md:grid-cols-6 md:gap-3 lg:grid-cols-12">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="col-span-1 md:col-span-3">
+                <DashStatSkeleton />
+              </div>
+            ))}
+          </div>
+        </div>
       </main>
     );
   }
@@ -243,9 +257,10 @@ export default function OwnerDashboard() {
     );
   }
 
-  const t = dash?.today;
-  const openCount = seats.filter((s) => s.status === "OPEN").length;
+  const t           = dash?.today;
+  const openCount   = seats.filter((s) => s.status === "OPEN").length;
   const occupiedCount = seats.filter((s) => s.status === "OCCUPIED").length;
+  const dashLoading = !dash && !authLoading;
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">
@@ -268,6 +283,13 @@ export default function OwnerDashboard() {
           </div>
         </div>
       </header>
+
+      {/* Skeleton while dash data loads */}
+      {dashLoading && (
+        <div className="grid grid-cols-2 gap-2 p-4 md:grid-cols-4 md:gap-3 md:p-6">
+          {Array.from({ length: 4 }).map((_, i) => <DashStatSkeleton key={i} />)}
+        </div>
+      )}
 
       {/* Bento Grid */}
       <div className="px-4 pb-8 md:px-6 lg:px-8">

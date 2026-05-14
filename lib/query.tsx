@@ -6,10 +6,13 @@ function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 30_000, // 30s — data is fresh for 30s, no refetch
-        gcTime: 5 * 60_000, // 5min — keep in cache
-        refetchOnWindowFocus: false,
-        retry: 1,
+        staleTime:          30_000,       // 30s — don't refetch if data is fresh
+        gcTime:             15 * 60_000,  // 15min — keep in memory across navigations
+        refetchOnWindowFocus: false,      // don't hammer the API on tab switch
+        refetchOnReconnect: "always",     // but do refresh on reconnect
+        retry:              1,
+        // Show stale data instantly while revalidating in background
+        placeholderData:    (prev: unknown) => prev,
       },
     },
   });
@@ -25,4 +28,9 @@ function getQueryClient() {
 export function QueryProvider({ children }: { children: ReactNode }) {
   const [client] = useState(getQueryClient);
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+
+/** Call this to get the singleton client for prefetching */
+export function getClient() {
+  return getQueryClient();
 }

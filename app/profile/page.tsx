@@ -7,6 +7,13 @@ import { useAuth } from "@/lib/useAuth";
 import { apiFetch } from "@/lib/api";
 import { useBookingHistory } from "@/lib/hooks/useBookingHistory";
 import { getMainImage } from "@/lib/image-types";
+import {
+  StatsStripSkeleton,
+  ChartSkeleton,
+  BookingRowSkeleton,
+  TopCenterRowSkeleton,
+  Skeleton,
+} from "@/components/Skeleton";
 
 interface Booking {
   id: string;
@@ -206,6 +213,11 @@ export default function ProfilePage() {
       </section>
 
       {/* ── STATS STRIP ── */}
+      {!stats && (
+        <section className="border-b border-white/[0.06]">
+          <StatsStripSkeleton />
+        </section>
+      )}
       {stats && (
         <section className="grid grid-cols-3 border-b border-white/[0.06] md:grid-cols-6">
           {[
@@ -260,6 +272,12 @@ export default function ProfilePage() {
         <div className="divide-y divide-white/[0.05]">
 
           {/* Monthly spending chart */}
+          {!stats && (
+            <section className="px-6 py-10 md:px-12">
+              <Skeleton dark className="mb-8 h-2 w-32" />
+              <ChartSkeleton />
+            </section>
+          )}
           {stats && (
             <section className="px-6 py-10 md:px-12">
               <h3 className="mb-8 text-[9px] font-medium uppercase tracking-[0.32em] text-white/28">
@@ -293,6 +311,12 @@ export default function ProfilePage() {
           )}
 
           {/* Top centers */}
+          {!stats && (
+            <section className="px-6 py-8 md:px-12">
+              <Skeleton dark className="mb-6 h-2 w-24" />
+              {Array.from({ length: 3 }).map((_, i) => <TopCenterRowSkeleton key={i} />)}
+            </section>
+          )}
           {stats && stats.topCenters.length > 0 && (
             <section className="px-6 py-8 md:px-12">
               <h3 className="mb-6 text-[9px] font-medium uppercase tracking-[0.32em] text-white/28">
@@ -400,8 +424,12 @@ export default function ProfilePage() {
             <span className="mono text-[9px] text-white/18">{historyTotal} захиалга</span>
           </div>
 
-          {history.length === 0 && (
-            <p className="px-6 py-12 text-[11px] text-white/14 md:px-12">Захиалга олдсонгүй.</p>
+          {history.length === 0 && historyTotal === 0 && (
+            <div className="divide-y divide-white/[0.04]">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <BookingRowSkeleton key={i} />
+              ))}
+            </div>
           )}
 
           <div className="divide-y divide-white/[0.04]">
