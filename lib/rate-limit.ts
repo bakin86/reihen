@@ -8,7 +8,7 @@ export interface RateLimitResult {
 }
 
 // Policies
-export const AUTH_LIMIT = { max: 10, windowMs: 15 * 60_000 }; // 10 per 15 min
+export const AUTH_LIMIT = { max: 30, windowMs: 15 * 60_000 }; // 30 per 15 min (was 10)
 export const API_LIMIT  = { max: 300, windowMs: 60_000 };      // 300 per minute
 
 /**

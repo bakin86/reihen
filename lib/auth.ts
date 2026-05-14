@@ -15,8 +15,8 @@ const REFRESH_EXPIRES = "7d";       // long-lived refresh token
 const REFRESH_DAYS = 7;
 
 // Account lockout settings
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_MINUTES = 15;
+const MAX_FAILED_ATTEMPTS = 10;  // was 5
+const LOCKOUT_MINUTES = 10;       // was 15
 
 export const BCRYPT_SALT_ROUNDS = 12;
 
