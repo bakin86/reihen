@@ -190,6 +190,15 @@ export function extractBearer(req: Request | NextRequest): string | null {
     const cookie = (req as NextRequest).cookies.get(ACCESS_COOKIE);
     if (cookie?.value) return cookie.value;
   }
+  const cookieHeader = req.headers.get("cookie");
+  if (cookieHeader) {
+    const accessCookie = cookieHeader
+      .split(";")
+      .map((part) => part.trim())
+      .find((part) => part.startsWith(`${ACCESS_COOKIE}=`));
+    const value = accessCookie?.slice(ACCESS_COOKIE.length + 1);
+    if (value) return decodeURIComponent(value);
+  }
 
   // 2. Fallback to Authorization header (mobile apps, API clients)
   const header = req.headers.get("authorization") ?? req.headers.get("Authorization");

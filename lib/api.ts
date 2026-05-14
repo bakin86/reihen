@@ -29,10 +29,11 @@ export async function apiFetch<T>(
   opts: RequestInit & { token?: string | null } = {}
 ): Promise<T> {
   const { token, ...init } = opts;
+  const bearerToken = token && token !== "cookie-auth" ? token : null;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     // Bearer token fallback for mobile/API — browser uses httpOnly cookies
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {}),
     ...((init.headers as Record<string, string>) ?? {}),
   };
 
