@@ -1,9 +1,7 @@
 name: Keep Warm
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"  # every 5 minutes
-  workflow_dispatch:         # manual trigger
+  workflow_dispatch:  # manual only — use UptimeRobot instead (GitHub Actions free tier: 2000min/month)
 
 jobs:
   ping:
