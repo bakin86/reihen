@@ -103,6 +103,7 @@ model User {
   subscription          Subscription?
   refreshTokens         RefreshToken[]
   passwordResetTokens   PasswordResetToken[]
+  smsOtps               SmsOtp[]
   tournamentTeams       TournamentTeam[]
   tournamentMemberships TournamentMember[]
 
@@ -435,6 +436,20 @@ model TournamentMember {
   @@unique([teamId, userId])
   @@index([teamId])
   @@index([userId])
+}
+
+model SmsOtp {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model FavoriteCenter {
