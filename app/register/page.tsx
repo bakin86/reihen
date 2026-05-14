@@ -59,12 +59,12 @@ export default function RegisterPage() {
           {/* Role selector */}
           <div>
             <label className="text-xs uppercase tracking-[0.3em] text-gray">БҮРТГЭЛИЙН ТӨРӨЛ</label>
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="mt-3 grid grid-cols-2 gap-1">
               <button
                 type="button"
                 onClick={() => setRole("PLAYER")}
-                className={`border border-black py-4 text-xs uppercase tracking-[0.3em] transition-colors ${
-                  role === "PLAYER" ? "bg-black text-white" : "hover:bg-black hover:text-white"
+                className={`py-4 text-xs uppercase tracking-[0.3em] transition-colors ${
+                  role === "PLAYER" ? "bg-black text-white" : "bg-black/[0.04] hover:bg-black hover:text-white"
                 }`}
               >
                 ТОГЛОГЧ
@@ -72,8 +72,8 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setRole("OWNER")}
-                className={`border border-black py-4 text-xs uppercase tracking-[0.3em] transition-colors ${
-                  role === "OWNER" ? "bg-black text-white" : "hover:bg-black hover:text-white"
+                className={`py-4 text-xs uppercase tracking-[0.3em] transition-colors ${
+                  role === "OWNER" ? "bg-black text-white" : "bg-black/[0.04] hover:bg-black hover:text-white"
                 }`}
               >
                 PC CENTER ЭЗЭН
@@ -92,7 +92,7 @@ export default function RegisterPage() {
           <Field label="PASSWORD" type="password" value={form.password} onChange={set("password")} placeholder="••••••••" required minLength={6} />
 
           {error && (
-            <div className="border border-black bg-black p-4 text-xs uppercase tracking-[0.3em] text-white">
+            <div className="bg-black px-4 py-3 text-[11px] uppercase tracking-[0.25em] text-white/70">
               {error}
             </div>
           )}

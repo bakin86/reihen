@@ -77,7 +77,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="border border-black bg-black p-4 text-xs uppercase tracking-[0.3em] text-white">
+            <div className="bg-black px-4 py-3 text-[11px] uppercase tracking-[0.25em] text-white/70">
               {error}
             </div>
           )}

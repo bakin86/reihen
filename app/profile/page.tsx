@@ -132,7 +132,7 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-[#0a0a0a] text-white">
 
       {/* ── HEADER ── */}
-      <header className="flex items-center justify-between border-b border-white/10 px-6 py-4 md:px-12">
+      <header className="flex items-center justify-between px-6 py-5 md:px-12">
         <Link href="/" className="text-[10px] uppercase tracking-[0.3em] text-white/40 hover:text-white transition-colors">
           ← HOME
         </Link>
@@ -144,13 +144,14 @@ export default function ProfilePage() {
           LOGOUT
         </button>
       </header>
+      <div className="h-px bg-white/[0.06] mx-6 md:mx-12" />
 
       {/* ── USER HERO ── */}
-      <section className="border-b border-white/10 px-6 py-10 md:px-12 md:py-14">
+      <section className="px-6 py-10 md:px-12 md:py-14">
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <span className="text-[9px] uppercase tracking-[0.35em] text-white/25 border border-white/10 px-2 py-0.5">
+              <span className="text-[9px] uppercase tracking-[0.35em] text-white/25">
                 {ROLE_LABELS[user.role] ?? user.role}
               </span>
               {active.length > 0 && (
@@ -167,17 +168,18 @@ export default function ProfilePage() {
             <p className="mt-3 text-[11px] text-white/25 mono">{user.phone} · {user.email}</p>
           </div>
 
-          {/* Balance pill */}
-          <div className="border border-white/10 bg-white/[0.03] px-6 py-4 text-right">
-            <div className="mono text-2xl md:text-3xl">{user.balance.toLocaleString()}₮</div>
-            <div className="mt-1 text-[9px] uppercase tracking-[0.3em] text-white/30">ҮЛДЭГДЭЛ</div>
+          {/* Balance — plain text block */}
+          <div className="text-right">
+            <div className="mono text-2xl md:text-3xl text-[#F5C000]">{user.balance.toLocaleString()}₮</div>
+            <div className="mt-1 text-[9px] uppercase tracking-[0.3em] text-white/25">ҮЛДЭГДЭЛ</div>
           </div>
         </div>
       </section>
+      <div className="h-px bg-white/[0.06]" />
 
       {/* ── STATS STRIP ── */}
       {stats && (
-        <section className="grid grid-cols-3 border-b border-white/10 md:grid-cols-6">
+        <section className="grid grid-cols-3 md:grid-cols-6">
           {[
             { v: `${stats.totalHours.toFixed(0)}ц`, l: "Нийт цаг" },
             { v: `${(stats.totalSpent / 1000).toFixed(0)}к₮`, l: "Зарцуулсан" },
@@ -186,19 +188,17 @@ export default function ProfilePage() {
             { v: String(stats.favoritesCount), l: "Дуртай" },
             { v: `${(stats.balance / 1000).toFixed(0)}к₮`, l: "Үлдэгдэл" },
           ].map((s, i) => (
-            <div
-              key={i}
-              className="flex flex-col items-center justify-center py-5 border-white/[0.06] [&:not(:last-child)]:border-r"
-            >
+            <div key={i} className="flex flex-col items-center justify-center py-5">
               <div className="mono text-xl md:text-2xl text-white">{s.v}</div>
               <div className="mt-1 text-[8px] uppercase tracking-[0.2em] text-white/25">{s.l}</div>
             </div>
           ))}
         </section>
       )}
+      <div className="h-px bg-white/[0.06]" />
 
       {/* ── TABS ── */}
-      <div className="flex border-b border-white/10">
+      <div className="flex">
         {(["stats", "history", "favorites"] as const).map((t) => {
           const badge =
             t === "history" && historyTotal > 0 ? historyTotal :
@@ -207,15 +207,15 @@ export default function ProfilePage() {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-[9px] uppercase tracking-[0.3em] transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 py-4 text-[9px] uppercase tracking-[0.3em] transition-colors ${
                 tab === t
-                  ? "border-b-2 border-white text-white"
+                  ? "text-[#F5C000] border-b-2 border-[#F5C000]"
                   : "text-white/25 hover:text-white/50"
               }`}
             >
               {t === "stats" ? "Статистик" : t === "history" ? "Түүх" : "Дуртай"}
               {badge != null && badge > 0 && (
-                <span className={`mono text-[8px] px-1.5 py-0.5 rounded-full ${tab === t ? "bg-white/10 text-white/60" : "bg-white/[0.04] text-white/20"}`}>
+                <span className={`mono text-[8px] px-1.5 py-0.5 ${tab === t ? "text-[#F5C000]/60" : "text-white/20"}`}>
                   {badge}
                 </span>
               )}
@@ -223,6 +223,7 @@ export default function ProfilePage() {
           );
         })}
       </div>
+      <div className="h-px bg-white/[0.06]" />
 
       {/* ── STATS TAB ── */}
       {tab === "stats" && (
@@ -268,7 +269,7 @@ export default function ProfilePage() {
                   <Link
                     key={tc.centerId}
                     href={`/centers/${tc.centerId}`}
-                    className="flex items-center gap-4 border border-white/[0.06] bg-white/[0.02] p-4 hover:bg-white/[0.05] transition-colors"
+                    className="flex items-center gap-4 py-3 hover:opacity-70 transition-opacity"
                   >
                     <span className="mono text-2xl text-white/15 w-6 shrink-0">{i + 1}</span>
                     {tc.image && (
@@ -302,7 +303,7 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-3">
                 {active.map((b) => (
-                  <div key={b.id} className="border border-white/[0.08] bg-white/[0.02] p-4">
+                  <div key={b.id} className="py-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <div className="mono text-[10px] text-white/25">{b.code}</div>
@@ -319,7 +320,7 @@ export default function ProfilePage() {
                       <button
                         disabled={cancelling === b.id}
                         onClick={() => cancelMutation.mutate(b.id)}
-                        className="shrink-0 border border-white/10 px-4 py-2 text-[9px] uppercase tracking-[0.25em] text-white/40 hover:border-red-400/50 hover:text-red-400 disabled:opacity-30 transition-colors"
+                        className="shrink-0 text-[9px] uppercase tracking-[0.25em] text-white/30 hover:text-red-400 disabled:opacity-30 transition-colors"
                       >
                         {cancelling === b.id ? "..." : "ЦУЦЛАХ"}
                       </button>
@@ -336,13 +337,13 @@ export default function ProfilePage() {
       {tab === "history" && (
         <div>
           {/* Status filter */}
-          <div className="flex border-b border-white/[0.06]">
+          <div className="flex">
             {(["ALL", "CONFIRMED", "CANCELLED", "NOSHOW"] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => { setStatusFilter(s); setHistoryPage(1); }}
                 className={`flex-1 py-3 text-[8px] uppercase tracking-[0.2em] transition-colors ${
-                  statusFilter === s ? "text-white border-b border-white" : "text-white/20 hover:text-white/40"
+                  statusFilter === s ? "text-[#F5C000] border-b-2 border-[#F5C000]" : "text-white/20 hover:text-white/40"
                 }`}
               >
                 {s === "ALL" ? "Бүгд" : s === "CONFIRMED" ? "Баталгаасан" : s === "CANCELLED" ? "Цуцалсан" : "Ирээгүй"}
@@ -391,7 +392,7 @@ export default function ProfilePage() {
           </div>
 
           {totalHistoryPages > 1 && (
-            <div className="flex items-center justify-center gap-6 border-t border-white/[0.06] py-5">
+            <div className="flex items-center justify-center gap-6 py-6">
               <button
                 disabled={historyPage <= 1}
                 onClick={() => setHistoryPage((p) => p - 1)}
@@ -433,7 +434,7 @@ export default function ProfilePage() {
               {favorites.map((c) => {
                 const img = getMainImage(c.images);
                 return (
-                  <div key={c.id} className="group relative overflow-hidden border border-white/[0.08]">
+                  <div key={c.id} className="group relative overflow-hidden">
                     <Link href={`/centers/${c.id}`} className="block">
                       <div className="relative aspect-[16/7] bg-white/[0.03]">
                         {img && (
@@ -460,10 +461,10 @@ export default function ProfilePage() {
                     {/* Unfavorite */}
                     <button
                       onClick={() => unfavoriteMutation.mutate(c.id)}
-                      className="absolute top-3 right-3 flex h-7 w-7 items-center justify-center border border-white/20 bg-black/60 text-white/50 text-xs hover:border-red-400/60 hover:text-red-400 transition-colors"
+                      className="absolute top-3 right-3 bg-black/50 px-2 py-1 text-[9px] uppercase tracking-[0.2em] text-white/40 hover:text-red-400 transition-colors"
                       title="Хасах"
                     >
-                      ♥
+                      ✕
                     </button>
                   </div>
                 );
