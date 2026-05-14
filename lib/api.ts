@@ -1,6 +1,11 @@
 "use client";
 
-const BASE = process.env.NEXT_PUBLIC_APP_URL ?? "";
+// Never use an absolute base URL for client-side fetches.
+// Using a hardcoded domain breaks CORS on preview deployments because
+// the page origin (e.g. reihen-bakin86s-projects.vercel.app) differs
+// from the API origin (reihen.vercel.app). Relative paths always resolve
+// to whatever origin served the page, which is what we want.
+const BASE = "";
 
 export class ApiError extends Error {
   status: number;
