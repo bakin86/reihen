@@ -565,7 +565,7 @@ export default function CenterManagePage({ params }: { params: { id: string } })
                         {floorSeats.length === 0 && (
                           <p className="text-sm text-gray">No seats on this floor.</p>
                         )}
-                        <div className="grid grid-cols-6 gap-2.5 rounded-xl bg-[#0d0d0d] p-4 md:grid-cols-8 lg:grid-cols-10">
+                        <div className="grid grid-cols-6 gap-2.5 bg-[#0d0d0d] p-4 md:grid-cols-8 lg:grid-cols-10">
                           {floorSeats.map((s) => (
                             <div key={s.id} className="group relative">
                               <SeatCell

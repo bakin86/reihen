@@ -248,7 +248,7 @@ function BookingInner() {
         </InView>
 
         <InView from="up" distance={12} delay={60} duration={600}>
-          <div className="mb-10 grid grid-cols-4 overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+          <div className="mb-10 grid grid-cols-4 overflow-hidden border border-white/[0.06] bg-white/[0.02]">
             {[
               { n: 1, label: "Seat", done: pickedSeats.length > 0 },
               { n: 2, label: "Time", done: Boolean(start) && consecutive },
@@ -348,7 +348,7 @@ function BookingInner() {
 
             {/* Other-floor notice */}
             {otherFloorCount > 0 && (
-              <div className="mb-4 flex items-center justify-between rounded-xl bg-white/[0.03] px-4 py-2.5">
+              <div className="mb-4 flex items-center justify-between bg-white/[0.03] px-4 py-2.5">
                 <span className="label text-[8px] text-white/30">
                   {otherFloorCount} seat{otherFloorCount > 1 ? "s" : ""} on other floor
                 </span>
@@ -364,7 +364,7 @@ function BookingInner() {
             )}
 
             {mapView === "grid" ? (
-              <div className="grid grid-cols-4 gap-2 rounded-2xl bg-white/[0.02] p-4 md:grid-cols-10">
+              <div className="grid grid-cols-4 gap-2 bg-white/[0.02] p-4 md:grid-cols-10">
                 {view.map((s) => (
                   <SeatCell
                     key={s.id}
@@ -418,7 +418,7 @@ function BookingInner() {
                 <button
                   key={h}
                   onClick={() => setStart(h)}
-                  className={`mono rounded-xl py-3 text-[11px] transition-all duration-300 ${
+                  className={`mono py-3 text-[11px] transition-all duration-300 ${
                     start === h
                       ? "bg-white text-black"
                       : "bg-white/[0.03] text-white/40 hover:bg-white/[0.07] hover:text-white/70"
@@ -445,7 +445,7 @@ function BookingInner() {
                 <button
                   key={h}
                   onClick={() => setHours(h)}
-                  className={`mono rounded-xl px-5 py-3 text-sm transition-all duration-300 ${
+                  className={`mono px-5 py-3 text-sm transition-all duration-300 ${
                     hours === h
                       ? "bg-white text-black"
                       : "bg-white/[0.03] text-white/40 hover:bg-white/[0.07] hover:text-white/70"
@@ -467,7 +467,7 @@ function BookingInner() {
                 <button
                   key={m}
                   onClick={() => setMethod(m)}
-                  className={`flex-1 rounded-xl py-3 text-[10px] uppercase tracking-[0.2em] transition-all duration-300 ${
+                  className={`flex-1 py-3 text-[10px] uppercase tracking-[0.2em] transition-all duration-300 ${
                     method === m
                       ? "bg-white text-black"
                       : "bg-white/[0.03] text-white/40 hover:bg-white/[0.07] hover:text-white/70"
@@ -478,7 +478,7 @@ function BookingInner() {
               ))}
             </div>
             {method === "QPAY" && (
-              <div className="mt-3 rounded-xl border border-yellow-400/15 bg-yellow-400/[0.06] px-4 py-3">
+              <div className="mt-3 border border-yellow-400/15 bg-yellow-400/[0.06] px-4 py-3">
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-[9px] uppercase tracking-widest text-yellow-200/70">
                     Payment window
@@ -532,7 +532,7 @@ function BookingInner() {
             </div>
 
             {error && (
-              <div className="mt-6 rounded-xl bg-white/[0.03] px-4 py-3 text-[9px] uppercase tracking-[0.2em] text-white/40">
+              <div className="mt-6 bg-white/[0.03] px-4 py-3 text-[9px] uppercase tracking-[0.2em] text-white/40">
                 ✕ {error}
               </div>
             )}
@@ -545,7 +545,7 @@ function BookingInner() {
             {!token ? (
               <Link
                 href="/login"
-                className="block w-full rounded-2xl bg-white py-4 text-center text-[10px] uppercase tracking-[0.2em] text-black transition-all duration-300 hover:bg-white/80"
+                className="block w-full bg-white py-4 text-center text-[10px] uppercase tracking-[0.2em] text-black transition-all duration-300 hover:bg-white/80"
               >
                 Login to book →
               </Link>
@@ -553,7 +553,7 @@ function BookingInner() {
               <button
                 onClick={submit}
                 disabled={!canSubmit}
-                className="w-full rounded-2xl bg-white py-4 text-[10px] uppercase tracking-[0.2em] text-black transition-all duration-500 hover:bg-white/90 disabled:bg-white/[0.04] disabled:text-white/20"
+                className="w-full bg-white py-4 text-[10px] uppercase tracking-[0.2em] text-black transition-all duration-500 hover:bg-white/90 disabled:bg-white/[0.04] disabled:text-white/20"
               >
                 {submitLabel}
               </button>

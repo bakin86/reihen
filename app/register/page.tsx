@@ -30,55 +30,51 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="grid min-h-screen grid-cols-1 md:grid-cols-2" style={{ background: "#0F0E0B" }}>
+    <main className="grid min-h-screen grid-cols-1 bg-white md:grid-cols-2">
       {/* LEFT */}
-      <section className="flex flex-col justify-between p-10 md:p-16" style={{ background: "#0C0B09" }}>
-        <Link href="/" className="text-xs uppercase tracking-[0.3em] transition-colors"
-          style={{ color: "rgba(237,232,224,0.30)" }}
-          onMouseEnter={e => (e.currentTarget.style.color = "#EDE8E0")}
-          onMouseLeave={e => (e.currentTarget.style.color = "rgba(237,232,224,0.30)")}
-        >
+      <section className="flex flex-col justify-between bg-black p-10 md:p-16">
+        <Link href="/" className="text-[10px] font-medium uppercase tracking-[0.3em] text-white/30 transition-colors hover:text-white">
           ← REIHEN
         </Link>
         <div>
-          <h1 className="display leading-none" style={{ fontSize: "clamp(72px, 10vw, 140px)", color: "#EDE8E0" }}>
+          <h1
+            className="font-black text-white"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(72px, 10vw, 160px)",
+              lineHeight: 0.84,
+              letterSpacing: "-0.05em",
+              fontWeight: 900,
+            }}
+          >
             SIGN<br />UP.
           </h1>
-          <p className="mt-8 max-w-sm text-sm font-light" style={{ color: "rgba(237,232,224,0.30)" }}>
+          <p className="mt-8 max-w-sm text-sm font-light text-white/30">
             Тоглогч эсвэл PC Center эзэмшигч бүртгэл үүсгэх.
           </p>
         </div>
-        <div className="mono text-xs" style={{ color: "rgba(237,232,224,0.20)" }}>REIHEN · 2026</div>
+        <div className="mono text-xs text-white/20">REIHEN · 2026</div>
       </section>
 
       {/* RIGHT */}
       <section className="flex flex-col justify-center p-10 md:p-16">
         <form onSubmit={submit} className="space-y-6">
-          {/* Role selector */}
           <div>
-            <label className="text-xs uppercase tracking-[0.3em]" style={{ color: "rgba(237,232,224,0.35)" }}>
-              БҮРТГЭЛИЙН ТӨРӨЛ
-            </label>
+            <label className="text-[10px] font-medium uppercase tracking-[0.3em] text-black/35">БҮРТГЭЛИЙН ТӨРӨЛ</label>
             <div className="mt-3 grid grid-cols-2 gap-1">
               {(["PLAYER", "OWNER"] as const).map((r) => (
                 <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRole(r)}
-                  className="py-4 text-xs uppercase tracking-[0.3em] transition-all"
-                  style={role === r
-                    ? { background: "#F5C000", color: "#0C0B09", fontWeight: 600 }
-                    : { background: "rgba(237,232,224,0.05)", color: "rgba(237,232,224,0.40)" }
-                  }
-                  onMouseEnter={e => { if (role !== r) e.currentTarget.style.background = "rgba(237,232,224,0.09)"; }}
-                  onMouseLeave={e => { if (role !== r) e.currentTarget.style.background = "rgba(237,232,224,0.05)"; }}
+                  key={r} type="button" onClick={() => setRole(r)}
+                  className={`py-4 text-[10px] font-semibold uppercase tracking-[0.2em] transition-all ${
+                    role === r ? "bg-black text-white" : "bg-black/[0.05] text-black/40 hover:bg-black/[0.08]"
+                  }`}
                 >
                   {r === "PLAYER" ? "ТОГЛОГЧ" : "PC CENTER ЭЗЭН"}
                 </button>
               ))}
             </div>
             {role === "OWNER" && (
-              <p className="mt-2 text-[10px] uppercase tracking-[0.3em]" style={{ color: "rgba(237,232,224,0.25)" }}>
+              <p className="mt-2 text-[9px] font-medium uppercase tracking-[0.25em] text-black/25">
                 Бүртгүүлсний дараа багц сонгох хуудас руу шилжинэ
               </p>
             )}
@@ -90,32 +86,19 @@ export default function RegisterPage() {
           <Field label="PASSWORD" type="password" value={form.password} onChange={set("password")} placeholder="••••••••"          required minLength={6} />
 
           {error && (
-            <div className="px-4 py-3 text-[11px] uppercase tracking-[0.25em]"
-              style={{ background: "rgba(239,68,68,0.1)", color: "rgba(239,68,68,0.8)" }}>
-              {error}
-            </div>
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-red-500/80">{error}</p>
           )}
 
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full px-6 py-4 text-xs uppercase tracking-[0.3em] font-semibold transition-all disabled:opacity-40"
-            style={{ background: "#F5C000", color: "#0C0B09" }}
-            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = "#EDE8E0"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#F5C000"; }}
+            type="submit" disabled={loading}
+            className="w-full bg-black py-4 text-[11px] font-semibold uppercase tracking-[0.3em] text-white transition-opacity hover:opacity-60 disabled:opacity-30"
           >
             {loading ? "..." : role === "OWNER" ? "БҮРТГҮҮЛЭХ → БАГЦ СОНГОХ" : "БҮРТГҮҮЛЭХ →"}
           </button>
 
-          <p className="text-xs uppercase tracking-[0.3em]" style={{ color: "rgba(237,232,224,0.30)" }}>
+          <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-black/30">
             Бүртгэлтэй юу?{" "}
-            <Link href="/login" className="underline transition-colors"
-              style={{ color: "#EDE8E0" }}
-              onMouseEnter={e => (e.currentTarget.style.color = "#F5C000")}
-              onMouseLeave={e => (e.currentTarget.style.color = "#EDE8E0")}
-            >
-              НЭВТРЭХ
-            </Link>
+            <Link href="/login" className="text-black underline transition-colors hover:opacity-50">НЭВТРЭХ</Link>
           </p>
         </form>
       </section>
@@ -127,14 +110,11 @@ function Field(props: React.InputHTMLAttributes<HTMLInputElement> & { label: str
   const { label, ...rest } = props;
   return (
     <div>
-      <label className="text-xs uppercase tracking-[0.3em]" style={{ color: "rgba(237,232,224,0.35)" }}>{label}</label>
+      <label className="text-[10px] font-medium uppercase tracking-[0.3em] text-black/35">{label}</label>
       <input
         {...rest}
-        className="mt-2 block w-full bg-transparent pb-3 text-xl font-black outline-none"
-        style={{
-          color: "#EDE8E0",
-          borderBottom: "1px solid rgba(237,232,224,0.18)",
-        }}
+        className="mt-2 block w-full bg-transparent pb-3 text-xl font-black text-black outline-none placeholder:text-black/15"
+        style={{ borderBottom: "1px solid rgba(0,0,0,0.15)" }}
       />
     </div>
   );

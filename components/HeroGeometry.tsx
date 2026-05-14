@@ -46,14 +46,14 @@ function Helix() {
     rGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(rungPositions), 3));
 
     const strandMaterial = new THREE.LineBasicMaterial({
-      color: "#ffffff",
+      color: "#000000",
       transparent: true,
-      opacity: 0.18,
+      opacity: 0.14,
     });
     const rungMaterial = new THREE.LineBasicMaterial({
-      color: "#ffffff",
+      color: "#000000",
       transparent: true,
-      opacity: 0.08,
+      opacity: 0.06,
     });
 
     return {

@@ -274,18 +274,18 @@ export default function OwnerDashboard() {
         <div className="grid auto-rows-[minmax(140px,auto)] grid-cols-2 gap-2 md:grid-cols-6 md:gap-3 lg:grid-cols-12">
 
           {/* Income — large tile */}
-          <div className="col-span-1 row-span-1 flex flex-col justify-between rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 md:col-span-3 md:p-6">
+          <div className="col-span-1 row-span-1 flex flex-col justify-between border border-white/[0.06] bg-white/[0.03] p-4 md:col-span-3 md:p-6">
             <span className="text-[10px] uppercase tracking-[0.3em] text-white/30">INCOME</span>
             <div>
-              <div className="display mono text-4xl md:text-5xl">
-                {t ? <><Counter value={Math.round(t.income / 1000)} duration={1200} className="mono" /><span className="text-lg text-white/30">K₮</span></> : "—"}
+              <div className="mono font-black text-white" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(28px, 4vw, 48px)", letterSpacing: "-0.05em", lineHeight: 1 }}>
+                {t ? <><Counter value={Math.round(t.income / 1000)} duration={1200} className="mono" /><span className="text-lg text-white/28">K₮</span></> : "—"}
               </div>
               <div className="mt-1 text-[10px] text-white/20">ӨНӨӨДӨР</div>
             </div>
           </div>
 
           {/* Bookings count */}
-          <div className="col-span-1 row-span-1 flex flex-col justify-between rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 md:col-span-3 md:p-6">
+          <div className="col-span-1 row-span-1 flex flex-col justify-between border border-white/[0.06] bg-white/[0.03] p-4 md:col-span-3 md:p-6">
             <span className="text-[10px] uppercase tracking-[0.3em] text-white/30">BOOKINGS</span>
             <div>
               <div className="display mono text-4xl md:text-5xl">
@@ -296,7 +296,7 @@ export default function OwnerDashboard() {
           </div>
 
           {/* Occupancy — ring */}
-          <div className="col-span-1 row-span-1 flex flex-col items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 md:col-span-3 md:p-6">
+          <div className="col-span-1 row-span-1 flex flex-col items-center justify-center border border-white/[0.06] bg-white/[0.03] p-4 md:col-span-3 md:p-6">
             <div className="relative flex h-20 w-20 items-center justify-center">
               <svg className="absolute inset-0 -rotate-90" viewBox="0 0 80 80">
                 <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
@@ -314,7 +314,7 @@ export default function OwnerDashboard() {
           </div>
 
           {/* Seat status mini — open / occupied / total */}
-          <div className="col-span-1 row-span-1 flex flex-col justify-between rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 md:col-span-3 md:p-6">
+          <div className="col-span-1 row-span-1 flex flex-col justify-between border border-white/[0.06] bg-white/[0.03] p-4 md:col-span-3 md:p-6">
             <span className="text-[10px] uppercase tracking-[0.3em] text-white/30">SEATS</span>
             <div className="flex items-end gap-4">
               <div>
@@ -334,7 +334,7 @@ export default function OwnerDashboard() {
 
           {/* Peak Hours — wide tile */}
           {dash && (
-            <div className="col-span-2 row-span-1 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 md:col-span-6 md:p-6 lg:col-span-8">
+            <div className="col-span-2 row-span-1 border border-white/[0.06] bg-white/[0.03] p-4 md:col-span-6 md:p-6 lg:col-span-8">
               <div className="mb-4 flex items-center justify-between">
                 <span className="text-[10px] uppercase tracking-[0.3em] text-white/30">PEAK HOURS · 14 DAY AVG</span>
                 <span className="mono text-[9px] text-white/20">BOOKINGS/HOUR</span>
@@ -365,7 +365,7 @@ export default function OwnerDashboard() {
           )}
 
           {/* Centers — tall narrow tile */}
-          <div className="col-span-2 row-span-2 flex flex-col rounded-2xl border border-white/[0.06] bg-white/[0.03] md:col-span-3 lg:col-span-4">
+          <div className="col-span-2 row-span-2 flex flex-col border border-white/[0.06] bg-white/[0.03] md:col-span-3 lg:col-span-4">
             <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
               <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">MY CENTERS</span>
               <Link href="/owner/centers/new" className="text-[9px] uppercase tracking-widest text-white/20 hover:text-white transition-colors">+ ADD</Link>
@@ -374,7 +374,7 @@ export default function OwnerDashboard() {
               {centers.length === 0 && (
                 <div className="flex h-full flex-col items-center justify-center gap-3 p-6">
                   <p className="text-xs text-white/20">No centers yet</p>
-                  <Link href="/owner/centers/new" className="rounded-lg bg-white/10 px-4 py-2 text-[10px] uppercase tracking-widest text-white/60 hover:bg-white hover:text-black transition-colors">
+                  <Link href="/owner/centers/new" className="bg-white/10 px-4 py-2 text-[10px] uppercase tracking-widest text-white/60 hover:bg-white hover:text-black transition-colors">
                     ADD CENTER
                   </Link>
                 </div>
@@ -387,7 +387,7 @@ export default function OwnerDashboard() {
                     centerId === c.id ? "bg-white/[0.08]" : "hover:bg-white/[0.03]"
                   }`}
                 >
-                  <span className={`flex h-9 w-9 items-center justify-center rounded-xl text-[10px] font-black transition-colors ${
+                  <span className={`flex h-9 w-9 items-center justify-center text-[10px] font-black transition-colors ${
                     centerId === c.id ? "bg-white text-black" : "bg-white/[0.06] text-white/40 group-hover:bg-white group-hover:text-black"
                   }`}>
                     {String(i + 1).padStart(2, "0")}
@@ -406,7 +406,7 @@ export default function OwnerDashboard() {
           </div>
 
           {/* Bookings — large tile */}
-          <div className="col-span-2 row-span-2 flex flex-col rounded-2xl border border-white/[0.06] bg-white/[0.03] md:col-span-6 lg:col-span-8">
+          <div className="col-span-2 row-span-2 flex flex-col border border-white/[0.06] bg-white/[0.03] md:col-span-6 lg:col-span-8">
             <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
               <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">RECENT BOOKINGS</span>
               <span className="mono text-[9px] text-white/20">{dash?.recentBookings.length ?? 0}</span>
@@ -423,7 +423,7 @@ export default function OwnerDashboard() {
                   <div key={b.id} className="group border-b border-white/[0.03] px-5 py-4 hover:bg-white/[0.02] transition-colors">
                     <div className="flex items-center gap-4">
                       {/* Seat numbers pill */}
-                      <div className="flex h-11 min-w-[3rem] items-center justify-center rounded-xl bg-white/[0.06] px-3">
+                      <div className="flex h-11 min-w-[3rem] items-center justify-center bg-white/[0.06] px-3">
                         <span className="display text-sm">{b.bookingSeats.map((bs) => bs.seat.number).join(",")}</span>
                       </div>
                       {/* Info */}
@@ -457,14 +457,14 @@ export default function OwnerDashboard() {
                         <button
                           disabled={busy === b.id}
                           onClick={() => markArrived(b.id)}
-                          className="btn-pop rounded-lg border border-green-500/20 bg-green-500/10 px-4 py-2 text-[9px] uppercase tracking-widest text-green-400 hover:bg-green-500/20 disabled:opacity-40 transition-colors"
+                          className="btn-lift border border-green-500/20 bg-green-500/10 px-4 py-2 text-[9px] uppercase tracking-widest text-green-400 hover:bg-green-500/20 disabled:opacity-40 transition-colors"
                         >
                           ARRIVED
                         </button>
                         <button
                           disabled={busy === b.id}
                           onClick={() => markNoShow(b.id)}
-                          className="btn-pop rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-[9px] uppercase tracking-widest text-white/40 hover:border-red-500/30 hover:text-red-400 disabled:opacity-40 transition-colors"
+                          className="btn-lift border border-white/10 bg-white/5 px-4 py-2 text-[9px] uppercase tracking-widest text-white/40 hover:border-red-500/30 hover:text-red-400 disabled:opacity-40 transition-colors"
                         >
                           NO-SHOW
                         </button>
@@ -477,7 +477,7 @@ export default function OwnerDashboard() {
           </div>
 
           {/* Seat Map — full-width tile */}
-          <div className="col-span-2 row-span-2 flex flex-col rounded-2xl border border-white/[0.06] bg-white/[0.03] md:col-span-6 lg:col-span-12">
+          <div className="col-span-2 row-span-2 flex flex-col border border-white/[0.06] bg-white/[0.03] md:col-span-6 lg:col-span-12">
             <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
               <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">RISK CUSTOMERS</span>
               <span className="mono text-[9px] text-white/20">{dash?.riskCustomers.length ?? 0}</span>
@@ -500,7 +500,7 @@ export default function OwnerDashboard() {
                   <button
                     disabled={busy === c.id}
                     onClick={() => setCustomerRestriction(c.id, c.isRestricted)}
-                    className={`mt-4 w-full rounded-lg border px-3 py-2 text-[9px] uppercase tracking-widest transition-colors disabled:opacity-40 ${c.isRestricted ? "border-white/10 text-white/40 hover:bg-white hover:text-black" : "border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500 hover:text-black"}`}
+                    className={`mt-4 w-full border px-3 py-2 text-[9px] uppercase tracking-widest transition-colors disabled:opacity-40 ${c.isRestricted ? "border-white/10 text-white/40 hover:bg-white hover:text-black" : "border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500 hover:text-black"}`}
                   >
                     {c.isRestricted ? "UNRESTRICT" : "RESTRICT 7D"}
                   </button>
@@ -509,7 +509,7 @@ export default function OwnerDashboard() {
             </div>
           </div>
 
-          <div className="col-span-2 row-span-2 flex flex-col rounded-2xl border border-white/[0.06] bg-white/[0.03] md:col-span-6 lg:col-span-12">
+          <div className="col-span-2 row-span-2 flex flex-col border border-white/[0.06] bg-white/[0.03] md:col-span-6 lg:col-span-12">
             <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
               <div className="flex items-center gap-4">
                 <div>
@@ -527,7 +527,7 @@ export default function OwnerDashboard() {
                   <select
                     value={centerId}
                     onChange={(e) => setActiveCenterId(e.target.value)}
-                    className="rounded-lg border border-white/[0.08] bg-black px-3 py-2 text-[10px] uppercase tracking-widest text-white/70 outline-none"
+                    className="border border-white/[0.08] bg-black px-3 py-2 text-[10px] uppercase tracking-widest text-white/70 outline-none"
                   >
                     {centers.map((c) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
@@ -535,7 +535,7 @@ export default function OwnerDashboard() {
                   </select>
                 )}
                 {/* View toggle */}
-                <div className="flex rounded-lg border border-white/[0.08] overflow-hidden">
+                <div className="flex border border-white/[0.08] overflow-hidden">
                   {(["grid", "grouped", "blueprint"] as const).map((v) => (
                     <button
                       key={v}
@@ -553,7 +553,7 @@ export default function OwnerDashboard() {
                 {centerId && (
                   <Link
                     href={`/owner/centers/${centerId}/layout`}
-                    className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-[8px] uppercase tracking-widest text-white/40 hover:bg-white hover:text-black transition-colors"
+                    className="border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-[8px] uppercase tracking-widest text-white/40 hover:bg-white hover:text-black transition-colors"
                   >
                     LAYOUT EDITOR
                   </Link>
@@ -566,7 +566,7 @@ export default function OwnerDashboard() {
                     <button
                       key={st}
                       onClick={() => selectAllByStatus(st)}
-                      className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[8px] uppercase tracking-widest text-white/40 hover:bg-white hover:text-black transition-colors"
+                      className="border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[8px] uppercase tracking-widest text-white/40 hover:bg-white hover:text-black transition-colors"
                     >
                       {st} {count}
                     </button>
@@ -589,7 +589,7 @@ export default function OwnerDashboard() {
                 <span className="display text-lg">{selectedSeats.size}</span>
                 <span className="text-[9px] uppercase tracking-widest text-white/30">SELECTED</span>
                 {selectedStatus.length > 0 && (
-                  <span className="rounded-full border border-white/[0.06] px-2 py-1 text-[8px] uppercase tracking-widest text-white/25">
+                  <span className="border border-white/[0.06] px-2 py-1 text-[8px] uppercase tracking-widest text-white/25">
                     {new Set(selectedStatus).size === 1 ? selectedStatus[0] : "MIXED"}
                   </span>
                 )}
@@ -599,7 +599,7 @@ export default function OwnerDashboard() {
                       key={st}
                       disabled={bulkBusy}
                       onClick={() => changeSeatStatus(Array.from(selectedSeats), st)}
-                      className="btn-pop rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-[9px] uppercase tracking-widest text-white/50 hover:bg-white hover:text-black disabled:opacity-40 transition-colors"
+                      className="btn-lift border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-[9px] uppercase tracking-widest text-white/50 hover:bg-white hover:text-black disabled:opacity-40 transition-colors"
                     >
                       {st}
                     </button>
@@ -613,7 +613,7 @@ export default function OwnerDashboard() {
 
             {/* Grid / Grouped */}
             <div className="flex-1 overflow-y-auto p-5">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.04] bg-black/30 px-4 py-3">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border border-white/[0.04] bg-black/30 px-4 py-3">
                 <SeatLegend />
                 <span className="text-[9px] uppercase tracking-widest text-white/20">
                   Hover seats for details
@@ -667,7 +667,7 @@ export default function OwnerDashboard() {
                       CLOSED: "text-white/40",
                     };
                     return (
-                      <div key={status} className={`rounded-xl border p-4 ${colors[status]}`}>
+                      <div key={status} className={`border p-4 ${colors[status]}`}>
                         <div className="mb-3 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${textColors[status]}`}>{status}</span>
@@ -704,7 +704,7 @@ export default function OwnerDashboard() {
                   {centerId && (
                     <Link
                       href={`/owner/centers/${centerId}/layout`}
-                      className="mt-5 rounded-full bg-white px-5 py-2.5 text-[9px] uppercase tracking-widest text-black transition-colors hover:bg-white/80"
+                      className="mt-5 bg-white px-5 py-2.5 text-[9px] uppercase tracking-widest text-black transition-opacity hover:opacity-75"
                     >
                       Open Layout Editor
                     </Link>

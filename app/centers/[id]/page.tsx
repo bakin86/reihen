@@ -392,9 +392,9 @@ export default function CenterPage({ params }: { params: { id: string } }) {
               <button
                 onClick={toggleFav}
                 title={isFav ? "Дуртайгаас хасах" : "Дуртайд нэмэх"}
-                className={`flex h-8 w-8 items-center justify-center rounded-full border text-sm transition-all duration-300 ${
+                className={`flex h-8 w-8 items-center justify-center border text-sm transition-all duration-300 ${
                   isFav
-                    ? "border-red-400/60 bg-red-400/10 text-red-400"
+                    ? "border-white/40 bg-white/10 text-white"
                     : "border-white/20 bg-black/30 text-white/60 hover:border-white/40 hover:text-white"
                 }`}
               >
@@ -433,7 +433,16 @@ export default function CenterPage({ params }: { params: { id: string } }) {
             <span className="anim-fade-in anim-d3 text-[10px] uppercase tracking-[0.3em] text-white/40">LIVE</span>
           </div>
 
-          <h1 className="anim-hero anim-d1 display mt-3 text-6xl text-white md:text-[10vw] md:leading-[0.85]">
+          <h1
+            className="anim-hero anim-d1 mt-3 font-black text-white"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(48px, 10vw, 160px)",
+              lineHeight: 0.85,
+              letterSpacing: "-0.05em",
+              fontWeight: 900,
+            }}
+          >
             {center.name.toUpperCase()}
           </h1>
 
@@ -484,7 +493,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
             {center.seatTypes.map((t, i) => (
               <div
                 key={t.id}
-                className={`anim-fade-up rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 md:p-6 text-center ${i === 0 ? "md:row-span-2 flex flex-col justify-center" : ""}`}
+                className={`anim-fade-up border border-white/[0.06] bg-white/[0.03] p-5 md:p-6 text-center ${i === 0 ? "md:row-span-2 flex flex-col justify-center" : ""}`}
                 style={{ animationDelay: `${i * 0.08}s` }}
               >
                 <div className="text-[10px] uppercase tracking-[0.3em] text-white/40">{t.name}</div>
@@ -554,7 +563,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
             const maxRow = Math.max(...positioned.map((s) => s.posY!)) + 1;
             return (
               <div
-                className="w-full overflow-x-auto rounded-xl border border-white/5 bg-black/30 p-4"
+                className="w-full overflow-x-auto border border-white/5 bg-black/30 p-4"
               >
                 <div
                   className="grid gap-2 mx-auto"
@@ -589,7 +598,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
               </div>
             );
           })() : (
-            <div className="grid grid-cols-4 gap-2 rounded-xl border border-white/5 bg-black/30 p-4 md:grid-cols-8 lg:grid-cols-10">
+            <div className="grid grid-cols-4 gap-2 border border-white/5 bg-black/30 p-4 md:grid-cols-8 lg:grid-cols-10">
               {view.map((s) => (
                 <SeatCell
                   key={s.id}
@@ -616,14 +625,14 @@ export default function CenterPage({ params }: { params: { id: string } }) {
             {pickedSeats.length > 0 ? (
               <div className="anim-fade-up space-y-5">
                 {/* Selected seats */}
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
+                <div className="border border-white/[0.06] bg-white/[0.03] p-4">
                   <p className="text-[10px] uppercase tracking-[0.3em] text-white/30">SEATS</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {pickedSeats.map((s) => (
                       <button
                         key={s.id}
                         onClick={() => setSelectedIds((prev) => prev.filter((x) => x !== s.id))}
-                        className="group flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-black text-white transition-colors hover:bg-white hover:text-black"
+                        className="group flex items-center gap-1.5 border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-black text-white transition-colors hover:bg-white hover:text-black"
                       >
                         {s.number}
                         <span className="text-[10px] text-white/30 group-hover:text-black/50">✕</span>
@@ -643,7 +652,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                       <button
                         key={h}
                         onClick={() => setStart(h)}
-                        className={`mono rounded-lg py-2 text-[10px] transition-colors ${
+                        className={`mono py-2 text-[10px] transition-colors ${
                           start === h
                             ? "bg-white text-black"
                             : "border border-white/[0.08] text-white/50 hover:bg-white/10"
@@ -663,7 +672,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                       <button
                         key={h}
                         onClick={() => setHoursVal(h)}
-                        className={`mono flex-1 rounded-lg py-2 text-xs transition-colors ${
+                        className={`mono flex-1 py-2 text-xs transition-colors ${
                           hours === h
                             ? "bg-white text-black"
                             : "border border-white/[0.08] text-white/50 hover:bg-white/10"
@@ -681,7 +690,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                   <div className="mt-2 grid grid-cols-2 gap-1">
                     <button
                       onClick={() => setMethod("QPAY")}
-                      className={`rounded-lg py-2 text-[10px] uppercase tracking-[0.3em] transition-colors ${
+                      className={`py-2 text-[10px] uppercase tracking-[0.3em] transition-colors ${
                         method === "QPAY"
                           ? "bg-white text-black"
                           : "border border-white/[0.08] text-white/50 hover:bg-white/10"
@@ -691,7 +700,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                     </button>
                     <button
                       onClick={() => setMethod("BALANCE")}
-                      className={`rounded-lg py-2 text-[10px] uppercase tracking-[0.3em] transition-colors ${
+                      className={`py-2 text-[10px] uppercase tracking-[0.3em] transition-colors ${
                         method === "BALANCE"
                           ? "bg-white text-black"
                           : "border border-white/[0.08] text-white/50 hover:bg-white/10"
@@ -722,7 +731,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                 </div>
 
                 {error && (
-                  <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-[10px] uppercase tracking-[0.3em] text-red-400">
+                  <div className="border border-red-500/20 bg-red-500/10 p-3 text-[10px] uppercase tracking-[0.3em] text-red-400">
                     {error}
                   </div>
                 )}
@@ -731,7 +740,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                 {!token ? (
                   <Link
                     href="/login"
-                    className="block w-full rounded-xl bg-white py-4 text-center text-xs uppercase tracking-[0.3em] text-black hover:bg-white/90 transition-colors"
+                    className="btn-lift block w-full bg-white py-4 text-center text-xs uppercase tracking-[0.3em] text-black transition-opacity hover:opacity-75"
                   >
                     НЭВТЭРЧ ЗАХИАЛАХ →
                   </Link>
@@ -739,7 +748,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                   <button
                     onClick={confirmBooking}
                     disabled={!canSubmit}
-                    className="btn-pop w-full rounded-xl bg-white py-4 text-xs uppercase tracking-[0.3em] text-black disabled:opacity-40 hover:bg-white/90 transition-colors"
+                    className="btn-lift w-full bg-white py-4 text-xs uppercase tracking-[0.3em] text-black disabled:opacity-40 transition-opacity hover:opacity-75"
                   >
                     {submitting
                       ? "PROCESSING..."
@@ -750,7 +759,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                 )}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-white/10 p-8 text-center">
+              <div className="border border-dashed border-white/10 p-8 text-center">
                 <p className="text-sm text-white/30">Суудал сонгоно уу</p>
                 <p className="mono mt-2 text-[10px] text-white/20">TAP SEATS TO SELECT & BOOK</p>
               </div>
@@ -788,7 +797,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                 <Link
                   key={t.id}
                   href={`/centers/${params.id}/tournaments/${t.id}`}
-                  className={`group mb-3 flex flex-col justify-between break-inside-avoid rounded-2xl border transition-colors ${heightClass} ${
+                  className={`group mb-3 flex flex-col justify-between break-inside-avoid border transition-colors ${heightClass} ${
                     isLive
                       ? "border-green-500/30 bg-green-500/[0.05] hover:bg-green-500/[0.08]"
                       : "border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.05]"
@@ -973,7 +982,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
               </span>
               <button
                 onClick={() => window.scrollTo({ top: document.getElementById("seats-section")?.offsetTop ?? 0, behavior: "smooth" })}
-                className="btn-pop rounded-xl bg-white px-8 py-4 text-xs uppercase tracking-[0.3em] text-black hover:bg-white/90 transition-colors"
+                className="btn-lift bg-white px-8 py-4 text-xs uppercase tracking-[0.3em] text-black transition-opacity hover:opacity-75"
               >
                 ЗАХИАЛАХ ↑
               </button>
@@ -981,7 +990,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
           ) : (
             <button
               onClick={() => window.scrollTo({ top: document.getElementById("seats-section")?.offsetTop ?? 0, behavior: "smooth" })}
-              className="btn-pop rounded-xl border border-white/20 px-8 py-4 text-xs uppercase tracking-[0.3em] text-white hover:bg-white hover:text-black transition-colors"
+              className="btn-lift border border-white/20 px-8 py-4 text-xs uppercase tracking-[0.3em] text-white hover:bg-white hover:text-black transition-colors"
             >
               СУУДАЛ СОНГОХ ↑
             </button>
@@ -1062,7 +1071,7 @@ function GalleryStrip({
         <div className="mb-4 flex gap-2">
           <button
             onClick={() => setActiveTab("all")}
-            className={`rounded-full px-3 py-1 text-[9px] uppercase tracking-[0.2em] transition-all ${
+            className={`px-3 py-1 text-[9px] uppercase tracking-[0.2em] transition-all ${
               activeTab === "all" ? "bg-white/[0.08] text-white" : "text-white/25 hover:text-white/40"
             }`}
           >
@@ -1072,7 +1081,7 @@ function GalleryStrip({
             <button
               key={t.value}
               onClick={() => setActiveTab(t.value)}
-              className={`rounded-full px-3 py-1 text-[9px] uppercase tracking-[0.2em] transition-all ${
+              className={`px-3 py-1 text-[9px] uppercase tracking-[0.2em] transition-all ${
                 activeTab === t.value ? "bg-white/[0.08] text-white" : "text-white/25 hover:text-white/40"
               }`}
             >
@@ -1090,7 +1099,7 @@ function GalleryStrip({
             <button
               key={i}
               onClick={() => onClickImage(realIdx >= 0 ? realIdx : i)}
-              className="relative aspect-[3/2] h-28 flex-shrink-0 overflow-hidden rounded-xl transition-transform duration-300 hover:scale-[1.02] md:h-36"
+              className="relative aspect-[3/2] h-28 flex-shrink-0 overflow-hidden transition-transform duration-300 hover:scale-[1.02] md:h-36"
             >
               <Image
                 src={url}
