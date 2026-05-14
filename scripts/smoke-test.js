@@ -47,7 +47,7 @@ async function main() {
   const seats = await request(`/api/centers/${centerId}/seats`);
   checks.push(["center seats", Array.isArray(seats.seats) && seats.seats.length > 0]);
 
-  const player = await login("batbayar@gmail.com", "player123");
+  const player = await login("otgonbayar@gmail.com", "player123");
   const me = await authRequest("/api/auth/me", player.token);
   checks.push(["player auth", me.user?.role === "PLAYER"]);
 
@@ -79,7 +79,7 @@ async function main() {
     checks.push(["booking cancel", cancelled.cancelled === true]);
   }
 
-  const owner = await login("bold@reihen.mn", "owner123");
+  const owner = await login("sarnai@reihen.mn", "owner123");
   const ownerDashboard = await authRequest("/api/owner/dashboard", owner.token);
   checks.push(["owner dashboard", Array.isArray(ownerDashboard.centerIds)]);
 

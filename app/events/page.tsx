@@ -62,10 +62,11 @@ export default function EventsPage() {
   const totalPrize = events.reduce((sum, event) => sum + event.prizePool, 0);
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white">
+    <main className="ui-page-dark text-white">
       <NavBar />
 
-      <section className="border-b border-white/10 px-6 pb-10 pt-28 md:px-12 md:pb-14">
+      <section className="relative overflow-hidden border-b border-white/10 px-6 pb-10 pt-32 md:px-12 md:pb-14">
+        <div className="pointer-events-none absolute inset-x-6 top-24 h-px bg-white/10 md:inset-x-12" />
         <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="label text-[10px] text-green-400">REIHEN EVENTS</p>
@@ -88,7 +89,7 @@ export default function EventsPage() {
             <button
               key={item}
               onClick={() => setFilter(item)}
-              className={`border px-4 py-2 text-[10px] uppercase tracking-[0.18em] transition-colors ${
+              className={`rounded-lg border px-4 py-2 text-[10px] uppercase tracking-[0.18em] transition-colors ${
                 filter === item
                   ? "border-white bg-white text-black"
                   : "border-white/10 bg-white/[0.03] text-white/45 hover:border-white/30 hover:text-white"
@@ -104,7 +105,7 @@ export default function EventsPage() {
         {loading ? (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-64 animate-pulse border border-white/5 bg-white/[0.03]" />
+              <div key={index} className="h-64 animate-pulse rounded-lg border border-white/5 bg-white/[0.03]" />
             ))}
           </div>
         ) : filtered.length > 0 ? (
@@ -129,7 +130,7 @@ export default function EventsPage() {
 function Stat({ label, value, tone }: { label: string; value: string; tone: "green" | "yellow" | "white" }) {
   const color = tone === "green" ? "text-green-400" : tone === "yellow" ? "text-yellow-400" : "text-white";
   return (
-    <div className="border border-white/10 bg-white/[0.03] p-4">
+    <div className="ui-panel-dark p-4">
       <div className={`display truncate text-2xl ${color}`}>{value}</div>
       <div className="mt-1 text-[9px] uppercase tracking-[0.25em] text-white/25">{label}</div>
     </div>
@@ -145,10 +146,10 @@ function EventCard({ event, index }: { event: EventItem; index: number }) {
   return (
     <Link
       href={`/centers/${event.center.id}/tournaments/${event.id}`}
-      className={`group flex min-h-[280px] flex-col justify-between border p-5 transition-all duration-300 hover:-translate-y-0.5 ${
+      className={`anim-card ui-panel-dark group flex min-h-[280px] flex-col justify-between p-5 transition-all duration-300 hover:-translate-y-1 ${
         isLive
           ? "border-green-500/30 bg-green-500/[0.05] shadow-[0_0_32px_rgba(34,197,94,0.06)]"
-          : "border-white/[0.07] bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.04]"
+          : "hover:border-white/15 hover:bg-white/[0.04]"
       }`}
       style={{ animationDelay: `${index * 0.04}s` }}
     >

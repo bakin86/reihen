@@ -52,7 +52,7 @@ export const SeatCell = memo(function SeatCell({
       {/* Seat number */}
       <span className={cn(
         "relative z-10",
-        selected && "text-black"
+        selected && "text-white"
       )}>
         {number}
       </span>

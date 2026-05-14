@@ -23,8 +23,8 @@ const inter = Inter({
 const fontSpaceCompat = inter;
 
 export const metadata: Metadata = {
-  title: "Reihen — PC Gaming Center",
-  description: "PC Gaming Center Booking & Management — Mongolia",
+  title: "Reihen | PC Gaming Center",
+  description: "PC Gaming Center Booking & Management in Mongolia",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -52,7 +52,7 @@ export default function HomePage() {
   });
 
   return (
-    <main className="min-h-screen bg-white text-black">
+    <main className="ui-page text-black">
       <NavBar />
 
       {/* ── HERO ── */}
@@ -128,13 +128,13 @@ export default function HomePage() {
             <div className="flex flex-col gap-1.5">
               <Link
                 href="/booking"
-                className="btn-lift block bg-black py-3.5 text-center text-[10px] font-semibold uppercase tracking-[0.22em] text-white"
+                className="ui-button ui-button-primary w-full"
               >
                 Захиалах →
               </Link>
               <Link
                 href="/register"
-                className="btn-lift block py-3 text-center text-[10px] font-medium uppercase tracking-[0.22em] text-black/30 transition-colors hover:text-black"
+                className="ui-button ui-button-ghost w-full"
               >
                 Бүртгүүлэх
               </Link>
@@ -182,7 +182,7 @@ export default function HomePage() {
           <div className="flex gap-2 md:hidden">
             <Link
               href="/booking"
-              className="bg-black px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white"
+              className="ui-button ui-button-primary"
             >
               Захиалах
             </Link>
@@ -231,8 +231,8 @@ export default function HomePage() {
                 <button
                   key={key}
                   onClick={() => setSort(key)}
-                  className={`px-3 py-1 text-[9px] font-medium uppercase tracking-[0.14em] transition-all ${
-                    sort === key ? "bg-black text-white" : "text-black/24 hover:text-black"
+                  className={`rounded-lg px-3 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] transition-all ${
+                    sort === key ? "bg-black text-white" : "text-black/30 hover:bg-black/[0.05] hover:text-black"
                   }`}
                 >
                   {key === "rating" ? "Top" : key === "price" ? "Price" : "Open"}
@@ -282,7 +282,7 @@ export default function HomePage() {
             <div key={c.id} className="group">
               <Link
                 href={`/centers/${c.id}`}
-                className="flex items-stretch transition-colors duration-300 hover:bg-black/[0.02]"
+                className="flex items-stretch transition-colors duration-300 hover:bg-white/55"
                 style={{ minHeight: 200 }}
               >
                 {/* Image */}

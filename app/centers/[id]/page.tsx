@@ -280,7 +280,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
   // QPay payment pending — show QR + deeplinks
   if (qpayPending && center) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-black p-6 text-white">
+      <main className="ui-page-dark flex min-h-screen flex-col items-center justify-center p-6 text-white">
         <p className="anim-fade-up text-xs uppercase tracking-[0.3em] text-white/40">ТӨЛБӨР ХҮЛЭЭГДЭЖ БАЙНА</p>
         <div className="anim-scale-in mt-6 display text-2xl">{center.name.toUpperCase()}</div>
         <p className="anim-fade-up anim-d1 mono mt-2 text-sm text-white/50">
@@ -308,7 +308,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
               await fetch(`/api/qpay/callback?qpay_payment_id=${qpayPending.invoiceId}&mock=1`);
             } catch {}
           }}
-          className="anim-fade-up anim-d3 btn-pop mt-8 w-full max-w-sm border border-white py-4 text-xs uppercase tracking-[0.3em] text-white hover:bg-white hover:text-black transition-colors"
+          className="anim-fade-up anim-d3 ui-button ui-button-primary mt-8 w-full max-w-sm"
         >
           ТӨЛБӨР ШАЛГАХ
         </button>
@@ -337,7 +337,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
   // Booking success
   if (bookingCode && center) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center bg-black p-10 text-white">
+      <main className="ui-page-dark flex min-h-screen flex-col items-center justify-center p-10 text-white">
         <Confetti />
         <p className="anim-fade-up text-xs uppercase tracking-[0.3em] text-gray">CONFIRMED</p>
         <div className="anim-scale-in anim-d1 anim-success display mono mt-6 text-[20vw] md:text-[12vw]">{bookingCode}</div>
@@ -348,13 +348,13 @@ export default function CenterPage({ params }: { params: { id: string } }) {
         <div className="anim-fade-up anim-d4 mt-12 flex gap-4">
           <Link
             href="/"
-            className="btn-pop border border-white px-6 py-4 text-xs uppercase tracking-[0.3em] hover:bg-white hover:text-black"
+            className="ui-button border border-white/20 text-white hover:bg-white hover:text-black"
           >
             HOME
           </Link>
           <button
             onClick={() => { setBookingCode(null); setSelectedIds([]); setStart(null); setError(""); }}
-            className="btn-pop bg-white px-6 py-4 text-xs uppercase tracking-[0.3em] text-black"
+            className="ui-button ui-button-primary"
           >
             ДАХИН ЗАХИАЛАХ
           </button>
@@ -365,11 +365,14 @@ export default function CenterPage({ params }: { params: { id: string } }) {
 
   const heroImg = getMainImage(center.images);
   const allUrls = getImagesByTag(center.images);
+  const occupancyPct = seats.length > 0 ? Math.round(((seats.length - openCount) / seats.length) * 100) : 0;
+  const hasLayout = seats.some((s) => s.posX !== null && s.posY !== null);
+  const primarySeatTypes = center.seatTypes.slice(0, 3).map((t) => t.name).join(" / ");
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white">
+    <main className="ui-page-dark text-white">
       {/* ─── HERO: Full-width image with overlay ─── */}
-      <section className="relative h-[70vh] min-h-[500px] overflow-hidden bg-black">
+      <section className="relative h-[78vh] min-h-[560px] overflow-hidden bg-black">
         {heroImg ? (
           <Image
             src={heroImg}
@@ -380,11 +383,12 @@ export default function CenterPage({ params }: { params: { id: string } }) {
             sizes="100vw"
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/10" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_18%,rgba(74,222,128,0.18),transparent_34%)]" />
 
         {/* Nav overlay */}
         <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-6 py-5 md:px-12">
-          <Link href="/" className="text-xs uppercase tracking-[0.3em] text-white/70 hover:text-white transition-colors">
+          <Link href="/" className="ui-button border border-white/10 bg-black/30 text-white/60 hover:border-white/30 hover:text-white">
             ← HOME
           </Link>
           <div className="flex items-center gap-4">
@@ -392,7 +396,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
               <button
                 onClick={toggleFav}
                 title={isFav ? "Дуртайгаас хасах" : "Дуртайд нэмэх"}
-                className={`flex h-8 w-8 items-center justify-center border text-sm transition-all duration-300 ${
+                className={`flex h-10 w-10 items-center justify-center rounded-lg border text-sm transition-all duration-300 ${
                   isFav
                     ? "border-white/40 bg-white/10 text-white"
                     : "border-white/20 bg-black/30 text-white/60 hover:border-white/40 hover:text-white"
@@ -403,13 +407,13 @@ export default function CenterPage({ params }: { params: { id: string } }) {
             )}
             <button
               onClick={copyLink}
-              className="text-xs uppercase tracking-[0.3em] text-white/70 hover:text-white transition-colors"
+              className="ui-button border border-white/10 bg-black/30 text-white/60 hover:border-white/30 hover:text-white"
             >
               {copied ? "COPIED!" : "SHARE"}
             </button>
             <Link
               href={`/booking?center=${params.id}`}
-              className="btn-pop border border-white px-5 py-2.5 text-xs uppercase tracking-[0.3em] text-white hover:bg-white hover:text-black transition-colors"
+              className="ui-button border border-white bg-white text-black hover:border-green-400 hover:bg-green-400"
             >
               BOOK →
             </Link>
@@ -446,8 +450,10 @@ export default function CenterPage({ params }: { params: { id: string } }) {
             {center.name.toUpperCase()}
           </h1>
 
-          <div className="anim-fade-up anim-d3 mt-4 flex flex-wrap items-center gap-6">
-            <span className="mono text-sm text-white">{center.address}</span>
+          <div className="anim-fade-up anim-d3 mt-4 flex flex-wrap items-center gap-4">
+            <span className="ui-kbd mono text-sm text-white/80">{center.address}</span>
+            <span className="ui-kbd mono text-sm text-green-300">{openCount}/{seats.length} open</span>
+            {minPrice !== null && <span className="ui-kbd mono text-sm text-white/70">from {minPrice.toLocaleString()}₮/цаг</span>}
             {center.description && (
               <span className="hidden max-w-sm text-sm text-white/50 md:block">{center.description}</span>
             )}
@@ -456,12 +462,12 @@ export default function CenterPage({ params }: { params: { id: string } }) {
       </section>
 
       {/* ─── STATS BAR ─── */}
-      <section className="relative grid grid-cols-4 border-b border-black bg-[#0d0d0d]">
+      <section className="relative grid grid-cols-2 border-b border-white/10 bg-[#0d0d0d] md:grid-cols-4">
         {[
           { n: String(seats.length), l: "СУУДАЛ", green: false },
           { n: String(openCount), l: "СУЛ", green: openCount > 0 },
           { n: minPrice !== null ? `${minPrice.toLocaleString()}₮` : "—", l: "НЭГ ЦАГ", green: false },
-          { n: openCount > 0 ? "ОДОО" : nextFreeMin != null ? `~${nextFreeMin}м` : "—", l: "ДАРААГИЙН", green: openCount > 0 },
+          { n: `${occupancyPct}%`, l: "АШИГЛАЛТ", green: occupancyPct < 75 },
         ].map(({ n, l, green }, i) => (
           <div
             key={i}
@@ -481,6 +487,23 @@ export default function CenterPage({ params }: { params: { id: string } }) {
         ))}
       </section>
 
+      <section className="border-b border-white/10 bg-[#090909] px-4 py-4 md:px-8">
+        <div className="grid gap-3 md:grid-cols-4">
+          {[
+            { label: "LIVE SYNC", value: "Staff update", detail: "Суудлын төлөв staff dashboard-аас шинэчлэгдэнэ." },
+            { label: "CONFLICT SAFE", value: "Backend check", detail: "Захиалах мөчид давхар цагийг дахин шалгана." },
+            { label: "LAYOUT", value: hasLayout ? "Mapped" : "Grid", detail: hasLayout ? "Owner layout editor-оор байрлал тааруулсан." : "Автомат grid харагдац ашиглаж байна." },
+            { label: "SETUP", value: primarySeatTypes || "PC seats", detail: "Seat type бүр өөр үнэтэй байж болно." },
+          ].map((item, index) => (
+            <div key={item.label} className="anim-card ui-panel-dark p-4" style={{ animationDelay: `${index * 0.06}s` }}>
+              <div className="text-[8px] uppercase tracking-[0.26em] text-white/25">{item.label}</div>
+              <div className="mt-2 text-sm font-black text-white">{item.value}</div>
+              <p className="mt-2 text-xs leading-relaxed text-white/35">{item.detail}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ─── GALLERY STRIP with tag tabs ─── */}
       {allUrls.length > 1 && (
         <GalleryStrip images={center.images} centerName={center.name} onClickImage={(i: number) => setImgIdx(i)} />
@@ -493,7 +516,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
             {center.seatTypes.map((t, i) => (
               <div
                 key={t.id}
-                className={`anim-fade-up border border-white/[0.06] bg-white/[0.03] p-5 md:p-6 text-center ${i === 0 ? "md:row-span-2 flex flex-col justify-center" : ""}`}
+                className={`anim-fade-up ui-panel-dark p-5 text-center md:p-6 ${i === 0 ? "md:row-span-2 flex flex-col justify-center" : ""}`}
                 style={{ animationDelay: `${i * 0.08}s` }}
               >
                 <div className="text-[10px] uppercase tracking-[0.3em] text-white/40">{t.name}</div>
@@ -540,6 +563,21 @@ export default function CenterPage({ params }: { params: { id: string } }) {
       {/* ─── SEAT GRID + BOOKING PANEL ─── */}
       <section id="seats-section" className="grid grid-cols-1 md:grid-cols-[2fr_1fr]">
         <div className="border-white/10 bg-[#0d0d0d] p-6 md:border-r md:p-12">
+          <div className="mb-5 grid gap-3 md:grid-cols-3">
+            <div className="ui-panel-dark p-4">
+              <div className="text-[8px] uppercase tracking-[0.25em] text-white/25">STEP 01</div>
+              <div className="mt-1 text-sm font-black text-white">Суудал сонго</div>
+            </div>
+            <div className="ui-panel-dark p-4">
+              <div className="text-[8px] uppercase tracking-[0.25em] text-white/25">STEP 02</div>
+              <div className="mt-1 text-sm font-black text-white">Цагаа тохируул</div>
+            </div>
+            <div className="ui-panel-dark p-4">
+              <div className="text-[8px] uppercase tracking-[0.25em] text-white/25">STEP 03</div>
+              <div className="mt-1 text-sm font-black text-white">Backend дахин шалгана</div>
+            </div>
+          </div>
+
           {/* Selection toolbar */}
           <div className="mb-6 flex items-center justify-between">
             <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">СУУДАЛ СОНГОХ <span className="mono">({selectedIds.length}/{maxSeats})</span></p>
@@ -621,18 +659,18 @@ export default function CenterPage({ params }: { params: { id: string } }) {
 
         {/* Sticky booking panel */}
         <aside className="border-t border-white/10 bg-[#0a0a0a] md:border-t-0">
-          <div className="sticky top-0 p-6 md:p-8">
+          <div className="sticky top-24 p-6 md:p-8">
             {pickedSeats.length > 0 ? (
-              <div className="anim-fade-up space-y-5">
+              <div className="anim-fade-up ui-panel-dark space-y-5 p-5">
                 {/* Selected seats */}
-                <div className="border border-white/[0.06] bg-white/[0.03] p-4">
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-4">
                   <p className="text-[10px] uppercase tracking-[0.3em] text-white/30">SEATS</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {pickedSeats.map((s) => (
                       <button
                         key={s.id}
                         onClick={() => setSelectedIds((prev) => prev.filter((x) => x !== s.id))}
-                        className="group flex items-center gap-1.5 border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-black text-white transition-colors hover:bg-white hover:text-black"
+                        className="group flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-black text-white transition-colors hover:bg-white hover:text-black"
                       >
                         {s.number}
                         <span className="text-[10px] text-white/30 group-hover:text-black/50">✕</span>
@@ -654,8 +692,8 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                         onClick={() => setStart(h)}
                         className={`mono py-2 text-[10px] transition-colors ${
                           start === h
-                            ? "bg-white text-black"
-                            : "border border-white/[0.08] text-white/50 hover:bg-white/10"
+                            ? "rounded-lg bg-white text-black"
+                            : "rounded-lg border border-white/[0.08] text-white/50 hover:bg-white/10"
                         }`}
                       >
                         {h}
@@ -674,8 +712,8 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                         onClick={() => setHoursVal(h)}
                         className={`mono flex-1 py-2 text-xs transition-colors ${
                           hours === h
-                            ? "bg-white text-black"
-                            : "border border-white/[0.08] text-white/50 hover:bg-white/10"
+                            ? "rounded-lg bg-white text-black"
+                            : "rounded-lg border border-white/[0.08] text-white/50 hover:bg-white/10"
                         }`}
                       >
                         {h}ц
@@ -692,8 +730,8 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                       onClick={() => setMethod("QPAY")}
                       className={`py-2 text-[10px] uppercase tracking-[0.3em] transition-colors ${
                         method === "QPAY"
-                          ? "bg-white text-black"
-                          : "border border-white/[0.08] text-white/50 hover:bg-white/10"
+                          ? "rounded-lg bg-white text-black"
+                          : "rounded-lg border border-white/[0.08] text-white/50 hover:bg-white/10"
                       }`}
                     >
                       QPAY +{qpaySurchargePct}%
@@ -702,8 +740,8 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                       onClick={() => setMethod("BALANCE")}
                       className={`py-2 text-[10px] uppercase tracking-[0.3em] transition-colors ${
                         method === "BALANCE"
-                          ? "bg-white text-black"
-                          : "border border-white/[0.08] text-white/50 hover:bg-white/10"
+                          ? "rounded-lg bg-white text-black"
+                          : "rounded-lg border border-white/[0.08] text-white/50 hover:bg-white/10"
                       }`}
                     >
                       ҮЛДЭГДЭЛ
@@ -740,7 +778,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                 {!token ? (
                   <Link
                     href="/login"
-                    className="btn-lift block w-full bg-white py-4 text-center text-xs uppercase tracking-[0.3em] text-black transition-opacity hover:opacity-75"
+                    className="ui-button ui-button-primary w-full"
                   >
                     НЭВТЭРЧ ЗАХИАЛАХ →
                   </Link>
@@ -748,7 +786,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                   <button
                     onClick={confirmBooking}
                     disabled={!canSubmit}
-                    className="btn-lift w-full bg-white py-4 text-xs uppercase tracking-[0.3em] text-black disabled:opacity-40 transition-opacity hover:opacity-75"
+                    className="ui-button ui-button-primary w-full disabled:opacity-40"
                   >
                     {submitting
                       ? "PROCESSING..."
@@ -759,9 +797,12 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                 )}
               </div>
             ) : (
-              <div className="border border-dashed border-white/10 p-8 text-center">
-                <p className="text-sm text-white/30">Суудал сонгоно уу</p>
+              <div className="ui-panel-dark border-dashed p-8 text-center">
+                <p className="text-sm text-white/45">Суудал сонгоно уу</p>
                 <p className="mono mt-2 text-[10px] text-white/20">TAP SEATS TO SELECT & BOOK</p>
+                <p className="mt-4 text-xs leading-relaxed text-white/30">
+                  Суудал сонгоод эхлэх цаг, хугацаа, төлбөрийн аргаа тохируулна.
+                </p>
               </div>
             )}
           </div>
@@ -932,8 +973,8 @@ export default function CenterPage({ params }: { params: { id: string } }) {
       {/* ─── NO-SHOW WARNING MODAL ─── */}
       {showWarning && center && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
-          <div className="w-full max-w-sm border border-white/10 bg-[#111] p-6">
-            <p className="text-[9px] uppercase tracking-[0.3em] text-white/30 mb-3">АНХААРУУЛГА</p>
+          <div className="ui-panel-dark w-full max-w-md p-6">
+            <p className="mb-3 text-[9px] uppercase tracking-[0.3em] text-yellow-300/70">АНХААРУУЛГА</p>
             <p className="text-sm text-white/70 leading-relaxed mb-2">
               Захиалга баталгаажсаны дараа та{" "}
               <span className="text-white font-bold">{center.noShowMinutes} минутын</span> дотор ирэх ёстой.
@@ -941,21 +982,21 @@ export default function CenterPage({ params }: { params: { id: string } }) {
             <p className="text-sm text-white/50 leading-relaxed mb-4">
               Хэрэв та заасан хугацаанд амжиж ирэхгүй тохиолдолд бид хариуцлага хүлээхгүй бөгөөд захиалга цуцлагдана.
             </p>
-            <div className="border border-white/[0.08] bg-white/[0.03] px-4 py-3 mb-6">
+            <div className="mb-6 rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-3">
               <p className="text-[10px] text-white/30 leading-relaxed">
-                💡 Таны төлбөрийн <span className="text-white/60 font-semibold">50%</span> нь тухайн PC центрт шилжихийг анхаарна уу.
+                Таны төлбөрийн <span className="text-white/60 font-semibold">50%</span> нь тухайн PC центрт шилжихийг анхаарна уу.
               </p>
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowWarning(false)}
-                className="flex-1 border border-white/10 py-3 text-[10px] uppercase tracking-[0.25em] text-white/30 hover:text-white transition-colors"
+                className="ui-button flex-1 border border-white/10 text-white/40 hover:text-white"
               >
                 БУЦАХ
               </button>
               <button
                 onClick={submitBooking}
-                className="flex-1 bg-white py-3 text-[10px] uppercase tracking-[0.25em] text-black hover:bg-white/90 transition-colors"
+                className="ui-button ui-button-primary flex-1"
               >
                 ЗӨВШӨӨРЧ ЗАХИАЛАХ
               </button>
@@ -965,8 +1006,8 @@ export default function CenterPage({ params }: { params: { id: string } }) {
       )}
 
       {/* ─── BOTTOM CTA ─── */}
-      <section className="border-t border-white/10 bg-[#050505]">
-        <div className="flex items-center justify-between px-6 py-8 md:px-12">
+      <section className="sticky bottom-0 z-30 border-t border-white/10 bg-black/80 backdrop-blur-xl">
+        <div className="flex flex-col gap-4 px-6 py-4 md:flex-row md:items-center md:justify-between md:px-12">
           <div>
             <span className="text-[10px] uppercase tracking-[0.3em] text-white/30">
               {center.district}
@@ -977,12 +1018,12 @@ export default function CenterPage({ params }: { params: { id: string } }) {
           </div>
           {pickedSeats.length > 0 ? (
             <div className="flex items-center gap-4">
-              <span className="mono text-sm text-white/40">
+              <span className="mono text-sm text-white/50">
                 {pickedSeats.length} seat · {total.toLocaleString()}₮
               </span>
               <button
                 onClick={() => window.scrollTo({ top: document.getElementById("seats-section")?.offsetTop ?? 0, behavior: "smooth" })}
-                className="btn-lift bg-white px-8 py-4 text-xs uppercase tracking-[0.3em] text-black transition-opacity hover:opacity-75"
+                className="ui-button ui-button-primary"
               >
                 ЗАХИАЛАХ ↑
               </button>
@@ -990,7 +1031,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
           ) : (
             <button
               onClick={() => window.scrollTo({ top: document.getElementById("seats-section")?.offsetTop ?? 0, behavior: "smooth" })}
-              className="btn-lift border border-white/20 px-8 py-4 text-xs uppercase tracking-[0.3em] text-white hover:bg-white hover:text-black transition-colors"
+              className="ui-button border border-white/20 text-white hover:bg-white hover:text-black"
             >
               СУУДАЛ СОНГОХ ↑
             </button>

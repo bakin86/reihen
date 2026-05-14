@@ -56,13 +56,19 @@ export async function GET(req: Request) {
     where,
     include: {
       seatTypes: { select: { id: true, name: true, pricePerHour: true, peakHourPrice: true } },
-      seats: { where: { status: "OPEN" }, select: { id: true } },
       _count: { select: { seats: true, reviews: true } },
     },
     orderBy: [{ isVerified: "desc" }, { rating: "desc" }],
     skip: (page - 1) * limit,
     take: limit,
   });
+
+  const openSeatGroups = await prisma.seat.groupBy({
+    by: ["centerId"],
+    where: { centerId: { in: centers.map((c) => c.id) }, status: "OPEN" },
+    _count: { _all: true },
+  });
+  const openSeatCountByCenter = new Map(openSeatGroups.map((row) => [row.centerId, row._count._all]));
 
   // If date+time provided, check actual availability for that slot
   let slotAvailability: Map<string, number> | null = null;
@@ -94,7 +100,7 @@ export async function GET(req: Request) {
 
   const shaped = centers.map((c) => {
     const totalSeats = c._count.seats;
-    const openSeats = c.seats.length;
+    const openSeats = openSeatCountByCenter.get(c.id) ?? 0;
 
     // If checking a specific slot, use slot-based availability
     let availableSeats = openSeats;

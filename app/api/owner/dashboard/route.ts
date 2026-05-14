@@ -47,12 +47,12 @@ export async function GET(req: Request) {
       // Peak hours: group by hour using raw SQL for efficiency
       prisma.$queryRaw<{ h: number; cnt: bigint; inc: bigint }[]>(
         Prisma.sql`
-          SELECT HOUR(startTime) as h, COUNT(*) as cnt, COALESCE(SUM(totalPrice),0) as inc
-          FROM Booking
-          WHERE centerId IN (${Prisma.join(centerIds)})
-            AND startTime >= ${fourteenDaysAgo}
-            AND status IN ('CONFIRMED','PENDING')
-          GROUP BY HOUR(startTime)
+          SELECT EXTRACT(HOUR FROM "startTime")::int as h, COUNT(*) as cnt, COALESCE(SUM("totalPrice"),0) as inc
+          FROM "Booking"
+          WHERE "centerId" IN (${Prisma.join(centerIds)})
+            AND "startTime" >= ${fourteenDaysAgo}
+            AND "status" IN ('CONFIRMED','PENDING')
+          GROUP BY EXTRACT(HOUR FROM "startTime")
         `
       ),
       prisma.booking.findMany({
