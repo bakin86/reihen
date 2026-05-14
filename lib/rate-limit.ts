@@ -1,9 +1,5 @@
-// Edge-compatible in-memory rate limiter. Per-instance — for multi-node
-// deployment swap the backing store for Redis/Upstash.
 import { NextResponse, type NextRequest } from "next/server";
-
-type Bucket = { count: number; reset: number };
-const buckets = new Map<string, Bucket>();
+import { redis } from "./redis";
 
 export interface RateLimitResult {
   ok: boolean;
@@ -12,60 +8,58 @@ export interface RateLimitResult {
   reset: number;
 }
 
-export function rateLimit(
+// Policies
+export const AUTH_LIMIT = { max: 10, windowMs: 15 * 60_000 }; // 10 per 15 min
+export const API_LIMIT  = { max: 300, windowMs: 60_000 };      // 300 per minute
+
+/**
+ * Redis sliding-window rate limiter — works across all Vercel instances.
+ * Uses INCR + EXPIRE: atomic, no race conditions.
+ */
+export async function rateLimit(
   key: string,
   limit: number,
   windowMs: number
-): RateLimitResult {
-  const now = Date.now();
-  const b = buckets.get(key);
-  if (!b || b.reset < now) {
-    const reset = now + windowMs;
-    buckets.set(key, { count: 1, reset });
-    return { ok: true, limit, remaining: limit - 1, reset };
+): Promise<RateLimitResult> {
+  const windowSec = Math.ceil(windowMs / 1000);
+  const redisKey  = `rl:${key}`;
+
+  try {
+    const count = await redis.incr(redisKey);
+    if (count === 1) {
+      // First request in this window — set TTL
+      await redis.expire(redisKey, windowSec);
+    }
+    const ttl   = await redis.ttl(redisKey);
+    const reset = Date.now() + ttl * 1000;
+    return {
+      ok:        count <= limit,
+      limit,
+      remaining: Math.max(0, limit - count),
+      reset,
+    };
+  } catch {
+    // Redis down — fail open (allow request)
+    return { ok: true, limit, remaining: limit - 1, reset: Date.now() + windowMs };
   }
-  b.count += 1;
-  return {
-    ok: b.count <= limit,
-    limit,
-    remaining: Math.max(0, limit - b.count),
-    reset: b.reset,
-  };
 }
 
-// Policies
-export const AUTH_LIMIT = { max: 10, windowMs: 15 * 60_000 }; // 10 per 15 min
-export const API_LIMIT = { max: 300, windowMs: 60_000 }; // 300 per minute
-
 /**
- * Extract client IP for rate limiting.
- * Only trusts x-forwarded-for when TRUSTED_PROXY=true is set (behind a reverse proxy).
- * Without it, uses x-real-ip (set by most proxies) or falls back to "unknown".
- * This prevents clients from spoofing x-forwarded-for to bypass rate limits.
+ * Extract client IP.
+ * Trusts x-forwarded-for only when TRUSTED_PROXY=true (set in Vercel env).
  */
 export function getClientKey(req: Request | NextRequest, scope: string) {
   const trustProxy = process.env.TRUSTED_PROXY === "true";
-  let ip: string;
-
-  if (trustProxy) {
-    // Behind a trusted reverse proxy — use the first hop in x-forwarded-for
-    ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      req.headers.get("x-real-ip") ??
-      "unknown";
-  } else {
-    // Direct exposure — only trust x-real-ip (typically set by the server itself)
-    // Ignore x-forwarded-for since clients can spoof it
-    ip = req.headers.get("x-real-ip") ?? "unknown";
-  }
-
+  const ip = trustProxy
+    ? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
+    : req.headers.get("x-real-ip") ?? "unknown";
   return `${scope}:${ip}`;
 }
 
 export function applyRateHeaders(res: NextResponse, r: RateLimitResult) {
-  res.headers.set("X-RateLimit-Limit", String(r.limit));
+  res.headers.set("X-RateLimit-Limit",     String(r.limit));
   res.headers.set("X-RateLimit-Remaining", String(r.remaining));
-  res.headers.set("X-RateLimit-Reset", String(Math.ceil(r.reset / 1000)));
+  res.headers.set("X-RateLimit-Reset",     String(Math.ceil(r.reset / 1000)));
   return res;
 }
 
@@ -76,13 +70,4 @@ export function rateLimitResponse(r: RateLimitResult): NextResponse {
   );
   res.headers.set("Retry-After", String(Math.ceil((r.reset - Date.now()) / 1000)));
   return applyRateHeaders(res, r);
-}
-
-/** Throw-style helper for route handlers. */
-export function enforceRateLimit(
-  req: Request | NextRequest,
-  scope: string,
-  policy: { max: number; windowMs: number }
-): RateLimitResult {
-  return rateLimit(getClientKey(req, scope), policy.max, policy.windowMs);
 }

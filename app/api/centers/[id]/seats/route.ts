@@ -1,9 +1,22 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { maskName } from "@/lib/booking-code";
+import { cacheGet, cacheSet } from "@/lib/redis";
+
+export const SEATS_CACHE_TTL = 10; // seconds
+export const seatsCacheKey = (centerId: string) => `seats:${centerId}`;
 
 // GET /api/centers/:id/seats — seats with status, freeAt, masked user name, peak pricing
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const cacheKey = seatsCacheKey(params.id);
+  const cached = await cacheGet<any>(cacheKey);
+  if (cached) {
+    const res = NextResponse.json(cached);
+    res.headers.set("Cache-Control", "public, max-age=10, stale-while-revalidate=30");
+    res.headers.set("X-Cache", "HIT");
+    return res;
+  }
+
   const center = await prisma.pCCenter.findUnique({
     where: { id: params.id },
     select: {
@@ -29,7 +42,6 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const currentHour = now.getHours();
   const isPeakHour = currentHour >= 18 && currentHour < 23;
 
-  // Find active bookings for all seats via BookingSeat
   const seatIds = seats.map((s) => s.id);
   const activeBookingSeats = await prisma.bookingSeat.findMany({
     where: {
@@ -75,7 +87,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   });
 
   const { _count, cancelPolicy, ...centerData } = center;
-  const res = NextResponse.json({
+  const payload = {
     center: {
       ...centerData,
       reviewCount: _count.reviews,
@@ -85,8 +97,13 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     },
     seats: shaped,
     isPeakHour,
-  });
-  // Short cache — seats change frequently but benefit from dedup within 10s
+    qpaySurchargePct: Number(process.env.QPAY_SURCHARGE_PCT ?? 1),
+  };
+
+  await cacheSet(cacheKey, payload, SEATS_CACHE_TTL);
+
+  const res = NextResponse.json(payload);
   res.headers.set("Cache-Control", "public, max-age=10, stale-while-revalidate=30");
+  res.headers.set("X-Cache", "MISS");
   return res;
 }

@@ -7,6 +7,8 @@ import { processPayment, processRefund, cancelQPayInvoice } from "@/lib/payment"
 import { sendPushToUser } from "@/lib/push";
 import { emitSeatUpdate } from "@/lib/socket";
 import { sendBookingConfirm } from "@/lib/sms";
+import { cacheDel } from "@/lib/redis";
+import { seatsCacheKey } from "@/app/api/centers/[id]/seats/route";
 
 const schema = z.object({
   seatIds: z.array(z.string().min(1)).min(1),
@@ -109,7 +111,7 @@ export async function POST(req: Request) {
     // Calculate total price: apply peak rate per individual hour, not per booking.
     // Peak window is 18:00–22:59 (hour 18..22 inclusive).
     const now = new Date();
-    const totalPrice = seats.reduce((sum, seat) => {
+    const basePrice = seats.reduce((sum, seat) => {
       let seatTotal = 0;
       for (let h = 0; h < hours; h++) {
         const hour = (start.getHours() + h) % 24;
@@ -118,6 +120,13 @@ export async function POST(req: Request) {
       }
       return sum + seatTotal;
     }, 0);
+
+    // QPay surcharge (default 1%) — passed to user to offset gateway fees
+    const surchargePct = paymentMethod === "QPAY"
+      ? Number(process.env.QPAY_SURCHARGE_PCT ?? 1) / 100
+      : 0;
+    const surchargeAmount = Math.round(basePrice * surchargePct);
+    const totalPrice = basePrice + surchargeAmount;
 
     const code = await generateBookingCode();
 
@@ -208,6 +217,9 @@ export async function POST(req: Request) {
     }
 
     const seatNumbers = booking.bookingSeats.map((bs) => bs.seat.number).join(", ");
+
+    // Invalidate seat cache so next request reflects new booking
+    cacheDel(seatsCacheKey(center.id)).catch(() => {});
 
     if (!isPending) {
       // Emit realtime updates for each seat

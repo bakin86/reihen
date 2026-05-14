@@ -11,10 +11,8 @@ import {
 const CSRF_COOKIE = "reihen_csrf";
 const CSRF_HEADER = "x-csrf-token";
 
-// Mutation methods that require CSRF validation when using cookie auth
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-// Endpoints exempt from CSRF (callbacks from external services, auth endpoints that set cookies)
 const CSRF_EXEMPT = [
   "/api/qpay/callback",
   "/api/auth/login",
@@ -25,7 +23,7 @@ const CSRF_EXEMPT = [
   "/api/chat",
 ];
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname, hostname } = req.nextUrl;
   const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0";
 
@@ -40,7 +38,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url, 301);
   }
 
-  // CSRF check for cookie-authenticated mutations
+  // CSRF check
   if (
     pathname.startsWith("/api") &&
     MUTATION_METHODS.has(req.method) &&
@@ -48,29 +46,25 @@ export function middleware(req: NextRequest) {
   ) {
     const cookieToken = req.cookies.get(CSRF_COOKIE)?.value;
     const headerToken = req.headers.get(CSRF_HEADER);
-    // Only enforce CSRF when cookie auth is being used (cookie exists)
-    // Bearer-only requests (mobile/API) skip CSRF since they can't be CSRF'd
     if (cookieToken && cookieToken !== headerToken) {
       return NextResponse.json({ error: "CSRF token mismatch" }, { status: 403 });
     }
   }
 
-  // Skip rate limiting in development — all requests share one IP ("unknown")
-  // which causes false 429s during rapid dev/hot-reload cycles
   const isDev = process.env.NODE_ENV !== "production";
+  if (isDev || isLocalHost) return NextResponse.next();
 
-  if (pathname.startsWith("/api/auth") && !isDev && !isLocalHost) {
-    const r = rateLimit(getClientKey(req, "auth"), AUTH_LIMIT.max, AUTH_LIMIT.windowMs);
+  // Redis-backed rate limiting (cross-instance, accurate per-IP)
+  if (pathname.startsWith("/api/auth")) {
+    const r = await rateLimit(getClientKey(req, "auth"), AUTH_LIMIT.max, AUTH_LIMIT.windowMs);
     if (!r.ok) return rateLimitResponse(r);
-    const res = NextResponse.next();
-    return applyRateHeaders(res, r);
+    return applyRateHeaders(NextResponse.next(), r);
   }
 
-  if (pathname.startsWith("/api") && !isDev && !isLocalHost) {
-    const r = rateLimit(getClientKey(req, "api"), API_LIMIT.max, API_LIMIT.windowMs);
+  if (pathname.startsWith("/api")) {
+    const r = await rateLimit(getClientKey(req, "api"), API_LIMIT.max, API_LIMIT.windowMs);
     if (!r.ok) return rateLimitResponse(r);
-    const res = NextResponse.next();
-    return applyRateHeaders(res, r);
+    return applyRateHeaders(NextResponse.next(), r);
   }
 
   return NextResponse.next();

@@ -70,6 +70,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
   const [start, setStart] = useState<string | null>(null);
   const [hours, setHoursVal] = useState(1);
   const [method, setMethod] = useState<"QPAY" | "BALANCE">("QPAY");
+  const [qpaySurchargePct, setQpaySurchargePct] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const [error, setError] = useState("");
@@ -86,10 +87,11 @@ export default function CenterPage({ params }: { params: { id: string } }) {
   } | null>(null);
 
   useEffect(() => {
-    apiFetch<{ center: CenterInfo; seats: SeatData[] }>(`/api/centers/${params.id}/seats`)
-      .then(({ center: c, seats: s }) => {
+    apiFetch<{ center: CenterInfo; seats: SeatData[]; qpaySurchargePct: number }>(`/api/centers/${params.id}/seats`)
+      .then(({ center: c, seats: s, qpaySurchargePct: pct }) => {
         setCenter(c);
         setSeats(s);
+        setQpaySurchargePct(pct ?? 1);
         if (s.length) setFloor(s[0].floor.floorNumber);
       })
       .catch(() => {});
@@ -173,7 +175,9 @@ export default function CenterPage({ params }: { params: { id: string } }) {
   );
 
   const pickedSeats = seats.filter((s) => selectedIds.includes(s.id));
-  const total = pickedSeats.reduce((sum, s) => sum + s.type.pricePerHour * hours, 0);
+  const baseTotal = pickedSeats.reduce((sum, s) => sum + s.type.pricePerHour * hours, 0);
+  const surcharge = method === "QPAY" ? Math.round(baseTotal * qpaySurchargePct / 100) : 0;
+  const total = baseTotal + surcharge;
   const allOpen = pickedSeats.every((s) => s.status === "OPEN");
   const canSubmit = pickedSeats.length > 0 && allOpen && start && !submitting && token;
 
@@ -675,20 +679,32 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.3em] text-white/30">ТӨЛБӨР</p>
                   <div className="mt-2 grid grid-cols-2 gap-1">
-                    {(["QPAY", "BALANCE"] as const).map((m) => (
-                      <button
-                        key={m}
-                        onClick={() => setMethod(m)}
-                        className={`rounded-lg py-2 text-[10px] uppercase tracking-[0.3em] transition-colors ${
-                          method === m
-                            ? "bg-white text-black"
-                            : "border border-white/[0.08] text-white/50 hover:bg-white/10"
-                        }`}
-                      >
-                        {m}
-                      </button>
-                    ))}
+                    <button
+                      onClick={() => setMethod("QPAY")}
+                      className={`rounded-lg py-2 text-[10px] uppercase tracking-[0.3em] transition-colors ${
+                        method === "QPAY"
+                          ? "bg-white text-black"
+                          : "border border-white/[0.08] text-white/50 hover:bg-white/10"
+                      }`}
+                    >
+                      QPAY +{qpaySurchargePct}%
+                    </button>
+                    <button
+                      onClick={() => setMethod("BALANCE")}
+                      className={`rounded-lg py-2 text-[10px] uppercase tracking-[0.3em] transition-colors ${
+                        method === "BALANCE"
+                          ? "bg-white text-black"
+                          : "border border-white/[0.08] text-white/50 hover:bg-white/10"
+                      }`}
+                    >
+                      ҮЛДЭГДЭЛ
+                    </button>
                   </div>
+                  {method === "QPAY" && surcharge > 0 && (
+                    <p className="mt-1.5 text-[9px] text-white/30">
+                      +{surcharge.toLocaleString()}₮ QPay шимтгэл · Үлдэгдлээр төлбөл хямд
+                    </p>
+                  )}
                 </div>
 
                 {/* Total */}
@@ -698,6 +714,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                       <span className="text-[10px] uppercase tracking-[0.3em] text-white/30">TOTAL</span>
                       <div className="mono mt-1 text-[10px] text-white/25">
                         {pickedSeats.length} seat{pickedSeats.length > 1 ? "s" : ""} × {hours}ц
+                        {surcharge > 0 && ` · +${surcharge.toLocaleString()}₮ шимтгэл`}
                       </div>
                     </div>
                     <div className="display mono text-4xl">{total.toLocaleString()}₮</div>

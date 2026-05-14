@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { cacheGet, cacheSet } from "@/lib/redis";
 
 /**
  * GET /api/centers
@@ -35,6 +36,21 @@ export async function GET(req: Request) {
     ...(seatType ? { seatTypes: { some: { name: { contains: seatType } } } } : {}),
     ...(available ? { seats: { some: { status: "OPEN" as const } } } : {}),
   };
+
+  // Cache key based on all query params — skip cache if lat/lng (personalized)
+  const cacheKey = userLat === null
+    ? `centers:${new URL(req.url).search}`
+    : null;
+
+  if (cacheKey) {
+    const cached = await cacheGet<any>(cacheKey);
+    if (cached) {
+      const res = NextResponse.json(cached);
+      res.headers.set("Cache-Control", "public, max-age=30, stale-while-revalidate=60");
+      res.headers.set("X-Cache", "HIT");
+      return res;
+    }
+  }
 
   const centers = await prisma.pCCenter.findMany({
     where,
@@ -128,8 +144,12 @@ export async function GET(req: Request) {
     });
   }
 
-  const res = NextResponse.json({ centers: shaped, count: shaped.length, page, limit });
+  const payload = { centers: shaped, count: shaped.length, page, limit };
+  if (cacheKey) await cacheSet(cacheKey, payload, 30);
+
+  const res = NextResponse.json(payload);
   res.headers.set("Cache-Control", "public, max-age=30, stale-while-revalidate=60");
+  res.headers.set("X-Cache", "MISS");
   return res;
 }
 
