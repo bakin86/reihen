@@ -32,11 +32,15 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",   // Next.js needs inline scripts
-              "style-src 'self' 'unsafe-inline'",                   // Tailwind
-              "img-src 'self' data: blob: https:",                  // External images
-              "font-src 'self'",
-              "connect-src 'self' ws: wss: https://api.icafecloud.com https://merchant.qpay.mn https://merchant-sandbox.qpay.mn https://api.groq.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "img-src 'self' data: blob: https:",
+              // next/font/google serves files from /_next/static (self) but needs
+              // fonts.gstatic.com for the actual font binary download at build+runtime
+              "font-src 'self' https://fonts.gstatic.com",
+              // 'self' covers same-origin fetches; explicit vercel URLs cover
+              // preview deployments where 'self' origin differs from production URL
+              "connect-src 'self' https://reihen.vercel.app https://*.vercel.app ws: wss: https://api.icafecloud.com https://merchant.qpay.mn https://merchant-sandbox.qpay.mn https://api.groq.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
