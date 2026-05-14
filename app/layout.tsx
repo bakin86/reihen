@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter } from "next/font/google";
+import { Space_Grotesk, Inter, Bebas_Neue } from "next/font/google";
 import dynamic from "next/dynamic";
 import { AuthProvider } from "@/components/AuthProvider";
 import { QueryProvider } from "@/lib/query";
@@ -7,6 +7,13 @@ import "./globals.css";
 
 const ChatBot = dynamic(() => import("@/components/ChatBot").then((m) => m.ChatBot), {
   ssr: false,
+});
+
+const bebasNeue = Bebas_Neue({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-bebas",
+  display: "swap",
 });
 
 const spaceGrotesk = Space_Grotesk({
@@ -34,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="mn" className={`${spaceGrotesk.variable} ${inter.variable}`}>
+    <html lang="mn" className={`${bebasNeue.variable} ${spaceGrotesk.variable} ${inter.variable}`}>
       <body>
         <QueryProvider>
           <AuthProvider>
