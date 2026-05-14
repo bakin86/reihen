@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { maskName } from "@/lib/booking-code";
 import { cacheGet, cacheSet } from "@/lib/redis";
-
-export const SEATS_CACHE_TTL = 10; // seconds
-export const seatsCacheKey = (centerId: string) => `seats:${centerId}`;
+import { seatsCacheKey, SEATS_CACHE_TTL } from "@/lib/cache-keys";
 
 // GET /api/centers/:id/seats — seats with status, freeAt, masked user name, peak pricing
 export async function GET(_req: Request, { params }: { params: { id: string } }) {

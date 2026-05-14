@@ -8,7 +8,7 @@ import { sendPushToUser } from "@/lib/push";
 import { emitSeatUpdate } from "@/lib/socket";
 import { sendBookingConfirm } from "@/lib/sms";
 import { cacheDel } from "@/lib/redis";
-import { seatsCacheKey } from "@/app/api/centers/[id]/seats/route";
+import { seatsCacheKey } from "@/lib/cache-keys";
 
 const schema = z.object({
   seatIds: z.array(z.string().min(1)).min(1),

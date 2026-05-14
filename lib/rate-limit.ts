@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { redis } from "./redis";
 
 export interface RateLimitResult {
   ok: boolean;
@@ -13,25 +12,43 @@ export const AUTH_LIMIT = { max: 10, windowMs: 15 * 60_000 }; // 10 per 15 min
 export const API_LIMIT  = { max: 300, windowMs: 60_000 };      // 300 per minute
 
 /**
- * Redis sliding-window rate limiter — works across all Vercel instances.
- * Uses INCR + EXPIRE: atomic, no race conditions.
+ * Redis sliding-window rate limiter via Upstash REST API.
+ * Uses raw fetch so it works in both Edge (middleware) and Node.js runtimes.
  */
 export async function rateLimit(
   key: string,
   limit: number,
   windowMs: number
 ): Promise<RateLimitResult> {
+  const url   = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) {
+    // No Redis configured — fail open
+    return { ok: true, limit, remaining: limit - 1, reset: Date.now() + windowMs };
+  }
+
   const windowSec = Math.ceil(windowMs / 1000);
   const redisKey  = `rl:${key}`;
 
   try {
-    const count = await redis.incr(redisKey);
-    if (count === 1) {
-      // First request in this window — set TTL
-      await redis.expire(redisKey, windowSec);
-    }
-    const ttl   = await redis.ttl(redisKey);
-    const reset = Date.now() + ttl * 1000;
+    // INCR then EXPIRE in a pipeline (two commands, one round-trip)
+    const res = await fetch(`${url}/pipeline`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify([
+        ["INCR", redisKey],
+        ["EXPIRE", redisKey, windowSec, "NX"], // only set TTL on first request
+        ["TTL", redisKey],
+      ]),
+    });
+
+    if (!res.ok) throw new Error("Redis pipeline failed");
+    const results = await res.json() as { result: number }[];
+    const count = results[0].result;
+    const ttl   = results[2].result;
+    const reset = Date.now() + Math.max(ttl, 0) * 1000;
+
     return {
       ok:        count <= limit,
       limit,
@@ -39,7 +56,7 @@ export async function rateLimit(
       reset,
     };
   } catch {
-    // Redis down — fail open (allow request)
+    // Redis down — fail open
     return { ok: true, limit, remaining: limit - 1, reset: Date.now() + windowMs };
   }
 }
