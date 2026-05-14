@@ -71,13 +71,19 @@ enum TournamentStatus {
   CANCELLED
 }
 
+enum TournamentMatchStatus {
+  PENDING
+  LIVE
+  COMPLETED
+}
+
 // ─── Models ───────────────────────────────────────────────
 
 model User {
   id                  String    @id @default(cuid())
   name                String
   email               String    @unique
-  password            String    // bcrypt hash
+  password            String // bcrypt hash
   phone               String    @unique
   role                Role      @default(PLAYER)
   balance             Int       @default(0)
@@ -94,11 +100,11 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  ownedCenters    PCCenter[]         @relation("CenterOwner")
-  staffCenters    CenterStaff[]
-  favorites       FavoriteCenter[]
-  bookings        Booking[]
-  reviews         Review[]
+  ownedCenters          PCCenter[]           @relation("CenterOwner")
+  staffCenters          CenterStaff[]
+  favorites             FavoriteCenter[]
+  bookings              Booking[]
+  reviews               Review[]
   pushSubs              PushSubscription[]
   subscription          Subscription?
   refreshTokens         RefreshToken[]
@@ -114,12 +120,12 @@ model User {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  tokenHash String   @unique
+  tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -130,7 +136,7 @@ model PasswordResetToken {
 model RefreshToken {
   id        String   @id @default(cuid())
   userId    String
-  tokenHash String   @unique  // SHA-256 hash of the token (never store plaintext)
+  tokenHash String   @unique // SHA-256 hash of the token (never store plaintext)
   expiresAt DateTime
   createdAt DateTime @default(now())
 
@@ -183,12 +189,12 @@ model PCCenter {
   rating      Float    @default(0)
   ownerId     String
   isVerified  Boolean  @default(false)
-  lat         Float?   // GPS latitude for distance search
-  lng         Float?   // GPS longitude for distance search
+  lat         Float? // GPS latitude for distance search
+  lng         Float? // GPS longitude for distance search
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner        User          @relation("CenterOwner", fields: [ownerId], references: [id])
+  owner        User             @relation("CenterOwner", fields: [ownerId], references: [id])
   favorites    FavoriteCenter[]
   floors       Floor[]
   seatTypes    SeatType[]
@@ -207,13 +213,13 @@ model PCCenter {
 }
 
 model CenterStaff {
-  id        String   @id @default(cuid())
-  userId    String
-  centerId  String
-  canCheckin  Boolean @default(true)
-  canSeatStatus Boolean @default(true)
-  canViewBookings Boolean @default(true)
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  userId          String
+  centerId        String
+  canCheckin      Boolean  @default(true)
+  canSeatStatus   Boolean  @default(true)
+  canViewBookings Boolean  @default(true)
+  createdAt       DateTime @default(now())
 
   user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   center PCCenter @relation(fields: [centerId], references: [id], onDelete: Cascade)
@@ -223,13 +229,13 @@ model CenterStaff {
 }
 
 model StaffInvite {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   centerId  String
   phone     String
-  token     String   @unique
+  token     String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   center PCCenter @relation(fields: [centerId], references: [id], onDelete: Cascade)
 
@@ -256,7 +262,7 @@ model SeatType {
   centerId      String
   name          String
   pricePerHour  Int
-  peakHourPrice Int?     // nullable — if set, used during peak hours
+  peakHourPrice Int? // nullable — if set, used during peak hours
   description   String?  @db.Text
   images        Json     @default("[]")
   createdAt     DateTime @default(now())
@@ -276,15 +282,16 @@ model Seat {
   number    String
   status    SeatStatus @default(OPEN)
   freeAt    DateTime?
-  posX      Int?       // grid column position (0-based)
-  posY      Int?       // grid row position (0-based)
+  posX      Int? // grid column position (0-based)
+  posY      Int? // grid row position (0-based)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  center       PCCenter      @relation(fields: [centerId], references: [id], onDelete: Cascade)
-  floor        Floor         @relation(fields: [floorId], references: [id], onDelete: Cascade)
-  type         SeatType      @relation(fields: [typeId], references: [id])
-  bookingSeats BookingSeat[]
+  center            PCCenter          @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  floor             Floor             @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  type              SeatType          @relation(fields: [typeId], references: [id])
+  bookingSeats      BookingSeat[]
+  tournamentMatches TournamentMatch[]
 
   @@unique([centerId, number])
   @@index([centerId])
@@ -294,25 +301,25 @@ model Seat {
 }
 
 model Booking {
-  id             String        @id @default(cuid())
-  code           String        @unique // #BK + 4 digits
-  userId         String
-  centerId       String
-  startTime      DateTime
-  endTime        DateTime
-  hours          Float
-  totalPrice     Int
-  status         BookingStatus @default(PENDING)
-  paymentMethod  PaymentMethod
-  paymentStatus  PaymentStatus @default(UNPAID)
-  paymentRef     String?       // gateway reference
-  qpayInvoiceId  String?       // QPay invoice_id for check/cancel
-  qpayPaymentId  String?       // QPay payment_id for refund/ebarimt
-  ebarimtId      String?       // e-barimt receipt ID
-  cancelledAt    DateTime?
-  cancelReason   String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id            String        @id @default(cuid())
+  code          String        @unique // #BK + 4 digits
+  userId        String
+  centerId      String
+  startTime     DateTime
+  endTime       DateTime
+  hours         Float
+  totalPrice    Int
+  status        BookingStatus @default(PENDING)
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus @default(UNPAID)
+  paymentRef    String? // gateway reference
+  qpayInvoiceId String? // QPay invoice_id for check/cancel
+  qpayPaymentId String? // QPay payment_id for refund/ebarimt
+  ebarimtId     String? // e-barimt receipt ID
+  cancelledAt   DateTime?
+  cancelReason  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   user         User          @relation(fields: [userId], references: [id])
   center       PCCenter      @relation(fields: [centerId], references: [id])
@@ -361,7 +368,7 @@ model Review {
   userId     String
   centerId   String
   bookingId  String   @unique
-  rating     Int      // 1-5
+  rating     Int // 1-5
   comment    String?  @db.Text
   ownerReply String?  @db.Text
   createdAt  DateTime @default(now())
@@ -397,8 +404,9 @@ model Tournament {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  center PCCenter         @relation(fields: [centerId], references: [id], onDelete: Cascade)
-  teams  TournamentTeam[]
+  center  PCCenter          @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  teams   TournamentTeam[]
+  matches TournamentMatch[]
 
   @@index([centerId])
   @@index([status, startTime])
@@ -408,6 +416,7 @@ model TournamentTeam {
   id            String         @id @default(cuid())
   tournamentId  String
   name          String
+  playerNames   Json           @default("[]")
   captainId     String
   paymentMethod PaymentMethod?
   paymentRef    String?
@@ -418,6 +427,9 @@ model TournamentTeam {
   tournament Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   captain    User               @relation(fields: [captainId], references: [id])
   members    TournamentMember[]
+  matchAsA   TournamentMatch[]  @relation("MatchTeamA")
+  matchAsB   TournamentMatch[]  @relation("MatchTeamB")
+  matchWins  TournamentMatch[]  @relation("MatchWinner")
 
   @@unique([tournamentId, captainId])
   @@index([tournamentId])
@@ -436,6 +448,36 @@ model TournamentMember {
   @@unique([teamId, userId])
   @@index([teamId])
   @@index([userId])
+}
+
+model TournamentMatch {
+  id            String                @id @default(cuid())
+  tournamentId  String
+  round         Int
+  matchNumber   Int
+  teamAId       String?
+  teamBId       String?
+  winnerTeamId  String?
+  scoreA        Int?
+  scoreB        Int?
+  scheduledAt   DateTime?
+  stationSeatId String?
+  status        TournamentMatchStatus @default(PENDING)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  tournament  Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  teamA       TournamentTeam? @relation("MatchTeamA", fields: [teamAId], references: [id])
+  teamB       TournamentTeam? @relation("MatchTeamB", fields: [teamBId], references: [id])
+  winnerTeam  TournamentTeam? @relation("MatchWinner", fields: [winnerTeamId], references: [id])
+  stationSeat Seat?           @relation(fields: [stationSeatId], references: [id])
+
+  @@unique([tournamentId, round, matchNumber])
+  @@index([tournamentId])
+  @@index([teamAId])
+  @@index([teamBId])
+  @@index([winnerTeamId])
+  @@index([stationSeatId])
 }
 
 model SmsOtp {

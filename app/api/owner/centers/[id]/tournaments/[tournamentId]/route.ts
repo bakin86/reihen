@@ -49,6 +49,15 @@ export async function GET(req: Request, { params }: Params) {
           },
           orderBy: { createdAt: "asc" },
         },
+        matches: {
+          include: {
+            teamA: { select: { id: true, name: true, playerNames: true } },
+            teamB: { select: { id: true, name: true, playerNames: true } },
+            winnerTeam: { select: { id: true, name: true } },
+            stationSeat: { select: { id: true, number: true } },
+          },
+          orderBy: [{ round: "asc" }, { matchNumber: "asc" }],
+        },
         _count: { select: { teams: true } },
       },
     });

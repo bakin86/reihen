@@ -8,6 +8,7 @@ import { emitTournamentUpdate } from "@/lib/socket";
 
 const registerSchema = z.object({
   teamName: z.string().min(1).max(64),
+  playerNames: z.array(z.string().min(1).max(40)).max(10).optional(),
   paymentMethod: z.enum(["QPAY", "BALANCE"]).optional(),
 });
 
@@ -50,6 +51,20 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const { teamName, paymentMethod } = parsed.data;
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.sub },
+      select: { name: true },
+    });
+    const playerNames = Array.from(
+      new Set(
+        (parsed.data.playerNames ?? [])
+          .map((name) => name.trim())
+          .filter(Boolean)
+      )
+    ).slice(0, tournament.teamSize);
+    if (playerNames.length === 0) {
+      playerNames.push(currentUser?.name ?? teamName);
+    }
 
     // Handle entry fee payment
     let paymentRef: string | null = null;
@@ -81,6 +96,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       data: {
         tournamentId: params.id,
         name: teamName,
+        playerNames,
         captainId: session.sub,
         paymentMethod: tournament.entryFee > 0 ? (paymentMethod ?? "BALANCE") : null,
         paymentRef,

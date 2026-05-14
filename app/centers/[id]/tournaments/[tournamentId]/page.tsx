@@ -23,10 +23,27 @@ interface TournamentDetail {
   teams: {
     id: string;
     name: string;
+    playerNames: string[];
+    paymentStatus: string;
     createdAt: string;
     members: { user: { id: string; name: string } }[];
   }[];
+  matches: TournamentMatch[];
   _count: { teams: number };
+}
+
+interface TournamentMatch {
+  id: string;
+  round: number;
+  matchNumber: number;
+  scoreA: number | null;
+  scoreB: number | null;
+  status: string;
+  scheduledAt: string | null;
+  teamA: { id: string; name: string; playerNames: string[] } | null;
+  teamB: { id: string; name: string; playerNames: string[] } | null;
+  winnerTeam: { id: string; name: string } | null;
+  stationSeat: { id: string; number: string } | null;
 }
 
 export default function TournamentPage({
@@ -38,6 +55,7 @@ export default function TournamentPage({
   const [t, setT] = useState<TournamentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [teamName, setTeamName] = useState("");
+  const [playerNamesText, setPlayerNamesText] = useState("");
   const [payMethod, setPayMethod] = useState<"QPAY" | "BALANCE">("QPAY");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -85,7 +103,14 @@ export default function TournamentPage({
         payment: { pending?: boolean; qrImage?: string; shortUrl?: string; deeplinks?: { name: string; link: string }[] } | null;
       }>(`/api/tournaments/${params.tournamentId}/register`, {
         method: "POST",
-        body: JSON.stringify({ teamName: teamName.trim(), paymentMethod: payMethod }),
+        body: JSON.stringify({
+          teamName: teamName.trim(),
+          playerNames: playerNamesText
+            .split("\n")
+            .map((name) => name.trim())
+            .filter(Boolean),
+          paymentMethod: payMethod,
+        }),
         token,
       });
 
@@ -98,6 +123,7 @@ export default function TournamentPage({
       } else {
         setSuccess("Бүртгэл амжилттай!");
         setTeamName("");
+        setPlayerNamesText("");
         fetchTournament();
       }
     } catch (e) {
@@ -286,6 +312,14 @@ export default function TournamentPage({
               className="border border-black px-4 py-3 text-sm focus:outline-none"
               maxLength={64}
             />
+            <textarea
+              placeholder={t.teamSize === 1 ? "Player name / IGN" : `Player names (${t.teamSize} lines max)`}
+              value={playerNamesText}
+              onChange={(e) => setPlayerNamesText(e.target.value)}
+              rows={Math.min(Math.max(t.teamSize, 2), 6)}
+              className="border border-black px-4 py-3 text-sm focus:outline-none"
+              maxLength={400}
+            />
 
             {t.entryFee > 0 && (
               <div className="flex gap-3">
@@ -426,9 +460,11 @@ export default function TournamentPage({
                   <span className="mono text-xs text-[#888] w-6">{i + 1}</span>
                   <div>
                     <span className="text-sm font-medium">{team.name}</span>
-                    {t.teamSize > 1 && (
+                    {(t.teamSize > 1 || team.playerNames.length > 0) && (
                       <div className="text-[11px] text-[#888] mt-0.5">
-                        {team.members.map((m) => m.user.name).join(", ")}
+                        {team.playerNames.length > 0
+                          ? team.playerNames.join(", ")
+                          : team.members.map((m) => m.user.name).join(", ")}
                       </div>
                     )}
                   </div>
@@ -441,6 +477,63 @@ export default function TournamentPage({
           </div>
         )}
       </div>
+
+      {t.matches.length > 0 && (
+        <div className="border-t border-black px-6 py-8 md:px-12">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="display text-xl">BRACKET</h3>
+            <span className="mono text-xs text-[#888]">{t.matches.length} MATCHES</span>
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-3">
+            {Array.from(new Set(t.matches.map((match) => match.round))).sort((a, b) => a - b).map((round) => (
+              <div key={round} className="min-w-[260px] flex-1">
+                <div className="mb-3 text-[10px] uppercase tracking-[0.3em] text-[#888]">
+                  Round {round}
+                </div>
+                <div className="space-y-3">
+                  {t.matches
+                    .filter((match) => match.round === round)
+                    .map((match) => (
+                      <div key={match.id} className="border border-black/15 bg-white p-3">
+                        <div className="mb-2 flex items-center justify-between text-[10px] text-[#888]">
+                          <span>Match {match.matchNumber}</span>
+                          <span>{match.status}</span>
+                        </div>
+                        {[match.teamA, match.teamB].map((team, index) => {
+                          const isWinner = !!team && match.winnerTeam?.id === team.id;
+                          const score = index === 0 ? match.scoreA : match.scoreB;
+                          return (
+                            <div
+                              key={team?.id ?? index}
+                              className={`mb-1 flex items-start justify-between gap-3 border px-3 py-2 ${
+                                isWinner ? "border-black bg-black text-white" : "border-black/10"
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-medium">
+                                  {team?.name ?? "TBD"}
+                                </div>
+                                {!!team?.playerNames?.length && (
+                                  <div className={`mt-0.5 truncate text-[10px] ${isWinner ? "text-white/70" : "text-[#888]"}`}>
+                                    {team.playerNames.join(", ")}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="mono text-sm">{score ?? "-"}</span>
+                            </div>
+                          );
+                        })}
+                        {match.stationSeat && (
+                          <div className="mt-2 text-[10px] text-[#888]">PC {match.stationSeat.number}</div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Center info footer */}
       <div className="border-t border-black px-6 py-5 md:px-12">

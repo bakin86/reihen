@@ -24,10 +24,26 @@ interface Tournament {
   teams?: {
     id: string;
     name: string;
+    playerNames: string[];
     captain: { id: string; name: string; phone: string };
     members: { user: { id: string; name: string } }[];
     paymentStatus: string;
   }[];
+  matches?: TournamentMatch[];
+}
+
+interface TournamentMatch {
+  id: string;
+  round: number;
+  matchNumber: number;
+  scoreA: number | null;
+  scoreB: number | null;
+  status: string;
+  scheduledAt: string | null;
+  teamA: { id: string; name: string; playerNames: string[] } | null;
+  teamB: { id: string; name: string; playerNames: string[] } | null;
+  winnerTeam: { id: string; name: string } | null;
+  stationSeat: { id: string; number: string } | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -175,6 +191,49 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
       setSelectedId(id);
     } catch {
       showToast("Failed to load detail", true);
+    }
+  };
+
+  const generateBracket = async (tournamentId: string) => {
+    setSaving(true);
+    try {
+      const res = await apiFetch<{ matches: TournamentMatch[] }>(
+        `/api/owner/centers/${params.id}/tournaments/${tournamentId}/bracket`,
+        { token, method: "POST" }
+      );
+      setTournaments((prev) =>
+        prev.map((t) => (t.id === tournamentId ? { ...t, matches: res.matches } : t))
+      );
+      showToast("Bracket generated");
+    } catch (e: any) {
+      showToast(e?.message ?? "Failed to generate bracket", true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateMatch = async (
+    tournamentId: string,
+    matchId: string,
+    data: Partial<{ scoreA: number | null; scoreB: number | null; winnerTeamId: string | null; status: string }>
+  ) => {
+    setSaving(true);
+    try {
+      const res = await apiFetch<{ matches: TournamentMatch[] }>(
+        `/api/owner/centers/${params.id}/tournaments/${tournamentId}/bracket`,
+        {
+          token,
+          method: "PATCH",
+          body: JSON.stringify({ matchId, ...data }),
+        }
+      );
+      setTournaments((prev) =>
+        prev.map((t) => (t.id === tournamentId ? { ...t, matches: res.matches } : t))
+      );
+    } catch (e: any) {
+      showToast(e?.message ?? "Failed to update match", true);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -355,6 +414,13 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
                 <h4 className="text-[10px] uppercase tracking-[0.3em] text-gray mb-3">
                   БҮРТГҮҮЛСЭН БАГУУД ({selected.teams.length}/{selected.maxTeams})
                 </h4>
+                <button
+                  onClick={() => generateBracket(selected.id)}
+                  disabled={saving || selected.teams.filter((team) => team.paymentStatus === "PAID").length < 2}
+                  className="mb-4 border border-black px-3 py-1.5 text-[10px] uppercase tracking-widest hover:bg-black hover:text-white transition-colors disabled:opacity-40"
+                >
+                  GENERATE BRACKET
+                </button>
                 {selected.teams.length === 0 ? (
                   <p className="text-sm text-[#888]">Одоогоор бүртгэл алга</p>
                 ) : (
@@ -365,7 +431,9 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
                           <span className="text-xs text-[#888] mr-2">#{i + 1}</span>
                           <span className="font-medium text-sm">{team.name}</span>
                           <span className="ml-2 text-xs text-[#888]">
-                            ({team.members.map((m) => m.user.name).join(", ")})
+                            ({team.playerNames.length > 0
+                              ? team.playerNames.join(", ")
+                              : team.members.map((m) => m.user.name).join(", ")})
                           </span>
                         </div>
                         <span className={`text-[9px] uppercase tracking-widest ${team.paymentStatus === "PAID" ? "text-black" : "text-[#888]"}`}>
@@ -373,6 +441,71 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
                         </span>
                       </div>
                     ))}
+                  </div>
+                )}
+                {!!selected.matches?.length && (
+                  <div className="mt-6">
+                    <h4 className="mb-3 text-[10px] uppercase tracking-[0.3em] text-gray">
+                      BRACKET ({selected.matches.length} MATCHES)
+                    </h4>
+                    <div className="flex gap-4 overflow-x-auto pb-3">
+                      {Array.from(new Set(selected.matches.map((match) => match.round))).sort((a, b) => a - b).map((round) => (
+                        <div key={round} className="min-w-[300px] flex-1">
+                          <div className="mb-2 text-[10px] uppercase tracking-[0.3em] text-[#888]">Round {round}</div>
+                          <div className="space-y-3">
+                            {selected.matches!
+                              .filter((match) => match.round === round)
+                              .map((match) => (
+                                <div key={match.id} className="border border-[#ddd] p-3">
+                                  <div className="mb-2 flex items-center justify-between text-[10px] text-[#888]">
+                                    <span>Match {match.matchNumber}</span>
+                                    <span>{match.status}</span>
+                                  </div>
+                                  {[match.teamA, match.teamB].map((team, index) => {
+                                    const isWinner = !!team && match.winnerTeam?.id === team.id;
+                                    const score = index === 0 ? match.scoreA : match.scoreB;
+                                    return (
+                                      <div key={team?.id ?? index} className={`mb-2 border p-2 ${isWinner ? "border-black bg-black text-white" : "border-[#ddd]"}`}>
+                                        <div className="flex items-center justify-between gap-2">
+                                          <div className="min-w-0">
+                                            <div className="truncate text-sm font-medium">{team?.name ?? "TBD"}</div>
+                                            {!!team?.playerNames?.length && (
+                                              <div className={`truncate text-[10px] ${isWinner ? "text-white/70" : "text-[#888]"}`}>
+                                                {team.playerNames.join(", ")}
+                                              </div>
+                                            )}
+                                          </div>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            value={score ?? ""}
+                                            onChange={(e) =>
+                                              updateMatch(selected.id, match.id, {
+                                                [index === 0 ? "scoreA" : "scoreB"]: e.target.value === "" ? null : Number(e.target.value),
+                                              })
+                                            }
+                                            className="w-16 border border-[#ddd] px-2 py-1 text-sm text-black"
+                                            disabled={saving}
+                                          />
+                                        </div>
+                                        {team && (
+                                          <button
+                                            onClick={() => updateMatch(selected.id, match.id, { winnerTeamId: team.id })}
+                                            disabled={saving || isWinner}
+                                            className="mt-2 w-full border border-black px-2 py-1 text-[10px] uppercase tracking-widest hover:bg-black hover:text-white disabled:opacity-40"
+                                          >
+                                            {isWinner ? "WINNER" : "SET WINNER"}
+                                          </button>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
