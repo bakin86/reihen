@@ -746,10 +746,11 @@ async function main() {
 
   // Register teams in upcoming + live tournaments
   // Demo player is in the live tournament
-  await prisma.tournamentTeam.create({
+  const liveTeam1 = await prisma.tournamentTeam.create({
     data: {
       tournamentId: liveT.id,
       name: "Team Reihen",
+      playerNames: ["Batbayar", "Munkhbat", "Otgonbayar", "Enkhjin", "Temuulen"],
       captainId: demo.id,
       paymentStatus: "PAID", paymentMethod: "QPAY",
       members: {
@@ -759,10 +760,11 @@ async function main() {
     },
   });
 
-  await prisma.tournamentTeam.create({
+  const liveTeam2 = await prisma.tournamentTeam.create({
     data: {
       tournamentId: liveT.id,
       name: "Nexus Squad",
+      playerNames: ["Nomin", "Bayarsaikhan", "Dolgoon", "Ankhbayar", "Uyanga"],
       captainId: players[4].id,
       paymentStatus: "PAID", paymentMethod: "BALANCE",
       members: {
@@ -772,10 +774,72 @@ async function main() {
     },
   });
 
+  const liveTeam3 = await prisma.tournamentTeam.create({
+    data: {
+      tournamentId: liveT.id,
+      name: "Arena Wolves",
+      playerNames: ["Zandan", "Munkhbat", "Enkhjin", "Dolgoon", "Uyanga"],
+      captainId: players[9].id,
+      paymentStatus: "PAID", paymentMethod: "BALANCE",
+      members: {
+        create: [players[9].id, players[0].id, players[2].id, players[6].id, players[8].id]
+          .map((uid) => ({ userId: uid })),
+      },
+    },
+  });
+
+  const liveTeam4 = await prisma.tournamentTeam.create({
+    data: {
+      tournamentId: liveT.id,
+      name: "Zero Ping",
+      playerNames: ["Ankhbayar", "Bayarsaikhan", "Otgonbayar", "Temuulen", "Nomin"],
+      captainId: players[7].id,
+      paymentStatus: "PAID", paymentMethod: "QPAY",
+      members: {
+        create: [players[7].id, players[5].id, players[1].id, players[3].id, players[4].id]
+          .map((uid) => ({ userId: uid })),
+      },
+    },
+  });
+
+  await prisma.tournamentMatch.createMany({
+    data: [
+      {
+        tournamentId: liveT.id,
+        round: 1,
+        matchNumber: 1,
+        teamAId: liveTeam1.id,
+        teamBId: liveTeam2.id,
+        winnerTeamId: liveTeam1.id,
+        scoreA: 13,
+        scoreB: 9,
+        status: "COMPLETED",
+      },
+      {
+        tournamentId: liveT.id,
+        round: 1,
+        matchNumber: 2,
+        teamAId: liveTeam3.id,
+        teamBId: liveTeam4.id,
+        scoreA: 7,
+        scoreB: 7,
+        status: "LIVE",
+      },
+      {
+        tournamentId: liveT.id,
+        round: 2,
+        matchNumber: 1,
+        teamAId: liveTeam1.id,
+        status: "PENDING",
+      },
+    ],
+  });
+
   // Demo player registers for upcoming solo tourney
   await prisma.tournamentTeam.create({
     data: {
       tournamentId: upcomingT1.id,
+      playerNames: ["Batbayar"],
       name: "Батбаяр Г.",
       captainId: demo.id,
       paymentStatus: "PAID", paymentMethod: "QPAY",
