@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authErrorResponse, getSession } from "@/lib/auth";
-import { processPayment } from "@/lib/payment";
+import { processPayment, processRefund, cancelQPayInvoice } from "@/lib/payment";
 import { sendPushToUser } from "@/lib/push";
 import { emitSeatUpdate } from "@/lib/socket";
+import { cacheDel } from "@/lib/redis";
+import { seatsCacheKey } from "@/lib/cache-keys";
 
 const schema = z.object({
   hours: z.number().int().min(1).max(12),
   paymentMethod: z.enum(["QPAY", "BALANCE"]).optional(),
 });
 
-// PATCH /api/bookings/:id/extend — extend all seats in booking
+// PATCH /api/bookings/:id/extend - extend all seats in booking
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getSession(req);
@@ -45,7 +48,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const newEnd = new Date(booking.endTime.getTime() + hours * 3_600_000);
     const seatIds = booking.bookingSeats.map((bs) => bs.seatId);
 
-    // Check ALL seats have the next slot available
     const conflicts = await prisma.bookingSeat.findMany({
       where: {
         seatId: { in: seatIds },
@@ -67,14 +69,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       );
     }
 
-    // Calculate additional charge per hour — apply peak rate if extension falls in peak window.
-    // Extension starts at current booking.endTime.
     const additional = booking.bookingSeats.reduce((sum, bs) => {
       let seatTotal = 0;
       for (let h = 0; h < hours; h++) {
         const hour = (booking.endTime.getHours() + h) % 24;
         const isPeak = hour >= 18 && hour < 23;
-        seatTotal += (isPeak && bs.seat.type.peakHourPrice) ? bs.seat.type.peakHourPrice : bs.seat.type.pricePerHour;
+        seatTotal += (isPeak && bs.seat.type.peakHourPrice)
+          ? bs.seat.type.peakHourPrice
+          : bs.seat.type.pricePerHour;
       }
       return sum + seatTotal;
     }, 0);
@@ -83,31 +85,72 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const pay = await processPayment(session.sub, additional, method, booking.code);
     if (!pay.ok) return NextResponse.json({ error: "Payment failed" }, { status: 402 });
 
-    const updated = await prisma.$transaction(async (tx) => {
-      // Re-verify status inside transaction — prevents TOCTOU where booking
-      // gets cancelled between our check and the actual update + payment.
-      const current = await tx.booking.findUnique({
-        where: { id: booking.id },
-        select: { status: true },
-      });
-      if (!current || current.status !== "CONFIRMED") {
-        throw new Error("Booking status changed — cannot extend");
+    const undoPayment = async () => {
+      if (method === "BALANCE") {
+        await processRefund(session.sub, additional, "BALANCE").catch(() => {});
+      } else if (pay.invoiceId) {
+        await cancelQPayInvoice(pay.invoiceId).catch(() => {});
       }
+    };
 
-      const b = await tx.booking.update({
-        where: { id: booking.id },
-        data: {
-          endTime: newEnd,
-          hours: booking.hours + hours,
-          totalPrice: booking.totalPrice + additional,
+    let updated;
+    try {
+      updated = await prisma.$transaction(
+        async (tx) => {
+          const current = await tx.booking.findUnique({
+            where: { id: booking.id },
+            select: { status: true, endTime: true },
+          });
+          if (!current || current.status !== "CONFIRMED" || current.endTime.getTime() !== booking.endTime.getTime()) {
+            throw new Error("BOOKING_CHANGED");
+          }
+
+          const insideConflicts = await tx.bookingSeat.findMany({
+            where: {
+              seatId: { in: seatIds },
+              booking: {
+                id: { not: booking.id },
+                status: { in: ["PENDING", "CONFIRMED"] },
+                startTime: { lt: newEnd },
+                endTime: { gt: booking.endTime },
+              },
+            },
+            include: { seat: { select: { number: true } } },
+          });
+          if (insideConflicts.length > 0) {
+            const conflictSeats = insideConflicts.map((c) => c.seat.number).join(", ");
+            throw new Error(`OVERLAP:${conflictSeats}`);
+          }
+
+          const b = await tx.booking.update({
+            where: { id: booking.id },
+            data: {
+              endTime: newEnd,
+              hours: booking.hours + hours,
+              totalPrice: booking.totalPrice + additional,
+            },
+          });
+          await tx.seat.updateMany({
+            where: { id: { in: seatIds } },
+            data: { freeAt: newEnd },
+          });
+          return b;
         },
-      });
-      await tx.seat.updateMany({
-        where: { id: { in: seatIds } },
-        data: { freeAt: newEnd },
-      });
-      return b;
-    });
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+      );
+    } catch (e: any) {
+      await undoPayment();
+      if (e?.message?.startsWith("OVERLAP:")) {
+        return NextResponse.json(
+          { error: `Next slot already booked for seats: ${e.message.replace("OVERLAP:", "")}` },
+          { status: 409 }
+        );
+      }
+      if (e?.message === "BOOKING_CHANGED") {
+        return NextResponse.json({ error: "Booking changed. Please refresh and try again." }, { status: 409 });
+      }
+      throw e;
+    }
 
     const centerName = booking.bookingSeats[0]?.seat.center.name ?? "";
     const ownerId = booking.bookingSeats[0]?.seat.center.ownerId ?? "";
@@ -115,6 +158,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     for (const bs of booking.bookingSeats) {
       emitSeatUpdate(booking.centerId, { id: bs.seatId, status: "OCCUPIED", code: bs.seat.number });
     }
+    cacheDel(seatsCacheKey(booking.centerId)).catch(() => {});
     sendPushToUser(ownerId, {
       title: "Захиалга сунгагдлаа",
       body: `${booking.code} · +${hours}ц · ${centerName}`,

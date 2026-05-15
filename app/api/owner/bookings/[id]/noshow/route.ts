@@ -13,11 +13,28 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const session = await requireStaff(req);
     const booking = await getBookingForStaff(session, params.id, "canCheckin");
 
-    if (booking.status === "NOSHOW") {
-      return NextResponse.json({ error: "Already marked no-show" }, { status: 409 });
+    if (booking.status !== "CONFIRMED") {
+      if (booking.status === "NOSHOW") {
+        return NextResponse.json({ error: "Already marked no-show" }, { status: 409 });
+      }
+      if (booking.status === "CANCELLED") {
+        return NextResponse.json({ error: "Booking cancelled" }, { status: 409 });
+      }
+      return NextResponse.json(
+        { error: booking.status === "PENDING" ? "Payment not yet confirmed" : `Cannot no-show ${booking.status} booking` },
+        { status: 409 }
+      );
     }
-    if (booking.status === "CANCELLED") {
-      return NextResponse.json({ error: "Booking cancelled" }, { status: 409 });
+
+    const policy = await prisma.cancelPolicy.findUnique({
+      where: { centerId: booking.centerId },
+      select: { noShowMinutes: true },
+    });
+    const noShowAfter = new Date(
+      booking.startTime.getTime() + (policy?.noShowMinutes ?? 60) * 60_000
+    );
+    if (session.role === "STAFF" && new Date() < noShowAfter) {
+      return NextResponse.json({ error: "Too early to mark no-show" }, { status: 400 });
     }
 
     const seatIds = booking.bookingSeats.map((bs) => bs.seatId);

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authErrorResponse, getSession } from "@/lib/auth";
@@ -16,6 +17,13 @@ const schema = z.object({
   hours: z.number().int().min(1).max(24),
   paymentMethod: z.enum(["QPAY", "BALANCE"]),
 });
+
+function isSerializableConflict(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2034"
+  );
+}
 
 // POST /api/bookings — create booking (multi-seat)
 export async function POST(req: Request) {
@@ -141,8 +149,16 @@ export async function POST(req: Request) {
 
     const isPending = !!payment.pending;
 
-    // Overlap check + create inside a single transaction to prevent race conditions.
-    // If the transaction throws (overlap), we refund the payment before returning 409.
+    const undoPayment = async () => {
+      if (paymentMethod === "BALANCE") {
+        await processRefund(session.sub, totalPrice, "BALANCE").catch(() => {});
+      } else if (payment.invoiceId) {
+        await cancelQPayInvoice(payment.invoiceId).catch(() => {});
+      }
+    };
+
+    // Overlap check + create inside a serializable transaction to prevent race conditions.
+    // If the transaction throws, undo the payment before returning.
     let booking;
     try {
     booking = await prisma.$transaction(async (tx) => {
@@ -198,18 +214,21 @@ export async function POST(req: Request) {
       }
 
       return b;
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (txErr: any) {
       // Transaction failed — refund the payment that was already processed
       if (txErr?.message?.startsWith("OVERLAP:")) {
-        if (paymentMethod === "BALANCE") {
-          await processRefund(session.sub, totalPrice, "BALANCE").catch(() => {});
-        } else if (payment.invoiceId) {
-          await cancelQPayInvoice(payment.invoiceId).catch(() => {});
-        }
+        await undoPayment();
         const conflictSeats = txErr.message.replace("OVERLAP:", "");
         return NextResponse.json(
           { error: `Seats already booked for this slot: ${conflictSeats}` },
+          { status: 409 }
+        );
+      }
+      await undoPayment();
+      if (isSerializableConflict(txErr)) {
+        return NextResponse.json(
+          { error: "Seat was booked at the same time. Please try again." },
           { status: 409 }
         );
       }

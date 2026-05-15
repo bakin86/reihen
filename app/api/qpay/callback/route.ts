@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { isDynamicUsageError } from "next/dist/export/helpers/is-dynamic-usage-error";
 import { prisma } from "@/lib/prisma";
 import { checkPayment, createEbarimt, QPAY_MODE } from "@/lib/qpay";
+import { processRefund } from "@/lib/payment";
 import { emitSeatUpdate } from "@/lib/socket";
 import { sendPushToUser } from "@/lib/push";
 import { sendPaymentConfirm } from "@/lib/sms";
+import { cacheDel } from "@/lib/redis";
+import { seatsCacheKey } from "@/lib/cache-keys";
 
 // In-memory rate limit for callback endpoint (prevent amplification attacks)
 const callbackHits = new Map<string, { count: number; reset: number }>();
@@ -89,7 +92,38 @@ export async function GET(req: Request) {
 
         const seatIds = booking.bookingSeats.map((bs) => bs.seatId);
 
+        let slotTakenAfterPayment = false;
+
         await prisma.$transaction(async (tx) => {
+          const overlaps = await tx.bookingSeat.findMany({
+            where: {
+              seatId: { in: seatIds },
+              bookingId: { not: booking.id },
+              booking: {
+                status: { in: ["PENDING", "CONFIRMED"] },
+                startTime: { lt: booking.endTime },
+                endTime: { gt: booking.startTime },
+              },
+            },
+            select: { id: true },
+            take: 1,
+          });
+
+          if (overlaps.length > 0) {
+            slotTakenAfterPayment = true;
+            await tx.booking.update({
+              where: { id: booking.id },
+              data: {
+                status: "CANCELLED",
+                paymentStatus: "PAID",
+                qpayPaymentId: paymentId,
+                cancelledAt: new Date(),
+                cancelReason: "Slot was taken before QPay confirmation",
+              },
+            });
+            return;
+          }
+
           await tx.booking.update({
             where: { id: booking.id },
             data: {
@@ -107,6 +141,16 @@ export async function GET(req: Request) {
             });
           }
         });
+
+        if (slotTakenAfterPayment) {
+          await processRefund(booking.user.id, booking.totalPrice, "QPAY", paymentId).catch((e) =>
+            console.error(`[qpay:callback] refund failed for conflicted booking ${booking.code}:`, e)
+          );
+          console.warn(`[qpay:callback] Cancelled conflicted paid booking ${booking.code} (payment=${paymentId})`);
+          continue;
+        }
+
+        cacheDel(seatsCacheKey(booking.centerId)).catch(() => {});
 
         // E-barimt (non-blocking, skip in mock)
         if (!isMock) {

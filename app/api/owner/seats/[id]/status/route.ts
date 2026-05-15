@@ -10,6 +10,7 @@ import { seatsCacheKey } from "@/lib/cache-keys";
 const schema = z.object({
   status: z.enum(["OPEN", "CLOSED", "REPAIR", "WAITING", "OCCUPIED"]),
   freeAt: z.coerce.date().nullish(),
+  force: z.boolean().optional(),
 });
 
 // PATCH /api/owner/seats/:id/status
@@ -28,6 +29,26 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!seat) return NextResponse.json({ error: "Seat not found" }, { status: 404 });
 
     await assertCenterAccess(session, seat.centerId, "canSeatStatus");
+
+    if (parsed.data.status === "OPEN" && !parsed.data.force) {
+      const activeBooking = await prisma.bookingSeat.findFirst({
+        where: {
+          seatId: seat.id,
+          booking: {
+            status: "CONFIRMED",
+            startTime: { lte: new Date() },
+            endTime: { gt: new Date() },
+          },
+        },
+        select: { booking: { select: { code: true } } },
+      });
+      if (activeBooking) {
+        return NextResponse.json(
+          { error: `Seat has active booking ${activeBooking.booking.code}. Cancel/no-show it first or retry with force.` },
+          { status: 409 }
+        );
+      }
+    }
 
     const updated = await prisma.seat.update({
       where: { id: seat.id },

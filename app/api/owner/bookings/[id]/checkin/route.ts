@@ -20,6 +20,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       );
     }
 
+    const now = new Date();
+    if (now > booking.endTime) {
+      return NextResponse.json({ error: "Booking has already ended" }, { status: 409 });
+    }
+    const earliestStaffCheckin = new Date(booking.startTime.getTime() - 60 * 60_000);
+    if (session.role === "STAFF" && now < earliestStaffCheckin) {
+      return NextResponse.json({ error: "Too early to check in this booking" }, { status: 400 });
+    }
+
     const seatIds = booking.bookingSeats.map((bs) => bs.seatId);
 
     const updated = await prisma.$transaction(async (tx) => {

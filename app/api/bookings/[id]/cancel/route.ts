@@ -6,6 +6,8 @@ import { processRefund, cancelQPayInvoice } from "@/lib/payment";
 import { sendPushToUser } from "@/lib/push";
 import { emitSeatUpdate } from "@/lib/socket";
 import { sendBookingCancel } from "@/lib/sms";
+import { cacheDel } from "@/lib/redis";
+import { seatsCacheKey } from "@/lib/cache-keys";
 
 const schema = z.object({
   reason: z.string().max(200).optional(),
@@ -63,6 +65,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         : { ok: true, reference: "no-refund", method: booking.paymentMethod, amount: 0 };
 
     const seatIds = booking.bookingSeats.map((bs) => bs.seatId);
+    const wasActive = booking.startTime <= new Date() && booking.endTime > new Date();
 
     await prisma.$transaction(async (tx) => {
       await tx.booking.update({
@@ -76,8 +79,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       // Release seats that are currently OCCUPIED (booking in progress).
       // Future bookings don't change seat.status (it stays OPEN until check-in),
       // so we only update if the booking was already active.
-      const now = new Date();
-      if (booking.startTime <= now && booking.endTime > now) {
+      if (wasActive) {
         await tx.seat.updateMany({
           where: { id: { in: seatIds } },
           data: { status: "OPEN", freeAt: null },
@@ -85,13 +87,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       }
     });
 
-    // Emit realtime updates for each seat
-    for (const bs of booking.bookingSeats) {
-      emitSeatUpdate(booking.centerId, {
-        id: bs.seatId,
-        status: "OPEN",
-        code: bs.seat.number,
-      });
+    if (wasActive) {
+      cacheDel(seatsCacheKey(booking.centerId)).catch(() => {});
+      for (const bs of booking.bookingSeats) {
+        emitSeatUpdate(booking.centerId, {
+          id: bs.seatId,
+          status: "OPEN",
+          code: bs.seat.number,
+        });
+      }
     }
 
     sendPushToUser(booking.center.ownerId, {

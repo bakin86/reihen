@@ -135,7 +135,8 @@ export async function PATCH(req: Request, { params }: Params) {
           await processRefund(
             team.captainId,
             tournament.entryFee,
-            team.paymentMethod ?? "BALANCE"
+            team.paymentMethod ?? "BALANCE",
+            team.qpayPaymentId ?? undefined
           );
         }
       }
@@ -203,7 +204,8 @@ export async function DELETE(req: Request, { params }: Params) {
         await processRefund(
           team.captainId,
           tournament.entryFee,
-          team.paymentMethod ?? "BALANCE"
+          team.paymentMethod ?? "BALANCE",
+          team.qpayPaymentId ?? undefined
         );
       }
     }

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSession, authErrorResponse } from "@/lib/auth";
-import { processPayment, processRefund } from "@/lib/payment";
+import { processPayment, processRefund, cancelQPayInvoice } from "@/lib/payment";
 import { sendPushToUser } from "@/lib/push";
 import { emitTournamentUpdate } from "@/lib/socket";
 
@@ -69,7 +70,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     // Handle entry fee payment
     let paymentRef: string | null = null;
     let paymentStatus: "PAID" | "UNPAID" = "UNPAID";
-    let paymentResult = null;
+    let paymentResult: Awaited<ReturnType<typeof processPayment>> | null = null;
 
     if (tournament.entryFee > 0) {
       const method = paymentMethod ?? "BALANCE";
@@ -92,23 +93,54 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       paymentStatus = "PAID"; // Free tournament
     }
 
-    const team = await prisma.tournamentTeam.create({
-      data: {
-        tournamentId: params.id,
-        name: teamName,
-        playerNames,
-        captainId: session.sub,
-        paymentMethod: tournament.entryFee > 0 ? (paymentMethod ?? "BALANCE") : null,
-        paymentRef,
-        paymentStatus,
-        members: {
-          create: { userId: session.sub },
+    let team;
+    try {
+      team = await prisma.$transaction(
+        async (tx) => {
+          const [teamCount, alreadyRegistered] = await Promise.all([
+            tx.tournamentTeam.count({ where: { tournamentId: params.id } }),
+            tx.tournamentTeam.findUnique({
+              where: { tournamentId_captainId: { tournamentId: params.id, captainId: session.sub } },
+              select: { id: true },
+            }),
+          ]);
+          if (alreadyRegistered) throw new Error("ALREADY_REGISTERED");
+          if (teamCount >= tournament.maxTeams) throw new Error("TOURNAMENT_FULL");
+
+          return tx.tournamentTeam.create({
+            data: {
+              tournamentId: params.id,
+              name: teamName,
+              playerNames,
+              captainId: session.sub,
+              paymentMethod: tournament.entryFee > 0 ? (paymentMethod ?? "BALANCE") : null,
+              paymentRef,
+              paymentStatus,
+              members: {
+                create: { userId: session.sub },
+              },
+            },
+            include: {
+              members: { include: { user: { select: { id: true, name: true } } } },
+            },
+          });
         },
-      },
-      include: {
-        members: { include: { user: { select: { id: true, name: true } } } },
-      },
-    });
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+      );
+    } catch (e: any) {
+      if (tournament.entryFee > 0 && paymentStatus === "PAID") {
+        await processRefund(session.sub, tournament.entryFee, paymentMethod ?? "BALANCE").catch(() => {});
+      } else if (tournament.entryFee > 0 && paymentResult?.invoiceId) {
+        await cancelQPayInvoice(paymentResult.invoiceId).catch(() => {});
+      }
+      if (e?.message === "ALREADY_REGISTERED") {
+        return NextResponse.json({ error: "Already registered" }, { status: 409 });
+      }
+      if (e?.message === "TOURNAMENT_FULL") {
+        return NextResponse.json({ error: "Tournament is full" }, { status: 400 });
+      }
+      throw e;
+    }
 
     // Notify center owner
     sendPushToUser(tournament.center.ownerId, {
