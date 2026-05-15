@@ -1,13 +1,21 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { DashStatSkeleton } from "@/components/Skeleton";
 import { SeatCell, SeatLegend, type SeatStatus } from "@/components/SeatCell";
-import { BlueprintSeatMap } from "@/components/BlueprintSeatMap";
 import { Counter } from "@/components/SplitFlap";
 import { useAuth } from "@/lib/useAuth";
 import { apiFetch } from "@/lib/api";
 import { useSeatSocket, type SeatUpdate } from "@/lib/useSeatSocket";
+
+const BlueprintSeatMap = dynamic(
+  () => import("@/components/BlueprintSeatMap").then((m) => m.BlueprintSeatMap),
+  {
+    ssr: false,
+    loading: () => <div className="h-48 animate-pulse bg-white/[0.03]" />,
+  }
+);
 
 interface Booking {
   id: string;

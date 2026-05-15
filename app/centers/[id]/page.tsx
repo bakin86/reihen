@@ -2,13 +2,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { SeatCell, SeatLegend, type SeatStatus } from "@/components/SeatCell";
-import { Confetti } from "@/components/Confetti";
 import { useSeatSocket, type SeatUpdate } from "@/lib/useSeatSocket";
 import { useAuth } from "@/lib/useAuth";
 import { useCountdown } from "@/lib/useCountdown";
 import { apiFetch } from "@/lib/api";
 import { getMainImage, getImagesByTag, IMAGE_TAGS, type CenterImage, type ImageTag } from "@/lib/image-types";
+
+const Confetti = dynamic(() => import("@/components/Confetti").then((m) => m.Confetti), { ssr: false });
 
 interface SeatData {
   id: string;

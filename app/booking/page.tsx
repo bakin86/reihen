@@ -2,14 +2,24 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { SeatCell, SeatLegend, type SeatStatus } from "@/components/SeatCell";
-import { BlueprintSeatMap } from "@/components/BlueprintSeatMap";
-import { Confetti } from "@/components/Confetti";
-import { Typewriter } from "@/components/Typewriter";
 import { InView } from "@/components/InView";
 import { useAuth } from "@/lib/useAuth";
 import { apiFetch } from "@/lib/api";
 import { useSeatSocket, type SeatUpdate } from "@/lib/useSeatSocket";
+
+const BlueprintSeatMap = dynamic(
+  () => import("@/components/BlueprintSeatMap").then((m) => m.BlueprintSeatMap),
+  {
+    ssr: false,
+    loading: () => <div className="h-48 animate-pulse bg-white/[0.03]" />,
+  }
+);
+const Confetti = dynamic(() => import("@/components/Confetti").then((m) => m.Confetti), { ssr: false });
+const Typewriter = dynamic(() => import("@/components/Typewriter").then((m) => m.Typewriter), {
+  ssr: false,
+});
 
 interface SeatData {
   id: string;

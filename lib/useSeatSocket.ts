@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { io, type Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import type { SeatStatus } from "@/components/SeatCell";
-import { isSupabaseRealtimeConfigured, supabase } from "@/lib/supabase-client";
 
 export interface SeatUpdate {
   id: string;
@@ -32,54 +31,62 @@ export function useSeatSocket(branchId: string, onUpdate: (u: SeatUpdate) => voi
 
     const subscriptions: { unsubscribe: () => Promise<unknown> }[] = [];
     let socket: Socket | null = null;
+    let cancelled = false;
 
-    if (isSupabaseRealtimeConfigured && supabase) {
-      const channel = supabase
-        .channel(`seat-status:${branchId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "Seat",
-            filter: `centerId=eq.${branchId}`,
-          },
-          (payload) => {
-            const row = payload.new as SeatRealtimeRow;
-            if (!row?.id || !row?.status) return;
-            onUpdateRef.current({
-              id: row.id,
-              status: row.status,
-              code: row.number,
-              freeAt: row.freeAt,
-            });
-          }
-        )
-        .subscribe();
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      import("@/lib/supabase-client").then(({ isSupabaseRealtimeConfigured, supabase }) => {
+        if (cancelled || !isSupabaseRealtimeConfigured || !supabase) return;
+        const channel = supabase
+          .channel(`seat-status:${branchId}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "UPDATE",
+              schema: "public",
+              table: "Seat",
+              filter: `centerId=eq.${branchId}`,
+            },
+            (payload) => {
+              const row = payload.new as SeatRealtimeRow;
+              if (!row?.id || !row?.status) return;
+              onUpdateRef.current({
+                id: row.id,
+                status: row.status,
+                code: row.number,
+                freeAt: row.freeAt,
+              });
+            }
+          )
+          .subscribe();
 
-      subscriptions.push(channel);
+        subscriptions.push(channel);
+      });
     }
 
     const url = process.env.NEXT_PUBLIC_WS_URL;
     if (url) {
       const socketToken = token && token !== "cookie-auth" ? token : undefined;
-      socket = io(url, {
-        transports: ["websocket"],
-        auth: { token: socketToken },
-      });
+      import("socket.io-client").then(({ io }) => {
+        if (cancelled) return;
+        socket = io(url, {
+          transports: ["websocket"],
+          auth: { token: socketToken },
+        });
 
-      socket.on("connect_error", (err) => {
-        // Silent fail for unauthenticated users - seat grid still works via REST/Realtime.
-        if (err.message.includes("Authentication") || err.message.includes("token")) {
-          socket?.disconnect();
-        }
-      });
+        socket.on("connect_error", (err) => {
+          // Silent fail for unauthenticated users - seat grid still works via REST/Realtime.
+          if (err.message.includes("Authentication") || err.message.includes("token")) {
+            socket?.disconnect();
+          }
+        });
 
-      socket.emit("branch:join", branchId);
-      socket.on("seat:update", (u: SeatUpdate) => onUpdateRef.current(u));
+        socket.emit("branch:join", branchId);
+        socket.on("seat:update", (u: SeatUpdate) => onUpdateRef.current(u));
+      });
     }
 
     return () => {
+      cancelled = true;
       for (const sub of subscriptions) {
         sub.unsubscribe().catch(() => {});
       }
