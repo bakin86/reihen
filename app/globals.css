@@ -627,6 +627,45 @@ button, a, input, select, textarea {
   animation: slideRight 0.5s var(--ease-circ) both;
 }
 
+@keyframes ownerFloatIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ownerHeaderIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ownerGlowSweep {
+  from { transform: translateX(-120%); opacity: 0; }
+  18% { opacity: 1; }
+  to { transform: translateX(120%); opacity: 0; }
+}
+
+@keyframes ownerRealtimeFlash {
+  0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.36); }
+  65% { box-shadow: 0 0 0 8px rgba(74,222,128,0); }
+  100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+}
+
+@keyframes ownerShimmer {
+  from { background-position: 140% 0; }
+  to { background-position: -140% 0; }
+}
+
 /* Owner console polish */
 .owner-dark,
 .owner-light {
@@ -659,6 +698,7 @@ button, a, input, select, textarea {
   z-index: 40;
   min-height: 64px;
   backdrop-filter: blur(18px) saturate(1.4);
+  animation: ownerHeaderIn 0.42s var(--ease-circ) both;
 }
 
 .owner-dark .owner-topbar {
@@ -675,9 +715,15 @@ button, a, input, select, textarea {
 
 .owner-card-dark,
 .owner-card-light {
+  position: relative;
   border-radius: 8px;
   overflow: hidden;
-  transition: transform 0.22s var(--ease-circ), border-color 0.22s ease, background 0.22s ease;
+  animation: ownerFloatIn 0.52s var(--ease-circ) both;
+  transition:
+    transform 0.24s var(--ease-circ),
+    border-color 0.24s ease,
+    background 0.24s ease,
+    box-shadow 0.24s ease;
 }
 
 .owner-card-dark {
@@ -695,18 +741,51 @@ button, a, input, select, textarea {
 
 .owner-card-dark:hover,
 .owner-card-light:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .owner-card-dark:hover { border-color: rgba(255,255,255,0.16); }
 .owner-card-light:hover { border-color: rgba(0,0,0,0.18); }
 
-.owner-action {
-  border-radius: 8px;
-  transition: transform 0.2s var(--ease-circ), background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+.owner-card-dark::after,
+.owner-card-light::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.16) 44%, transparent 62%);
+  opacity: 0;
+  transform: translateX(-120%);
 }
 
-.owner-action:hover { transform: translateY(-1px); }
+.owner-card-dark:hover::after,
+.owner-card-light:hover::after {
+  animation: ownerGlowSweep 0.82s var(--ease-circ) both;
+}
+
+.owner-dark .owner-card-dark:nth-of-type(2),
+.owner-light .owner-card-light:nth-of-type(2) { animation-delay: 0.04s; }
+.owner-dark .owner-card-dark:nth-of-type(3),
+.owner-light .owner-card-light:nth-of-type(3) { animation-delay: 0.08s; }
+.owner-dark .owner-card-dark:nth-of-type(4),
+.owner-light .owner-card-light:nth-of-type(4) { animation-delay: 0.12s; }
+.owner-dark .owner-card-dark:nth-of-type(5),
+.owner-light .owner-card-light:nth-of-type(5) { animation-delay: 0.16s; }
+
+.owner-action {
+  border-radius: 8px;
+  transition:
+    transform 0.2s var(--ease-circ),
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.owner-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.12);
+}
 .owner-action:active { transform: translateY(0) scale(0.985); }
 
 .owner-field-dark {
@@ -714,6 +793,7 @@ button, a, input, select, textarea {
   background: rgba(255,255,255,0.06);
   color: #fff;
   border-radius: 8px;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
 }
 
 .owner-field-dark:focus {
@@ -726,11 +806,45 @@ button, a, input, select, textarea {
   background: rgba(255,255,255,0.82);
   color: #080808;
   border-radius: 8px;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
 }
 
 .owner-field-light:focus {
   border-color: rgba(0,0,0,0.42);
   box-shadow: 0 0 0 4px rgba(74,222,128,0.14);
+}
+
+.owner-realtime-flash {
+  animation: ownerRealtimeFlash 0.9s var(--ease-circ) both;
+}
+
+.owner-shimmer {
+  background: linear-gradient(100deg, rgba(255,255,255,0.04) 30%, rgba(255,255,255,0.12) 48%, rgba(255,255,255,0.04) 66%);
+  background-size: 240% 100%;
+  animation: ownerShimmer 1.6s linear infinite;
+}
+
+.staff-create-button {
+  font-size: 0;
+}
+
+.staff-create-button::before {
+  content: "CREATE STAFF";
+  font-size: 11px;
+  line-height: 1;
+}
+
+.owner-dark .seat-open,
+.owner-dark .seat-occupied,
+.owner-dark .seat-waiting,
+.owner-dark .seat-repair,
+.owner-dark .seat-closed {
+  transition:
+    transform 0.2s var(--ease-circ),
+    background 0.24s ease,
+    border-color 0.24s ease,
+    color 0.24s ease,
+    box-shadow 0.24s ease;
 }
 
 @media (max-width: 720px) {
@@ -742,5 +856,21 @@ button, a, input, select, textarea {
   .owner-topbar .display {
     font-size: 1rem;
     letter-spacing: -0.02em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .owner-topbar,
+  .owner-card-dark,
+  .owner-card-light,
+  .owner-realtime-flash,
+  .owner-shimmer {
+    animation: none !important;
+  }
+
+  .owner-action,
+  .owner-card-dark,
+  .owner-card-light {
+    transition: none !important;
   }
 }

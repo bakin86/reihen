@@ -344,7 +344,7 @@ export default function OwnerStaffPage() {
               type="button"
               onClick={invite}
               disabled={submitting}
-              className="owner-action border border-green-400/40 bg-green-400 px-8 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-black shadow-[0_0_24px_rgba(74,222,128,0.18)] transition-all hover:bg-green-300 disabled:border-white/10 disabled:bg-white/10 disabled:text-white/30 disabled:shadow-none disabled:cursor-not-allowed"
+              className="owner-action staff-create-button border border-green-400/40 bg-green-400 px-8 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-black shadow-[0_0_24px_rgba(74,222,128,0.18)] transition-all hover:bg-green-300 disabled:border-white/10 disabled:bg-white/10 disabled:text-white/30 disabled:shadow-none disabled:cursor-not-allowed"
             >
               {submitting ? "..." : "УРИХ"}
             </button>
