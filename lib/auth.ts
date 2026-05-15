@@ -3,7 +3,9 @@ import bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { isDynamicUsageError } from "next/dist/export/helpers/is-dynamic-usage-error";
+import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "./prisma";
+import { isClerkConfigured } from "./clerk-config";
 
 const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "dev-secret-change-me-min-32-chars!!"
@@ -220,11 +222,82 @@ export async function getSession(
   req: Request | NextRequest
 ): Promise<SessionPayload> {
   const token = extractBearer(req);
-  if (!token) throw new AuthError("Missing Authorization header", 401);
+  if (token) {
+    try {
+      return await verifyToken(token);
+    } catch {
+      // Fall through to Clerk. This lets Clerk sessions work even when the
+      // legacy access cookie is absent or expired.
+    }
+  }
+
+  const clerkSession = await getClerkBackedSession();
+  if (clerkSession) return clerkSession;
+
+  throw new AuthError(token ? "Invalid or expired token" : "Missing Authorization header", 401);
+}
+
+function toRole(value: unknown): Role {
+  return value === "OWNER" || value === "STAFF" || value === "ADMIN" || value === "PLAYER"
+    ? value
+    : "PLAYER";
+}
+
+async function getClerkBackedSession(): Promise<SessionPayload | null> {
+  if (!isClerkConfigured()) return null;
+
   try {
-    return await verifyToken(token);
-  } catch {
-    throw new AuthError("Invalid or expired token", 401);
+    const clerkUser = await currentUser();
+    if (!clerkUser) return null;
+
+    const email =
+      clerkUser.primaryEmailAddress?.emailAddress ??
+      clerkUser.emailAddresses[0]?.emailAddress;
+    if (!email) return null;
+
+    const metadata = clerkUser.unsafeMetadata ?? {};
+    const role = toRole(metadata.role);
+    const phone = typeof metadata.phone === "string" && metadata.phone.trim()
+      ? metadata.phone.trim()
+      : `clerk_${clerkUser.id}`;
+    const name =
+      clerkUser.fullName ??
+      clerkUser.username ??
+      email.split("@")[0] ??
+      "Clerk User";
+    const avatarUrl = clerkUser.imageUrl || null;
+
+    let user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          phone,
+          role,
+          password: "CLERK_MANAGED",
+          avatarUrl,
+        },
+      });
+    } else {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          name: user.name || name,
+          avatarUrl: user.avatarUrl ?? avatarUrl,
+        },
+      });
+    }
+
+    if (!user.isActive) throw new AuthError("User not found", 401);
+    return {
+      sub: user.id,
+      role: user.role,
+      email: user.email,
+    };
+  } catch (e) {
+    if (e instanceof AuthError) throw e;
+    return null;
   }
 }
 

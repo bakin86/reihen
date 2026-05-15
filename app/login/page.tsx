@@ -2,9 +2,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { SignIn } from "@clerk/nextjs";
 import { useAuth } from "@/lib/useAuth";
 
 export default function LoginPage() {
+  const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
   const { login } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -55,7 +57,35 @@ export default function LoginPage() {
 
       {/* RIGHT */}
       <section className="ui-page flex flex-col justify-center p-10 md:p-16">
+        {clerkEnabled && (
+          <div className="mx-auto mb-6 w-full max-w-xl border border-black/10 bg-white p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-black/45">CLERK AUTH</p>
+              <Link href="/forgot-password" className="text-[9px] font-semibold uppercase tracking-[0.2em] text-black/40 underline underline-offset-4">
+                Reset by email
+              </Link>
+            </div>
+            <SignIn
+              routing="hash"
+              signUpUrl="/register"
+              fallbackRedirectUrl="/"
+              appearance={{
+                elements: {
+                  rootBox: "w-full",
+                  card: "shadow-none border-0 p-0 w-full",
+                  headerTitle: "text-black",
+                  formButtonPrimary: "bg-black hover:bg-black/80",
+                },
+              }}
+            />
+          </div>
+        )}
         <form onSubmit={submit} className="ui-panel mx-auto w-full max-w-xl space-y-7 p-6 md:p-8">
+          {clerkEnabled && (
+            <p className="text-[9px] font-semibold uppercase tracking-[0.25em] text-black/25">
+              Legacy login remains for seeded demo users
+            </p>
+          )}
           <div>
             <label className="text-[10px] font-medium uppercase tracking-[0.3em] text-black/35">EMAIL</label>
             <input

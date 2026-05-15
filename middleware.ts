@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import {
   AUTH_LIMIT,
   API_LIMIT,
@@ -7,6 +8,7 @@ import {
   rateLimit,
   rateLimitResponse,
 } from "./lib/rate-limit";
+import { isClerkPublicConfigured } from "./lib/clerk-config";
 
 const CSRF_COOKIE = "reihen_csrf";
 const CSRF_HEADER = "x-csrf-token";
@@ -23,7 +25,7 @@ const CSRF_EXEMPT = [
   "/api/chat",
 ];
 
-export async function middleware(req: NextRequest) {
+async function appMiddleware(req: NextRequest) {
   const { pathname, hostname } = req.nextUrl;
   const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0";
 
@@ -70,6 +72,13 @@ export async function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
+export default isClerkPublicConfigured()
+  ? clerkMiddleware((_auth, req) => appMiddleware(req))
+  : appMiddleware;
+
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)",
+    "/api/:path*",
+  ],
 };

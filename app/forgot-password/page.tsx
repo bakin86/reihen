@@ -1,11 +1,14 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSignIn } from "@clerk/nextjs";
 
 type Mode = "email" | "sms";
 type SmsStep = "phone" | "code";
 
 export default function ForgotPasswordPage() {
+  const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
   const [mode, setMode] = useState<Mode>("email");
 
   // Email flow
@@ -111,7 +114,8 @@ export default function ForgotPasswordPage() {
         </div>
 
         {/* Email flow */}
-        {mode === "email" && (
+        {mode === "email" && clerkEnabled && <ClerkEmailReset />}
+        {mode === "email" && !clerkEnabled && (
           <form onSubmit={submitEmail} className="space-y-8">
             <div>
               <label className="text-xs uppercase tracking-[0.3em] text-gray">EMAIL</label>
@@ -232,5 +236,131 @@ export default function ForgotPasswordPage() {
         )}
       </section>
     </main>
+  );
+}
+
+function ClerkEmailReset() {
+  const router = useRouter();
+  const { isLoaded, signIn, setActive } = useSignIn();
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [step, setStep] = useState<"email" | "code" | "done">("email");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const sendCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isLoaded || !signIn) return;
+    setLoading(true);
+    setError("");
+    try {
+      await signIn.create({
+        strategy: "reset_password_email_code",
+        identifier: email,
+      } as any);
+      setStep("code");
+    } catch (err: any) {
+      setError(err?.errors?.[0]?.message ?? "Could not send reset code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isLoaded || !signIn) return;
+    setLoading(true);
+    setError("");
+    try {
+      const result = await signIn.attemptFirstFactor({
+        strategy: "reset_password_email_code",
+        code,
+        password,
+      } as any);
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+        setStep("done");
+        router.push("/");
+        return;
+      }
+      setError("Additional verification is required");
+    } catch (err: any) {
+      setError(err?.errors?.[0]?.message ?? "Invalid code or password");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (step === "done") {
+    return (
+      <div className="space-y-6">
+        <div className="border border-black bg-black p-4 text-xs uppercase tracking-[0.2em] text-white">
+          Password changed successfully.
+        </div>
+        <Link href="/" className="block w-full bg-black px-6 py-5 text-center text-xs uppercase tracking-[0.3em] text-white">
+          GO HOME
+        </Link>
+      </div>
+    );
+  }
+
+  if (step === "code") {
+    return (
+      <form onSubmit={resetPassword} className="space-y-8">
+        <div className="border border-black bg-black p-4 text-xs uppercase tracking-[0.2em] text-white">
+          Clerk sent a reset code to {email}.
+        </div>
+        <div>
+          <label className="text-xs uppercase tracking-[0.3em] text-gray">EMAIL CODE</label>
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value.trim())}
+            required
+            className="mt-2 block w-full border-b-2 border-black bg-transparent pb-3 text-2xl font-black outline-none placeholder:text-gray"
+            placeholder="123456"
+          />
+        </div>
+        <div>
+          <label className="text-xs uppercase tracking-[0.3em] text-gray">NEW PASSWORD</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+            className="mt-2 block w-full border-b-2 border-black bg-transparent pb-3 text-2xl font-black outline-none placeholder:text-gray"
+            placeholder="••••••••"
+          />
+        </div>
+        {error && <div className="border border-red-400 bg-red-50 p-3 text-xs text-red-700">{error}</div>}
+        <button type="submit" disabled={loading} className="w-full bg-black px-6 py-5 text-xs uppercase tracking-[0.3em] text-white disabled:opacity-40">
+          {loading ? "..." : "RESET WITH CLERK"}
+        </button>
+      </form>
+    );
+  }
+
+  return (
+    <form onSubmit={sendCode} className="space-y-8">
+      <div>
+        <label className="text-xs uppercase tracking-[0.3em] text-gray">EMAIL</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="mt-2 block w-full border-b-2 border-black bg-transparent pb-3 text-2xl font-black outline-none placeholder:text-gray"
+          placeholder="email@example.com"
+        />
+      </div>
+      <div className="border border-black/20 p-4 text-[10px] uppercase tracking-[0.2em] text-black/45">
+        Clerk will send the password reset OTP to this email.
+      </div>
+      {error && <div className="border border-red-400 bg-red-50 p-3 text-xs text-red-700">{error}</div>}
+      <button type="submit" disabled={loading} className="w-full bg-black px-6 py-5 text-xs uppercase tracking-[0.3em] text-white disabled:opacity-40">
+        {loading ? "..." : "SEND CLERK OTP"}
+      </button>
+    </form>
   );
 }

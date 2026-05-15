@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import dynamic from "next/dynamic";
+import { ClerkProvider } from "@clerk/nextjs";
 import { AuthProvider } from "@/components/AuthProvider";
 import { QueryProvider } from "@/lib/query";
+import { isClerkPublicConfigured } from "@/lib/clerk-config";
 import "./globals.css";
 
 const ChatBot = dynamic(() => import("@/components/ChatBot").then((m) => m.ChatBot), {
@@ -28,15 +30,30 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const app = (
+    <QueryProvider>
+      <AuthProvider>
+        {children}
+        <ChatBot />
+      </AuthProvider>
+    </QueryProvider>
+  );
+
   return (
     <html lang="mn" className={inter.variable}>
       <body>
-        <QueryProvider>
-          <AuthProvider>
-            {children}
-            <ChatBot />
-          </AuthProvider>
-        </QueryProvider>
+        {isClerkPublicConfigured() ? (
+          <ClerkProvider
+            signInUrl="/login"
+            signUpUrl="/register"
+            afterSignInUrl="/"
+            afterSignUpUrl="/"
+          >
+            {app}
+          </ClerkProvider>
+        ) : (
+          app
+        )}
       </body>
     </html>
   );

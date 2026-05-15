@@ -2,9 +2,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { SignUp } from "@clerk/nextjs";
 import { useAuth } from "@/lib/useAuth";
 
 export default function RegisterPage() {
+  const clerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
   const { register } = useAuth();
   const router = useRouter();
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
@@ -58,7 +60,33 @@ export default function RegisterPage() {
 
       {/* RIGHT */}
       <section className="flex flex-col justify-center p-10 md:p-16">
+        {clerkEnabled && (
+          <div className="mb-6 border border-black/10 bg-white p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-black/45">CLERK SIGN UP</p>
+              <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-black/25">Email OTP ready</span>
+            </div>
+            <SignUp
+              routing="hash"
+              signInUrl="/login"
+              fallbackRedirectUrl="/"
+              unsafeMetadata={{ role, phone: form.phone }}
+              appearance={{
+                elements: {
+                  rootBox: "w-full",
+                  card: "shadow-none border-0 p-0 w-full",
+                  formButtonPrimary: "bg-black hover:bg-black/80",
+                },
+              }}
+            />
+          </div>
+        )}
         <form onSubmit={submit} className="space-y-6">
+          {clerkEnabled && (
+            <p className="text-[9px] font-semibold uppercase tracking-[0.25em] text-black/25">
+              Legacy registration remains for seeded demo and staff flows
+            </p>
+          )}
           <div>
             <label className="text-[10px] font-medium uppercase tracking-[0.3em] text-black/35">БҮРТГЭЛИЙН ТӨРӨЛ</label>
             <div className="mt-3 grid grid-cols-2 gap-1">
