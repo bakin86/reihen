@@ -8,9 +8,11 @@ import { PLANS, getActiveSubscription } from "@/lib/subscription";
 export async function GET(req: Request) {
   try {
     const session = await requireOwner(req);
-    const sub = await getActiveSubscription(session.sub);
-    const centerCount = await prisma.pCCenter.count({ where: { ownerId: session.sub } });
-    const seatCount = await prisma.seat.count({ where: { center: { ownerId: session.sub } } });
+    const [sub, centerCount, seatCount] = await Promise.all([
+      getActiveSubscription(session.sub),
+      prisma.pCCenter.count({ where: { ownerId: session.sub } }),
+      prisma.seat.count({ where: { center: { ownerId: session.sub } } }),
+    ]);
     return NextResponse.json({
       subscription: sub,
       usage: { centers: centerCount, seats: seatCount },

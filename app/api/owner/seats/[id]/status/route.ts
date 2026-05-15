@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { authErrorResponse, requireStaff } from "@/lib/auth";
 import { assertCenterAccess } from "@/lib/owner-guard";
 import { emitSeatUpdate } from "@/lib/socket";
+import { cacheDel } from "@/lib/redis";
+import { seatsCacheKey } from "@/lib/cache-keys";
 
 const schema = z.object({
   status: z.enum(["OPEN", "CLOSED", "REPAIR", "WAITING", "OCCUPIED"]),
@@ -40,6 +42,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       status: updated.status,
       code: seat.number,
     });
+    cacheDel(seatsCacheKey(seat.centerId)).catch(() => {});
 
     return NextResponse.json({ seat: updated });
   } catch (e) {

@@ -49,13 +49,15 @@ export async function GET(req: Request) {
       return new NextResponse("SUCCESS", { status: 200 });
     }
 
+    const isMock = QPAY_MODE === "mock";
+
     // Find pending bookings with QPay invoices
     const pendingBookings = await prisma.booking.findMany({
       where: {
         paymentMethod: "QPAY",
         paymentStatus: "UNPAID",
         status: "PENDING",
-        qpayInvoiceId: { not: null },
+        qpayInvoiceId: isMock ? qpayPaymentId : { not: null },
       },
       include: {
         bookingSeats: {
@@ -65,10 +67,8 @@ export async function GET(req: Request) {
         user: { select: { id: true, phone: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 50,
+      take: isMock ? 1 : 50,
     });
-
-    const isMock = QPAY_MODE === "mock";
 
     for (const booking of pendingBookings) {
       if (!booking.qpayInvoiceId) continue;
@@ -148,7 +148,7 @@ export async function GET(req: Request) {
       where: {
         paymentMethod: "QPAY",
         paymentStatus: "UNPAID",
-        paymentRef: { not: null },
+        paymentRef: isMock ? qpayPaymentId : { not: null },
       },
       include: {
         tournament: {
@@ -156,7 +156,7 @@ export async function GET(req: Request) {
         },
         captain: { select: { id: true, phone: true, name: true } },
       },
-      take: 20,
+      take: isMock ? 1 : 20,
     });
 
     for (const team of pendingTeams) {

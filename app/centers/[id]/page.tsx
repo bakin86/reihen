@@ -105,8 +105,8 @@ export default function CenterPage({ params }: { params: { id: string } }) {
       .then(({ tournaments: t }) => setTournaments(t))
       .catch(() => {});
     if (token) {
-      apiFetch<{ centers: { id: string }[] }>("/api/favorites", { token })
-        .then(({ centers: favs }) => setIsFav(favs.some((f) => f.id === params.id)))
+      apiFetch<{ favorited: boolean }>(`/api/favorites/${params.id}`, { token })
+        .then(({ favorited }) => setIsFav(favorited))
         .catch(() => {});
     }
   }, [params.id, token]);

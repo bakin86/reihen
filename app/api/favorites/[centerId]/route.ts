@@ -2,6 +2,21 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, authErrorResponse } from "@/lib/auth";
 
+// GET /api/favorites/[centerId] - lightweight favorite check
+export async function GET(req: Request, { params }: { params: { centerId: string } }) {
+  try {
+    const session = await getSession(req);
+    const favorite = await prisma.favoriteCenter.findUnique({
+      where: { userId_centerId: { userId: session.sub, centerId: params.centerId } },
+      select: { id: true },
+    });
+
+    return NextResponse.json({ favorited: Boolean(favorite) });
+  } catch (e) {
+    return authErrorResponse(e);
+  }
+}
+
 // POST /api/favorites/[centerId] — add center to favorites
 export async function POST(req: Request, { params }: { params: { centerId: string } }) {
   try {

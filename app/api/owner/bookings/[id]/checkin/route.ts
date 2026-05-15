@@ -4,6 +4,8 @@ import { authErrorResponse, requireStaff } from "@/lib/auth";
 import { getBookingForStaff } from "@/lib/owner-guard";
 import { emitSeatUpdate } from "@/lib/socket";
 import { sendPushToUser } from "@/lib/push";
+import { cacheDel } from "@/lib/redis";
+import { seatsCacheKey } from "@/lib/cache-keys";
 
 // PATCH /api/owner/bookings/:id/checkin — mark all seats as occupied
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -41,6 +43,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         code: bs.seat.number,
       });
     }
+    cacheDel(seatsCacheKey(booking.centerId)).catch(() => {});
     sendPushToUser(booking.userId, {
       title: "Тоглолт эхэллээ",
       body: `${booking.code} · ${seatNumbers}`,
