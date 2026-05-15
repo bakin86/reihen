@@ -62,9 +62,10 @@ export function useSeatSocket(branchId: string, onUpdate: (u: SeatUpdate) => voi
 
     const url = process.env.NEXT_PUBLIC_WS_URL;
     if (url) {
+      const socketToken = token && token !== "cookie-auth" ? token : undefined;
       socket = io(url, {
         transports: ["websocket"],
-        auth: { token: token ?? undefined },
+        auth: { token: socketToken },
       });
 
       socket.on("connect_error", (err) => {

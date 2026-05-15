@@ -32,7 +32,7 @@ export function ImageUpload({ images, onChange, token, max = 8 }: Props) {
     try {
       const csrf = document.cookie.match(/(?:^|;\s*)reihen_csrf=([^;]+)/)?.[1];
       const headers: Record<string, string> = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
+      if (token && token !== "cookie-auth") headers["Authorization"] = `Bearer ${token}`;
       if (csrf) headers["x-csrf-token"] = decodeURIComponent(csrf);
 
       const res = await fetch("/api/upload", {
