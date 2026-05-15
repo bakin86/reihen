@@ -181,6 +181,13 @@ export default function TournamentPage({
     CANCELLED: "ЦУЦЛАГДСАН",
   };
 
+  const bracketRounds = Array.from(new Set(t.matches.map((match) => match.round))).sort((a, b) => a - b);
+  const matchStatusStyle: Record<string, string> = {
+    PENDING: "border-black/20 text-[#888]",
+    LIVE: "border-black bg-black text-white animate-pulse",
+    COMPLETED: "border-black text-black",
+  };
+
   return (
     <main className="min-h-screen bg-white text-black">
       {/* Header */}
@@ -482,22 +489,24 @@ export default function TournamentPage({
         <div className="border-t border-black px-6 py-8 md:px-12">
           <div className="flex items-center justify-between mb-5">
             <h3 className="display text-xl">BRACKET</h3>
-            <span className="mono text-xs text-[#888]">{t.matches.length} MATCHES</span>
+            <span className="mono text-xs text-[#888]">{t.matches.length} MATCHES · LIVE BOARD</span>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-3">
-            {Array.from(new Set(t.matches.map((match) => match.round))).sort((a, b) => a - b).map((round) => (
-              <div key={round} className="min-w-[260px] flex-1">
+          <div className="relative flex gap-4 overflow-x-auto pb-3">
+            {bracketRounds.map((round) => (
+              <div key={round} className="min-w-[280px] flex-1">
                 <div className="mb-3 text-[10px] uppercase tracking-[0.3em] text-[#888]">
-                  Round {round}
+                  {round === bracketRounds.length ? "Final" : `Round ${round}`}
                 </div>
                 <div className="space-y-3">
                   {t.matches
                     .filter((match) => match.round === round)
                     .map((match) => (
-                      <div key={match.id} className="border border-black/15 bg-white p-3">
+                      <div key={match.id} className="border border-black/15 bg-white p-3 shadow-[4px_4px_0_#f1f1f1]">
                         <div className="mb-2 flex items-center justify-between text-[10px] text-[#888]">
                           <span>Match {match.matchNumber}</span>
-                          <span>{match.status}</span>
+                          <span className={`border px-2 py-0.5 uppercase tracking-widest ${matchStatusStyle[match.status] ?? "border-black/20"}`}>
+                            {match.status}
+                          </span>
                         </div>
                         {[match.teamA, match.teamB].map((team, index) => {
                           const isWinner = !!team && match.winnerTeam?.id === team.id;
@@ -505,12 +514,15 @@ export default function TournamentPage({
                           return (
                             <div
                               key={team?.id ?? index}
-                              className={`mb-1 flex items-start justify-between gap-3 border px-3 py-2 ${
-                                isWinner ? "border-black bg-black text-white" : "border-black/10"
+                              className={`mb-1 flex items-start justify-between gap-3 border px-3 py-2 transition-colors ${
+                                isWinner ? "border-black bg-black text-white" : "border-black/10 bg-[#fafafa]"
                               }`}
                             >
                               <div className="min-w-0">
-                                <div className="truncate text-sm font-medium">
+                                <div className="flex items-center gap-2 truncate text-sm font-medium">
+                                  <span className={isWinner ? "text-white" : "text-[#888]"}>
+                                    {index === 0 ? "A" : "B"}
+                                  </span>
                                   {team?.name ?? "TBD"}
                                 </div>
                                 {!!team?.playerNames?.length && (
@@ -523,6 +535,11 @@ export default function TournamentPage({
                             </div>
                           );
                         })}
+                        {match.winnerTeam && (
+                          <div className="mt-2 border-t border-black/10 pt-2 text-[10px] uppercase tracking-widest text-[#888]">
+                            Winner: <span className="text-black">{match.winnerTeam.name}</span>
+                          </div>
+                        )}
                         {match.stationSeat && (
                           <div className="mt-2 text-[10px] text-[#888]">PC {match.stationSeat.number}</div>
                         )}

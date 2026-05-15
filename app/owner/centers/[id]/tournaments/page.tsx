@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { apiFetch } from "@/lib/api";
-import { useRouter } from "next/navigation";
 
 interface Tournament {
   id: string;
@@ -36,6 +35,8 @@ interface TournamentMatch {
   id: string;
   round: number;
   matchNumber: number;
+  teamAId: string | null;
+  teamBId: string | null;
   scoreA: number | null;
   scoreB: number | null;
   status: string;
@@ -66,7 +67,6 @@ const GAMES = ["CS2", "Valorant", "Dota 2", "League of Legends", "PUBG", "Overwa
 
 export default function OwnerTournamentsPage({ params }: { params: { id: string } }) {
   const { token, loading: authLoading } = useAuth();
-  const router = useRouter();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -195,6 +195,8 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
   };
 
   const generateBracket = async (tournamentId: string) => {
+    const current = tournaments.find((t) => t.id === tournamentId);
+    if (current?.matches?.length && !confirm("Existing bracket will be replaced. Continue?")) return;
     setSaving(true);
     try {
       const res = await apiFetch<{ matches: TournamentMatch[] }>(
@@ -215,7 +217,16 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
   const updateMatch = async (
     tournamentId: string,
     matchId: string,
-    data: Partial<{ scoreA: number | null; scoreB: number | null; winnerTeamId: string | null; status: string }>
+    data: Partial<{
+      teamAId: string | null;
+      teamBId: string | null;
+      scoreA: number | null;
+      scoreB: number | null;
+      winnerTeamId: string | null;
+      scheduledAt: string | null;
+      stationSeatId: string | null;
+      status: string;
+    }>
   ) => {
     setSaving(true);
     try {
@@ -238,6 +249,7 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
   };
 
   const selected = tournaments.find((t) => t.id === selectedId);
+  const paidTeams = selected?.teams?.filter((team) => team.paymentStatus === "PAID") ?? [];
 
   if (authLoading || loading) {
     return (
@@ -418,9 +430,13 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
                   onClick={() => generateBracket(selected.id)}
                   disabled={saving || selected.teams.filter((team) => team.paymentStatus === "PAID").length < 2}
                   className="mb-4 border border-black px-3 py-1.5 text-[10px] uppercase tracking-widest hover:bg-black hover:text-white transition-colors disabled:opacity-40"
+                  title={selected.matches?.length ? "Existing bracket will be replaced" : undefined}
                 >
-                  GENERATE BRACKET
+                  {selected.matches?.length ? "REGENERATE BRACKET" : "GENERATE BRACKET"}
                 </button>
+                <span className="ml-3 text-[10px] uppercase tracking-[0.25em] text-[#888]">
+                  {paidTeams.length} PAID TEAMS READY
+                </span>
                 {selected.teams.length === 0 ? (
                   <p className="text-sm text-[#888]">Одоогоор бүртгэл алга</p>
                 ) : (
@@ -445,27 +461,80 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
                 )}
                 {!!selected.matches?.length && (
                   <div className="mt-6">
-                    <h4 className="mb-3 text-[10px] uppercase tracking-[0.3em] text-gray">
-                      BRACKET ({selected.matches.length} MATCHES)
-                    </h4>
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                      <h4 className="text-[10px] uppercase tracking-[0.3em] text-gray">
+                        BRACKET EDITOR ({selected.matches.length} MATCHES)
+                      </h4>
+                      <span className="text-[10px] uppercase tracking-[0.25em] text-[#888]">
+                        Team slots, scores, status, winner
+                      </span>
+                    </div>
                     <div className="flex gap-4 overflow-x-auto pb-3">
                       {Array.from(new Set(selected.matches.map((match) => match.round))).sort((a, b) => a - b).map((round) => (
-                        <div key={round} className="min-w-[300px] flex-1">
+                        <div key={round} className="min-w-[340px] flex-1">
                           <div className="mb-2 text-[10px] uppercase tracking-[0.3em] text-[#888]">Round {round}</div>
                           <div className="space-y-3">
                             {selected.matches!
                               .filter((match) => match.round === round)
                               .map((match) => (
-                                <div key={match.id} className="border border-[#ddd] p-3">
-                                  <div className="mb-2 flex items-center justify-between text-[10px] text-[#888]">
+                                <div key={match.id} className="border border-black/15 bg-white p-3 shadow-[4px_4px_0_#eee]">
+                                  <div className="mb-3 flex items-center justify-between gap-3 text-[10px] text-[#888]">
                                     <span>Match {match.matchNumber}</span>
-                                    <span>{match.status}</span>
+                                    <select
+                                      value={match.status}
+                                      onChange={(e) => updateMatch(selected.id, match.id, { status: e.target.value })}
+                                      disabled={saving}
+                                      className="border border-black/20 bg-white px-2 py-1 text-[10px] uppercase tracking-widest text-black"
+                                    >
+                                      <option value="PENDING">PENDING</option>
+                                      <option value="LIVE">LIVE</option>
+                                      <option value="COMPLETED">COMPLETED</option>
+                                    </select>
                                   </div>
                                   {[match.teamA, match.teamB].map((team, index) => {
                                     const isWinner = !!team && match.winnerTeam?.id === team.id;
                                     const score = index === 0 ? match.scoreA : match.scoreB;
+                                    const slotKey = index === 0 ? "teamAId" : "teamBId";
+                                    const scoreKey = index === 0 ? "scoreA" : "scoreB";
+                                    const selectedTeamId = index === 0 ? match.teamAId : match.teamBId;
                                     return (
-                                      <div key={team?.id ?? index} className={`mb-2 border p-2 ${isWinner ? "border-black bg-black text-white" : "border-[#ddd]"}`}>
+                                      <div key={`${match.id}-${index}`} className={`mb-2 border p-2 ${isWinner ? "border-black bg-black text-white" : "border-[#ddd]"}`}>
+                                        <div className="mb-2 flex items-center gap-2">
+                                          <span className={`w-5 text-[10px] font-semibold ${isWinner ? "text-white" : "text-[#888]"}`}>
+                                            {index === 0 ? "A" : "B"}
+                                          </span>
+                                          <select
+                                            value={selectedTeamId ?? ""}
+                                            onChange={(e) =>
+                                              updateMatch(selected.id, match.id, {
+                                                [slotKey]: e.target.value || null,
+                                                winnerTeamId: null,
+                                              })
+                                            }
+                                            disabled={saving}
+                                            className="min-w-0 flex-1 border border-[#ddd] bg-white px-2 py-1 text-xs text-black"
+                                          >
+                                            <option value="">TBD</option>
+                                            {paidTeams.map((teamOption) => (
+                                              <option key={teamOption.id} value={teamOption.id}>
+                                                {teamOption.name}
+                                              </option>
+                                            ))}
+                                          </select>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            value={score ?? ""}
+                                            onChange={(e) =>
+                                              updateMatch(selected.id, match.id, {
+                                                [scoreKey]: e.target.value === "" ? null : Number(e.target.value),
+                                              })
+                                            }
+                                            className="w-16 border border-[#ddd] px-2 py-1 text-sm text-black"
+                                            disabled={saving}
+                                            aria-label={`${index === 0 ? "Team A" : "Team B"} score`}
+                                          />
+                                        </div>
                                         <div className="flex items-center justify-between gap-2">
                                           <div className="min-w-0">
                                             <div className="truncate text-sm font-medium">{team?.name ?? "TBD"}</div>
@@ -475,18 +544,6 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
                                               </div>
                                             )}
                                           </div>
-                                          <input
-                                            type="number"
-                                            min={0}
-                                            value={score ?? ""}
-                                            onChange={(e) =>
-                                              updateMatch(selected.id, match.id, {
-                                                [index === 0 ? "scoreA" : "scoreB"]: e.target.value === "" ? null : Number(e.target.value),
-                                              })
-                                            }
-                                            className="w-16 border border-[#ddd] px-2 py-1 text-sm text-black"
-                                            disabled={saving}
-                                          />
                                         </div>
                                         {team && (
                                           <button
@@ -500,6 +557,15 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
                                       </div>
                                     );
                                   })}
+                                  {match.winnerTeam && (
+                                    <button
+                                      onClick={() => updateMatch(selected.id, match.id, { winnerTeamId: null })}
+                                      disabled={saving}
+                                      className="mt-1 w-full border border-[#ddd] px-2 py-1 text-[10px] uppercase tracking-widest text-[#888] hover:border-black hover:text-black disabled:opacity-40"
+                                    >
+                                      CLEAR WINNER
+                                    </button>
+                                  )}
                                 </div>
                               ))}
                           </div>

@@ -8,6 +8,8 @@ type Params = { params: { id: string; tournamentId: string } };
 
 const updateMatchSchema = z.object({
   matchId: z.string().min(1),
+  teamAId: z.string().nullable().optional(),
+  teamBId: z.string().nullable().optional(),
   scoreA: z.number().int().min(0).nullable().optional(),
   scoreB: z.number().int().min(0).nullable().optional(),
   winnerTeamId: z.string().nullable().optional(),
@@ -154,20 +156,55 @@ export async function PATCH(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Match not found" }, { status: 404 });
     }
 
-    const winnerTeamId = parsed.data.winnerTeamId ?? undefined;
-    if (winnerTeamId && winnerTeamId !== match.teamAId && winnerTeamId !== match.teamBId) {
+    const teamAId = parsed.data.teamAId !== undefined ? parsed.data.teamAId : match.teamAId;
+    const teamBId = parsed.data.teamBId !== undefined ? parsed.data.teamBId : match.teamBId;
+    const requestedWinnerTeamId =
+      parsed.data.winnerTeamId !== undefined ? parsed.data.winnerTeamId : match.winnerTeamId;
+
+    if (teamAId && teamBId && teamAId === teamBId) {
+      return NextResponse.json({ error: "A team cannot occupy both slots" }, { status: 400 });
+    }
+
+    const teamIds = Array.from(new Set([teamAId, teamBId, requestedWinnerTeamId].filter(Boolean))) as string[];
+    if (teamIds.length > 0) {
+      const validTeamCount = await prisma.tournamentTeam.count({
+        where: { tournamentId: params.tournamentId, id: { in: teamIds } },
+      });
+      if (validTeamCount !== teamIds.length) {
+        return NextResponse.json({ error: "Selected team is not registered in this tournament" }, { status: 400 });
+      }
+    }
+
+    if (requestedWinnerTeamId && requestedWinnerTeamId !== teamAId && requestedWinnerTeamId !== teamBId) {
       return NextResponse.json({ error: "Winner must be one of the match teams" }, { status: 400 });
     }
+
+    const teamChanged = parsed.data.teamAId !== undefined || parsed.data.teamBId !== undefined;
+    const winnerClearedByTeamChange =
+      teamChanged && !!match.winnerTeamId && match.winnerTeamId !== teamAId && match.winnerTeamId !== teamBId;
+    const winnerTeamId =
+      parsed.data.winnerTeamId !== undefined
+        ? parsed.data.winnerTeamId
+        : winnerClearedByTeamChange
+          ? null
+          : match.winnerTeamId;
+    const nextStatus =
+      parsed.data.status ??
+      (parsed.data.winnerTeamId !== undefined || winnerClearedByTeamChange
+        ? (winnerTeamId ? "COMPLETED" : "PENDING")
+        : undefined);
 
     const updated = await prisma.tournamentMatch.update({
       where: { id: match.id },
       data: {
+        ...(parsed.data.teamAId !== undefined ? { teamAId: parsed.data.teamAId } : {}),
+        ...(parsed.data.teamBId !== undefined ? { teamBId: parsed.data.teamBId } : {}),
         ...(parsed.data.scoreA !== undefined ? { scoreA: parsed.data.scoreA } : {}),
         ...(parsed.data.scoreB !== undefined ? { scoreB: parsed.data.scoreB } : {}),
         ...(parsed.data.scheduledAt !== undefined ? { scheduledAt: parsed.data.scheduledAt } : {}),
         ...(parsed.data.stationSeatId !== undefined ? { stationSeatId: parsed.data.stationSeatId } : {}),
-        ...(parsed.data.winnerTeamId !== undefined ? { winnerTeamId: parsed.data.winnerTeamId } : {}),
-        status: winnerTeamId ? "COMPLETED" : parsed.data.status,
+        ...(parsed.data.winnerTeamId !== undefined || winnerTeamId !== match.winnerTeamId ? { winnerTeamId } : {}),
+        ...(nextStatus ? { status: nextStatus } : {}),
       },
       include: matchInclude,
     });
