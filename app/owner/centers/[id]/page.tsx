@@ -267,7 +267,7 @@ export default function CenterManagePage({ params }: { params: { id: string } })
   const filteredFloors = center?.floors ?? [];
 
   return (
-    <main className="min-h-screen bg-white text-black">
+    <main className="owner-light min-h-screen text-black">
       {/* Toast */}
       {toast && (
         <div className={`fixed left-1/2 top-6 z-50 -translate-x-1/2 px-6 py-3 text-xs uppercase tracking-[0.3em] shadow-lg transition-all ${
@@ -278,7 +278,7 @@ export default function CenterManagePage({ params }: { params: { id: string } })
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-40 grid grid-cols-[auto_1fr_auto] items-center border-b border-black bg-white px-6 py-4 md:px-12">
+      <header className="owner-topbar grid grid-cols-[auto_1fr_auto] items-center gap-3 px-5 py-4 md:px-12">
         <Link href="/owner/dashboard" className="text-xs uppercase tracking-[0.3em]">← DASHBOARD</Link>
         <span className="display text-center text-xl">{center?.name?.toUpperCase() ?? "..."}</span>
         <Link href={`/centers/${params.id}`} className="text-xs uppercase tracking-[0.3em] text-gray">VIEW →</Link>
@@ -286,7 +286,7 @@ export default function CenterManagePage({ params }: { params: { id: string } })
 
       {/* Quick stats bar */}
       {center && (
-        <div className="flex gap-8 border-b border-black px-6 py-3 md:px-12">
+        <div className="mx-auto flex max-w-6xl flex-wrap gap-3 px-5 py-4 md:px-12">
           {[
             [`${center.seats.length}`, "SEATS"],
             [`${center.floors.length}`, "FLOORS"],
@@ -294,7 +294,7 @@ export default function CenterManagePage({ params }: { params: { id: string } })
             [`${center.seats.filter((s) => s.status === "OPEN").length}`, "OPEN"],
             [`${center._count.bookings}`, "BOOKINGS"],
           ].map(([n, l]) => (
-            <div key={l} className="flex items-baseline gap-2">
+            <div key={l} className="owner-card-light flex items-baseline gap-2 px-4 py-3">
               <span className="mono text-lg font-black">{n}</span>
               <span className="text-[9px] uppercase tracking-[0.3em] text-gray">{l}</span>
             </div>
@@ -303,7 +303,7 @@ export default function CenterManagePage({ params }: { params: { id: string } })
       )}
 
       {/* Jump nav */}
-      <div className="flex gap-4 border-b border-black px-6 py-3 md:px-12">
+      <div className="mx-auto flex max-w-6xl flex-wrap gap-3 px-5 pb-5 md:px-12">
         {["info", "floors", "types", "seats", "policy"].map((s) => (
           <a key={s} href={`#${s}`}
             className="text-[10px] uppercase tracking-[0.3em] text-gray hover:text-black">
@@ -320,7 +320,7 @@ export default function CenterManagePage({ params }: { params: { id: string } })
         </Link>
       </div>
 
-      <div className="divide-y divide-black">
+      <div className="mx-auto grid max-w-6xl gap-4 px-5 pb-10 md:px-12">
         {/* ─── GENERAL INFO ──────────────────────────────── */}
         <section id="info">
           <button onClick={() => toggle("info")}

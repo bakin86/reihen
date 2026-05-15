@@ -222,9 +222,9 @@ export default function OwnerStaffPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white">
+    <main className="owner-dark min-h-screen text-white">
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-white/10 px-6 py-4 md:px-12">
+      <header className="owner-topbar flex flex-wrap items-center justify-between gap-3 px-5 py-4 md:px-12">
         <Link
           href="/owner/dashboard"
           className="text-xs uppercase tracking-[0.3em] text-white/50 hover:text-white transition-colors"
@@ -237,10 +237,10 @@ export default function OwnerStaffPage() {
         </span>
       </header>
 
-      <div className="mx-auto max-w-5xl px-6 py-10 md:px-12">
+      <div className="mx-auto max-w-6xl px-5 py-8 md:px-12 md:py-10">
 
         {/* ── Invite form ── */}
-        <div className="mb-10 border border-white/10 bg-white/[0.02] p-6 md:p-8">
+        <div className="owner-card-dark mb-10 p-6 md:p-8">
           <h2 className="display text-2xl mb-1">АЖИЛТАН НЭМЭХ</h2>
           <p className="text-[11px] uppercase tracking-[0.2em] text-white/30 mb-8">
             Утасны дугаараар хайна. Бүртгэлтэй бол шууд нэмнэ, үгүй бол урилга явуулна.
@@ -256,7 +256,7 @@ export default function OwnerStaffPage() {
                 placeholder="Staff name"
                 value={staffName}
                 onChange={(e) => setStaffName(e.target.value)}
-                className="rounded-lg border border-white/30 bg-white px-4 py-3 text-sm font-semibold text-black placeholder:text-black/40 outline-none transition-colors focus:border-green-400"
+                className="owner-field-dark px-4 py-3 text-sm font-semibold placeholder:text-white/30 outline-none transition-colors"
               />
             </div>
 
@@ -269,7 +269,7 @@ export default function OwnerStaffPage() {
                 placeholder="staff@mail.com"
                 value={staffEmail}
                 onChange={(e) => setStaffEmail(e.target.value)}
-                className="rounded-lg border border-white/30 bg-white px-4 py-3 text-sm font-semibold text-black placeholder:text-black/40 outline-none transition-colors focus:border-green-400"
+                className="owner-field-dark px-4 py-3 text-sm font-semibold placeholder:text-white/30 outline-none transition-colors"
               />
             </div>
 
@@ -282,7 +282,7 @@ export default function OwnerStaffPage() {
                 placeholder="staff123"
                 value={staffPassword}
                 onChange={(e) => setStaffPassword(e.target.value)}
-                className="rounded-lg border border-white/30 bg-white px-4 py-3 text-sm font-semibold text-black placeholder:text-black/40 outline-none transition-colors focus:border-green-400"
+                className="owner-field-dark px-4 py-3 text-sm font-semibold placeholder:text-white/30 outline-none transition-colors"
               />
             </div>
 
@@ -301,17 +301,17 @@ export default function OwnerStaffPage() {
                   </Link>
                 </div>
               ) : centers.length === 1 ? (
-                <div className="rounded-lg border border-white/30 bg-white px-4 py-3 text-sm font-semibold text-black">
+                <div className="owner-field-dark px-4 py-3 text-sm font-semibold">
                   {centers[0].name}
                 </div>
               ) : (
                 <select
                   value={centerId}
                   onChange={(e) => setCenterId(e.target.value)}
-                  className="rounded-lg border border-white/30 bg-white px-4 py-3 text-sm font-semibold text-black outline-none transition-colors focus:border-green-400"
+                  className="owner-field-dark px-4 py-3 text-sm font-semibold outline-none transition-colors"
                 >
                   {centers.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-white text-black">
+                    <option key={c.id} value={c.id} className="bg-black text-white">
                       {c.name}
                     </option>
                   ))}
@@ -331,7 +331,7 @@ export default function OwnerStaffPage() {
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && invite()}
-                className="rounded-lg border border-white/30 bg-white px-4 py-3 text-sm font-semibold text-black placeholder:text-black/40 outline-none transition-colors focus:border-green-400"
+                className="owner-field-dark px-4 py-3 text-sm font-semibold placeholder:text-white/30 outline-none transition-colors"
               />
               <p className="text-[10px] leading-4 text-white/45">
                 8 оронтой дугаар, зайтай дугаар, эсвэл +976 format бүгд болно.
@@ -344,9 +344,8 @@ export default function OwnerStaffPage() {
               type="button"
               onClick={invite}
               disabled={submitting}
-              className="relative overflow-hidden rounded-lg border border-green-400/40 bg-green-400 px-8 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-transparent shadow-[0_0_24px_rgba(74,222,128,0.18)] transition-all hover:bg-green-300 disabled:border-white/10 disabled:bg-white/10 disabled:shadow-none disabled:cursor-not-allowed"
+              className="owner-action border border-green-400/40 bg-green-400 px-8 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-black shadow-[0_0_24px_rgba(74,222,128,0.18)] transition-all hover:bg-green-300 disabled:border-white/10 disabled:bg-white/10 disabled:text-white/30 disabled:shadow-none disabled:cursor-not-allowed"
             >
-              <span className="absolute inset-0 flex items-center justify-center text-black">{submitting ? "CREATING..." : "CREATE STAFF"}</span>
               {submitting ? "..." : "УРИХ"}
             </button>
             {msg && (
@@ -376,7 +375,7 @@ export default function OwnerStaffPage() {
               const centerName = members[0].center.name;
               const isUnassigned = members[0].center.id === "unassigned";
               return (
-                <div key={centerName} className={`border ${isUnassigned ? "border-yellow-400/25" : "border-white/10"}`}>
+                <div key={centerName} className={`owner-card-dark ${isUnassigned ? "border-yellow-400/25" : ""}`}>
                   {/* Center header */}
                   <div className={`border-b px-6 py-3 ${isUnassigned ? "border-yellow-400/20 bg-yellow-400/[0.06]" : "border-white/10 bg-white/[0.02]"}`}>
                     <span className={`text-[9px] uppercase tracking-[0.3em] ${isUnassigned ? "text-yellow-200/70" : "text-white/40"}`}>
@@ -434,11 +433,9 @@ export default function OwnerStaffPage() {
                           <button
                             disabled={busy === s.id}
                             onClick={() => removeStaff(s.id)}
-                            className="relative text-[9px] uppercase tracking-[0.25em] text-transparent hover:text-transparent disabled:opacity-30 transition-colors"
+                            className="text-[9px] uppercase tracking-[0.25em] text-red-400/70 hover:text-red-300 disabled:opacity-30 transition-colors"
                             aria-label="Remove staff"
                           >
-                            <span className="text-transparent">REMOVE</span>
-                            <span className="absolute text-red-400/70">REMOVE</span>
                             ХАСАХ
                           </button>
                           )}

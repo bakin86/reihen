@@ -113,8 +113,8 @@ export default function NewCenterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white text-black">
-      <header className="grid grid-cols-[auto_1fr_auto] items-center border-b border-black px-6 py-4 md:px-12">
+    <main className="owner-light min-h-screen text-black">
+      <header className="owner-topbar grid grid-cols-[auto_1fr_auto] items-center gap-3 px-5 py-4 md:px-12">
         <Link href="/owner/dashboard" className="text-xs uppercase tracking-[0.3em]">← DASHBOARD</Link>
         <span className="display text-center text-xl">NEW CENTER</span>
         <Link href="/owner/subscription" className="text-xs uppercase tracking-[0.3em] text-gray">SUBSCRIPTION</Link>
@@ -122,8 +122,8 @@ export default function NewCenterPage() {
 
       <form onSubmit={submit}>
         {/* Split: Info | Preview */}
-        <section className="grid grid-cols-1 border-b border-black md:grid-cols-[3fr_2fr]">
-          <div className="border-black p-8 md:border-r md:p-12">
+        <section className="mx-auto grid max-w-6xl grid-cols-1 gap-4 px-5 py-6 md:grid-cols-[3fr_2fr] md:px-12">
+          <div className="owner-card-light p-6 md:p-8">
             <p className="text-xs uppercase tracking-[0.3em] text-gray">01 · GENERAL</p>
 
             <div className="mt-6 space-y-6">
@@ -162,7 +162,7 @@ export default function NewCenterPage() {
             </div>
           </div>
 
-          <div className="bg-black p-8 text-white md:p-12">
+          <div className="owner-card-dark bg-black p-8 text-white md:p-12">
             <p className="text-xs uppercase tracking-[0.3em] text-gray">PREVIEW</p>
             <h2 className="display mt-6 text-5xl md:text-7xl">
               {name ? name.toUpperCase() : "YOUR CENTER"}
@@ -178,7 +178,8 @@ export default function NewCenterPage() {
         </section>
 
         {/* Floors */}
-        <section className="border-b border-black p-8 md:p-12">
+        <section className="mx-auto max-w-6xl px-5 py-6 md:px-12">
+          <div className="owner-card-light p-6 md:p-8">
           <div className="flex items-end justify-between">
             <p className="text-xs uppercase tracking-[0.3em] text-gray">02 · FLOORS</p>
             <button
@@ -212,10 +213,12 @@ export default function NewCenterPage() {
               </div>
             ))}
           </div>
+          </div>
         </section>
 
         {/* Seat types */}
-        <section className="border-b border-black p-8 md:p-12">
+        <section className="mx-auto max-w-6xl px-5 py-6 md:px-12">
+          <div className="owner-card-light p-6 md:p-8">
           <div className="flex items-end justify-between">
             <p className="text-xs uppercase tracking-[0.3em] text-gray">03 · SEAT TYPES</p>
             <button
@@ -275,10 +278,12 @@ export default function NewCenterPage() {
               </div>
             ))}
           </div>
+          </div>
         </section>
 
         {/* Cancel policy */}
-        <section className="border-b border-black p-8 md:p-12">
+        <section className="mx-auto max-w-6xl px-5 py-6 md:px-12">
+          <div className="owner-card-light p-6 md:p-8">
           <p className="text-xs uppercase tracking-[0.3em] text-gray">04 · CANCEL POLICY</p>
           <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
             <div>
@@ -321,10 +326,11 @@ export default function NewCenterPage() {
               </div>
             </div>
           </div>
+          </div>
         </section>
 
         {/* Submit */}
-        <section className="p-8 md:p-12">
+        <section className="mx-auto max-w-6xl px-5 py-8 md:px-12">
           {error && (
             <div className="mb-6 border border-black bg-black p-4 text-xs uppercase tracking-[0.3em] text-white">
               {error}
@@ -333,7 +339,7 @@ export default function NewCenterPage() {
           <button
             type="submit"
             disabled={submitting || !name || !address}
-            className="w-full bg-black px-6 py-6 text-sm uppercase tracking-[0.3em] text-white disabled:opacity-40 md:w-auto md:px-16"
+            className="owner-action w-full bg-black px-6 py-6 text-sm uppercase tracking-[0.3em] text-white disabled:opacity-40 md:w-auto md:px-16"
           >
             {submitting ? "CREATING..." : "CREATE CENTER →"}
           </button>

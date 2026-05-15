@@ -60,10 +60,10 @@ export default function OwnerReviewsPage() {
   if (authLoading) return null;
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white">
+    <main className="owner-dark min-h-screen text-white">
 
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-white/10 px-6 py-4 md:px-12">
+      <header className="owner-topbar flex flex-wrap items-center justify-between gap-3 px-5 py-4 md:px-12">
         <Link href="/owner/dashboard" className="text-[10px] uppercase tracking-[0.3em] text-white/40 hover:text-white transition-colors">
           ← DASHBOARD
         </Link>
@@ -72,11 +72,11 @@ export default function OwnerReviewsPage() {
       </header>
 
       {/* Filter bar */}
-      <div className="flex items-center gap-3 border-b border-white/[0.06] px-6 py-3 md:px-12">
+      <div className="mx-auto flex max-w-6xl items-center gap-3 px-5 py-5 md:px-12">
         <select
           value={centerId}
           onChange={(e) => { setCenterId(e.target.value); setPage(1); }}
-          className="bg-white/[0.04] border border-white/10 px-3 py-2 text-[11px] uppercase tracking-[0.15em] text-white/60 focus:outline-none focus:border-white/30"
+          className="owner-field-dark px-3 py-2 text-[11px] uppercase tracking-[0.15em] text-white/70 focus:outline-none"
         >
           <option value="">Бүх центр</option>
           {centers.map((c) => (
@@ -87,7 +87,7 @@ export default function OwnerReviewsPage() {
 
       {/* Review list */}
       {isLoading ? (
-        <div className="space-y-3 px-6 py-6 md:px-12">
+        <div className="mx-auto max-w-6xl space-y-3 px-5 py-6 md:px-12">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-28 animate-pulse bg-white/[0.03] border border-white/[0.05]" />
           ))}
@@ -98,9 +98,9 @@ export default function OwnerReviewsPage() {
           <p className="mt-2 text-sm text-white/20">Хэрэглэгчид үнэлгээ үлдээгээгүй байна.</p>
         </div>
       ) : (
-        <div className="divide-y divide-white/[0.05] px-6 md:px-12">
+        <div className="mx-auto grid max-w-6xl gap-4 px-5 pb-10 md:px-12">
           {reviews.map((r) => (
-            <div key={r.id} className="py-5">
+            <div key={r.id} className="owner-card-dark p-5">
               {/* Top row */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -128,7 +128,7 @@ export default function OwnerReviewsPage() {
                 {!r.ownerReply && replyingId !== r.id && (
                   <button
                     onClick={() => { setReplyingId(r.id); setReplyText(""); }}
-                    className="shrink-0 border border-white/10 px-3 py-1.5 text-[9px] uppercase tracking-[0.2em] text-white/30 hover:border-white/30 hover:text-white transition-colors"
+                    className="owner-action shrink-0 border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[9px] uppercase tracking-[0.2em] text-white/40 hover:border-white/30 hover:text-white transition-colors"
                   >
                     ХАРИУЛАХ
                   </button>
@@ -163,19 +163,19 @@ export default function OwnerReviewsPage() {
                     placeholder="Хариу бичих..."
                     maxLength={500}
                     rows={3}
-                    className="w-full resize-none bg-white/[0.04] border border-white/10 px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-white/30"
+                    className="owner-field-dark w-full resize-none px-3 py-2 text-sm placeholder-white/20 focus:outline-none"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={() => { setReplyingId(null); setReplyText(""); }}
-                      className="border border-white/10 px-4 py-2 text-[9px] uppercase tracking-[0.2em] text-white/30 hover:text-white transition-colors"
+                      className="owner-action border border-white/10 px-4 py-2 text-[9px] uppercase tracking-[0.2em] text-white/30 hover:text-white transition-colors"
                     >
                       ЦУЦЛАХ
                     </button>
                     <button
                       disabled={!replyText.trim() || replyMutation.isPending}
                       onClick={() => replyMutation.mutate({ id: r.id, ownerReply: replyText.trim() })}
-                      className="bg-white px-4 py-2 text-[9px] uppercase tracking-[0.2em] text-black hover:bg-white/90 disabled:opacity-40 transition-colors"
+                      className="owner-action bg-white px-4 py-2 text-[9px] uppercase tracking-[0.2em] text-black hover:bg-white/90 disabled:opacity-40 transition-colors"
                     >
                       {replyMutation.isPending ? "..." : "ХАДГАЛАХ"}
                     </button>

@@ -406,7 +406,7 @@ export default function LayoutEditorPage({ params }: { params: { id: string } })
   const pickQueueSet = new Set(pickQueue);
 
   return (
-    <main className="min-h-screen bg-white text-black select-none">
+    <main className="owner-light min-h-screen text-black select-none">
       {/* Toast */}
       {toast && (
         <div className="fixed left-1/2 top-6 z-50 -translate-x-1/2 anim-fade-up border border-black bg-white px-6 py-3 text-xs uppercase tracking-[0.3em] shadow-lg">
@@ -415,7 +415,7 @@ export default function LayoutEditorPage({ params }: { params: { id: string } })
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-black bg-white px-4 py-3 md:px-8">
+      <header className="owner-topbar flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-8">
         <div className="flex items-center gap-3">
           <Link href={`/owner/centers/${params.id}`} className="text-xs uppercase tracking-[0.3em] text-gray hover:text-black">← БУЦАХ</Link>
           <div className="hidden md:block">
@@ -433,7 +433,7 @@ export default function LayoutEditorPage({ params }: { params: { id: string } })
       </header>
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3 border-b border-black px-4 py-2 md:px-8">
+      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-3 px-4 py-3 md:px-8">
         <div className="flex items-center gap-1 border-r border-black/20 pr-3">
           {floors.map((f) => (
             <button key={f.n} onClick={() => { setFloor(f.n); clearAll_(); }}
@@ -489,7 +489,7 @@ export default function LayoutEditorPage({ params }: { params: { id: string } })
 
       <div className="flex flex-1">
         {/* Sidebar */}
-        <aside className="w-44 flex-shrink-0 border-r border-black bg-[#fafafa] md:w-52">
+        <aside className="w-44 flex-shrink-0 border-r border-black/10 bg-white/70 backdrop-blur md:w-52">
           <div className="sticky top-[95px] max-h-[calc(100vh-95px)] overflow-y-auto p-3 md:p-4">
             <p className="text-[10px] uppercase tracking-[0.3em] text-gray mb-1">БАЙРЛУУЛААГҮЙ ({unplaced.length})</p>
             <p className="text-[9px] text-gray/60 mb-3">Дарж сонгоод grid дээр дарна уу · Ctrl+Click олноор</p>

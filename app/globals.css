@@ -626,3 +626,121 @@ button, a, input, select, textarea {
   opacity: 0;
   animation: slideRight 0.5s var(--ease-circ) both;
 }
+
+/* Owner console polish */
+.owner-dark,
+.owner-light {
+  isolation: isolate;
+}
+
+.owner-dark {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(74, 222, 128, 0.08), transparent 28%),
+    linear-gradient(90deg, rgba(255,255,255,0.032) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,0.024) 1px, transparent 1px),
+    #080908;
+  background-size: auto, 64px 64px, 64px 64px;
+  color: #fff;
+}
+
+.owner-light {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(74, 222, 128, 0.16), transparent 24%),
+    linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px),
+    linear-gradient(rgba(0,0,0,0.028) 1px, transparent 1px),
+    #f7f7f4;
+  background-size: auto, 72px 72px, 72px 72px;
+  color: #090909;
+}
+
+.owner-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-height: 64px;
+  backdrop-filter: blur(18px) saturate(1.4);
+}
+
+.owner-dark .owner-topbar {
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: rgba(8, 9, 8, 0.78);
+  box-shadow: 0 14px 50px rgba(0,0,0,0.28);
+}
+
+.owner-light .owner-topbar {
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  background: rgba(247, 247, 244, 0.82);
+  box-shadow: 0 14px 42px rgba(0,0,0,0.07);
+}
+
+.owner-card-dark,
+.owner-card-light {
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.22s var(--ease-circ), border-color 0.22s ease, background 0.22s ease;
+}
+
+.owner-card-dark {
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.025));
+  box-shadow: 0 18px 60px rgba(0,0,0,0.24);
+}
+
+.owner-card-light {
+  border: 1px solid rgba(0,0,0,0.1);
+  background: rgba(255,255,255,0.76);
+  box-shadow: 0 18px 60px rgba(0,0,0,0.07);
+  backdrop-filter: blur(16px) saturate(1.2);
+}
+
+.owner-card-dark:hover,
+.owner-card-light:hover {
+  transform: translateY(-1px);
+}
+
+.owner-card-dark:hover { border-color: rgba(255,255,255,0.16); }
+.owner-card-light:hover { border-color: rgba(0,0,0,0.18); }
+
+.owner-action {
+  border-radius: 8px;
+  transition: transform 0.2s var(--ease-circ), background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.owner-action:hover { transform: translateY(-1px); }
+.owner-action:active { transform: translateY(0) scale(0.985); }
+
+.owner-field-dark {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  border-radius: 8px;
+}
+
+.owner-field-dark:focus {
+  border-color: rgba(74,222,128,0.7);
+  box-shadow: 0 0 0 4px rgba(74,222,128,0.12);
+}
+
+.owner-field-light {
+  border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.82);
+  color: #080808;
+  border-radius: 8px;
+}
+
+.owner-field-light:focus {
+  border-color: rgba(0,0,0,0.42);
+  box-shadow: 0 0 0 4px rgba(74,222,128,0.14);
+}
+
+@media (max-width: 720px) {
+  .owner-topbar {
+    position: sticky;
+    min-height: auto;
+  }
+
+  .owner-topbar .display {
+    font-size: 1rem;
+    letter-spacing: -0.02em;
+  }
+}

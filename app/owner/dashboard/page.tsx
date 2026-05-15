@@ -271,9 +271,9 @@ export default function OwnerDashboard() {
   const dashLoading = !dash && !authLoading;
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white">
+    <main className="owner-dark min-h-screen text-white">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-5 md:px-8">
+      <header className="owner-topbar flex flex-wrap items-center justify-between gap-3 px-5 py-4 md:px-8">
         <Link href="/" className="text-xs uppercase tracking-[0.3em] text-white/40 hover:text-white transition-colors">← HOME</Link>
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">

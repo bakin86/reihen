@@ -260,7 +260,7 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
   }
 
   return (
-    <main className="min-h-screen bg-white text-black">
+    <main className="owner-light min-h-screen text-black">
       {/* Toast */}
       {toast && (
         <div className={`fixed left-1/2 top-4 z-50 -translate-x-1/2 border px-6 py-3 text-xs uppercase tracking-widest ${toast.err ? "border-red-500 bg-red-50 text-red-600" : "border-black bg-black text-white"}`}>
@@ -269,7 +269,7 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
       )}
 
       {/* Header */}
-      <div className="border-b border-black px-6 py-6 md:px-12">
+      <div className="owner-topbar px-5 py-5 md:px-12">
         <Link href={`/owner/centers/${params.id}`} className="text-[10px] uppercase tracking-[0.3em] text-gray hover:text-black">
           ← CENTER
         </Link>
@@ -277,13 +277,13 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
       </div>
 
       {/* Action bar */}
-      <div className="flex items-center justify-between border-b border-black px-6 py-4 md:px-12">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-5 md:px-12">
         <span className="text-[10px] uppercase tracking-[0.3em] text-gray">
           {tournaments.length} ТЭМЦЭЭН
         </span>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="border border-black px-4 py-2 text-xs uppercase tracking-widest hover:bg-black hover:text-white transition-colors"
+          className="owner-action border border-black bg-white/60 px-4 py-2 text-xs uppercase tracking-widest hover:bg-black hover:text-white transition-colors"
         >
           {showCreate ? "ХААХ" : "+ ТЭМЦЭЭН НЭМЭХ"}
         </button>
@@ -291,7 +291,8 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
 
       {/* Create form */}
       {showCreate && (
-        <div className="border-b border-black p-6 md:p-12 space-y-4">
+        <div className="mx-auto max-w-6xl px-5 pb-6 md:px-12">
+        <div className="owner-card-light space-y-4 p-6 md:p-8">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="text-[10px] uppercase tracking-[0.3em] text-gray">НЭР *</label>
@@ -361,12 +362,13 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
             {saving ? "CREATING..." : "ТЭМЦЭЭН ҮҮСГЭХ"}
           </button>
         </div>
+        </div>
       )}
 
       {/* Tournament list */}
-      <div className="divide-y divide-black">
+      <div className="mx-auto grid max-w-6xl gap-4 px-5 pb-10 md:px-12">
         {tournaments.map((t) => (
-          <div key={t.id} className="px-6 py-6 md:px-12">
+          <div key={t.id} className="owner-card-light p-5 md:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3">

@@ -114,8 +114,8 @@ export default function SubscriptionPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white text-black">
-      <header className="grid grid-cols-[auto_1fr_auto] items-center border-b border-black px-6 py-4 md:px-12">
+    <main className="owner-light min-h-screen text-black">
+      <header className="owner-topbar grid grid-cols-[auto_1fr_auto] items-center gap-3 px-5 py-4 md:px-12">
         <Link href="/owner/dashboard" className="text-xs uppercase tracking-[0.3em]">← DASHBOARD</Link>
         <span className="display text-center text-xl">SUBSCRIPTION</span>
         <span className="text-xs uppercase tracking-[0.3em] text-gray">{user.name}</span>
@@ -123,14 +123,14 @@ export default function SubscriptionPage() {
 
       {/* Current subscription */}
       {sub && (
-        <section className="grid grid-cols-2 border-b border-black md:grid-cols-4">
+        <section className="mx-auto grid max-w-6xl grid-cols-2 gap-3 px-5 py-6 md:grid-cols-4 md:px-12">
           {[
             [sub.plan, "CURRENT PLAN"],
             [`${usage?.centers ?? 0}/${sub.maxCenters}`, "CENTERS"],
             [`${usage?.seats ?? 0}/${sub.maxSeats}`, "SEATS"],
             [new Date(sub.expiresAt).toLocaleDateString("mn-MN"), "EXPIRES"],
           ].map(([n, l], i) => (
-            <div key={i} className="border-black p-6 [&:not(:last-child)]:border-r md:p-10">
+            <div key={i} className="owner-card-light p-6 md:p-8">
               <div className="display text-2xl md:text-4xl">{n}</div>
               <div className="mt-2 text-[10px] uppercase tracking-[0.3em] text-gray">{l}</div>
             </div>
@@ -139,7 +139,7 @@ export default function SubscriptionPage() {
       )}
 
       {!sub && (
-        <section className="border-b border-black p-10 md:p-16">
+        <section className="mx-auto max-w-6xl px-5 py-10 md:px-12 md:py-16">
           <h1 className="display text-5xl md:text-8xl">SUBSCRIBE<br />TO LIST<br />YOUR CENTER.</h1>
           <p className="mt-6 max-w-lg text-sm font-light text-gray">
             PC Center-ээ Reihen платформд нэмэхийн тулд багц сонгоно уу.
@@ -150,7 +150,7 @@ export default function SubscriptionPage() {
 
       {/* Plans grid */}
       {plans && (
-        <section className="grid grid-cols-1 border-b border-black md:grid-cols-3">
+        <section className="mx-auto grid max-w-6xl grid-cols-1 gap-4 px-5 py-6 md:grid-cols-3 md:px-12">
           {PLAN_ORDER.map((key) => {
             const p = plans[key];
             const isCurrent = sub?.plan === key;
@@ -159,7 +159,7 @@ export default function SubscriptionPage() {
             return (
               <div
                 key={key}
-                className={`flex flex-col justify-between border-black p-8 md:p-12 [&:not(:last-child)]:border-b md:[&:not(:last-child)]:border-b-0 md:[&:not(:last-child)]:border-r ${
+                className={`owner-card-light flex flex-col justify-between p-8 md:p-10 ${
                   isSelected ? "bg-black text-white" : ""
                 }`}
               >
@@ -197,7 +197,7 @@ export default function SubscriptionPage() {
                 <button
                   disabled={isCurrent || (sub ? isLower : false)}
                   onClick={() => setSelected(key)}
-                  className={`mt-10 w-full border py-4 text-xs uppercase tracking-[0.3em] disabled:opacity-30 ${
+                  className={`owner-action mt-10 w-full border py-4 text-xs uppercase tracking-[0.3em] disabled:opacity-30 ${
                     isSelected
                       ? "border-white bg-white text-black"
                       : "border-black hover:bg-black hover:text-white"
@@ -213,15 +213,15 @@ export default function SubscriptionPage() {
 
       {/* Payment + confirm */}
       {selected && (
-        <section className="border-b border-black p-8 md:p-12">
-          <div className="mx-auto max-w-xl">
+        <section className="px-5 py-8 md:px-12">
+          <div className="owner-card-light mx-auto max-w-xl p-6">
             <p className="text-xs uppercase tracking-[0.3em] text-gray">PAYMENT METHOD</p>
             <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
               {(["QPAY", "BALANCE"] as Method[]).map((m) => (
                 <button
                   key={m}
                   onClick={() => setMethod(m)}
-                  className={`border border-black py-4 text-xs uppercase tracking-[0.3em] ${
+                  className={`owner-action border border-black py-4 text-xs uppercase tracking-[0.3em] ${
                     method === m ? "bg-black text-white" : "hover:bg-black hover:text-white"
                   }`}
                 >
@@ -248,7 +248,7 @@ export default function SubscriptionPage() {
             <button
               onClick={subscribe}
               disabled={processing}
-              className="mt-6 w-full bg-black px-6 py-5 text-xs uppercase tracking-[0.3em] text-white disabled:opacity-40"
+              className="owner-action mt-6 w-full bg-black px-6 py-5 text-xs uppercase tracking-[0.3em] text-white disabled:opacity-40"
             >
               {processing ? "PROCESSING..." : "CONFIRM PAYMENT →"}
             </button>
