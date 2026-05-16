@@ -42,12 +42,12 @@ export async function GET(req: Request) {
 
       // Monthly spending for last 6 months
       prisma.$queryRaw<{ month: string; total: number }[]>`
-        SELECT DATE_FORMAT(startTime, '%Y-%m') AS month, SUM(totalPrice) AS total
-        FROM Booking
-        WHERE userId = ${session.sub}
-          AND status IN ('CONFIRMED', 'NOSHOW')
-          AND startTime >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-        GROUP BY month
+        SELECT to_char("startTime", 'YYYY-MM') AS month, COALESCE(SUM("totalPrice"), 0)::int AS total
+        FROM "Booking"
+        WHERE "userId" = ${session.sub}
+          AND "status" IN ('CONFIRMED', 'NOSHOW')
+          AND "startTime" >= (date_trunc('month', now()) - interval '5 months')
+        GROUP BY to_char("startTime", 'YYYY-MM')
         ORDER BY month ASC
       `,
 

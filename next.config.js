@@ -32,15 +32,17 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.dev https://clerk.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https:",
               // next/font/google serves files from /_next/static (self) but needs
               // fonts.gstatic.com for the actual font binary download at build+runtime
-              "font-src 'self' https://fonts.gstatic.com",
+              "font-src 'self' https://fonts.gstatic.com https://*.clerk.accounts.dev https://*.clerk.dev",
               // 'self' covers same-origin fetches; explicit vercel URLs cover
               // preview deployments where 'self' origin differs from production URL
-              "connect-src 'self' https://reihen.vercel.app https://*.vercel.app ws: wss: https://api.icafecloud.com https://merchant.qpay.mn https://merchant-sandbox.qpay.mn https://api.groq.com",
+              "connect-src 'self' https://reihen.vercel.app https://*.vercel.app ws: wss: https://api.icafecloud.com https://merchant.qpay.mn https://merchant-sandbox.qpay.mn https://api.groq.com https://*.clerk.accounts.dev https://*.clerk.dev https://api.clerk.com https://clerk-telemetry.com",
+              "frame-src 'self' https://*.clerk.accounts.dev https://*.clerk.dev",
+              "worker-src 'self' blob:",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
