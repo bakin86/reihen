@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showLegacy, setShowLegacy] = useState(!clerkEnabled);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,11 +57,11 @@ export default function LoginPage() {
       </section>
 
       {/* RIGHT */}
-      <section className="ui-page flex flex-col justify-center p-10 md:p-16">
+      <section className="ui-page flex flex-col justify-center p-6 md:p-16">
         {clerkEnabled && (
-          <div className="mx-auto mb-6 w-full max-w-xl border border-black/10 bg-white p-4">
+          <div className="mx-auto w-full max-w-[430px]">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-black/45">CLERK AUTH</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-black/45">SECURE LOGIN</p>
               <Link href="/forgot-password" className="text-[9px] font-semibold uppercase tracking-[0.2em] text-black/40 underline underline-offset-4">
                 Reset by email
               </Link>
@@ -70,17 +71,33 @@ export default function LoginPage() {
               signUpUrl="/register"
               fallbackRedirectUrl="/"
               appearance={{
+                layout: {
+                  socialButtonsPlacement: "bottom",
+                  socialButtonsVariant: "blockButton",
+                },
                 elements: {
                   rootBox: "w-full",
-                  card: "shadow-none border-0 p-0 w-full",
-                  headerTitle: "text-black",
+                  card: "w-full rounded-none border border-black/10 bg-white shadow-none",
+                  headerTitle: "text-black text-xl font-black",
+                  headerSubtitle: "text-black/40",
+                  socialButtonsBlockButton: "rounded-none border-black/10",
+                  formFieldInput: "rounded-none border-black/15 focus:border-black focus:ring-0",
+                  footerActionLink: "text-black font-semibold",
                   formButtonPrimary: "bg-black hover:bg-black/80",
                 },
               }}
             />
+            <button
+              type="button"
+              onClick={() => setShowLegacy((v) => !v)}
+              className="mt-4 w-full border border-black/10 bg-white px-4 py-3 text-[9px] font-semibold uppercase tracking-[0.25em] text-black/35 transition-colors hover:border-black/30 hover:text-black"
+            >
+              {showLegacy ? "Hide demo login" : "Use seeded demo login"}
+            </button>
           </div>
         )}
-        <form onSubmit={submit} className="ui-panel mx-auto w-full max-w-xl space-y-7 p-6 md:p-8">
+        {showLegacy && (
+        <form onSubmit={submit} className={`ui-panel mx-auto w-full max-w-xl space-y-7 p-6 md:p-8 ${clerkEnabled ? "mt-5" : ""}`}>
           {clerkEnabled && (
             <p className="text-[9px] font-semibold uppercase tracking-[0.25em] text-black/25">
               Legacy login remains for seeded demo users
@@ -126,6 +143,7 @@ export default function LoginPage() {
             </Link>
           </p>
         </form>
+        )}
       </section>
     </main>
   );
