@@ -256,7 +256,7 @@ async function getClerkBackedSession(): Promise<SessionPayload | null> {
     if (!email) return null;
 
     const metadata = clerkUser.unsafeMetadata ?? {};
-    const role = toRole(metadata.role);
+    const metadataRole = toRole(metadata.role);
     const phone = typeof metadata.phone === "string" && metadata.phone.trim()
       ? metadata.phone.trim()
       : `clerk_${clerkUser.id}`;
@@ -274,17 +274,22 @@ async function getClerkBackedSession(): Promise<SessionPayload | null> {
           name,
           email,
           phone,
-          role,
+          role: metadataRole,
           password: "CLERK_MANAGED",
           avatarUrl,
         },
       });
     } else {
+      const shouldPromoteSeededPlayer =
+        user.role === "PLAYER" &&
+        (metadataRole === "OWNER" || metadataRole === "STAFF" || metadataRole === "ADMIN") &&
+        user.password === "CLERK_MANAGED";
       user = await prisma.user.update({
         where: { id: user.id },
         data: {
           name: user.name || name,
           avatarUrl: user.avatarUrl ?? avatarUrl,
+          ...(shouldPromoteSeededPlayer ? { role: metadataRole } : {}),
         },
       });
     }
