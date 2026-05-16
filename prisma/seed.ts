@@ -66,10 +66,10 @@ async function main() {
 
   // Owners
   const owner1 = await prisma.user.upsert({
-    where: { email: "oyunbaatar@reihen.mn" },
+    where: { email: "gankky@gmail.com" },
     update: {},
     create: {
-      name: "Оюунбаатар Д.", email: "oyunbaatar@reihen.mn", phone: "99112233",
+      name: "Gankky", email: "gankky@gmail.com", phone: "95230978",
       password: hash("owner123"), role: "OWNER", balance: 3_200_000,
     },
   });
@@ -857,7 +857,7 @@ async function main() {
   console.log("  ROLE       EMAIL                      PASSWORD");
   console.log("  ─────────────────────────────────────────────────────────");
   console.log("  Admin      admin@reihen.mn             admin123");
-  console.log("  Owner 1    oyunbaatar@reihen.mn        owner123   (ENTERPRISE · 7 centers)");
+  console.log("  Owner 1    gankky@gmail.com            owner123   (ENTERPRISE · 7 centers · Clerk-ready)");
   console.log("  Owner 2    sarnai@reihen.mn            owner123   (PRO · 4 centers)");
   console.log("  Staff      tulgaa@reihen.mn            staff123");
   console.log("  Demo       demo@reihen.mn              demo123    ← main demo account");
