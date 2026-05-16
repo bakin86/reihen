@@ -110,6 +110,7 @@ export default function OwnerDashboard() {
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
   const [seatView, setSeatView] = useState<"grid" | "grouped" | "blueprint">("grid");
   const [activeCenterId, setActiveCenterId] = useState("");
+  const [inspectedBookingId, setInspectedBookingId] = useState<string | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const centerId = activeCenterId || dash?.centerIds?.[0] || centers[0]?.id || "";
@@ -218,6 +219,19 @@ export default function OwnerDashboard() {
       else next.add(id);
       return next;
     });
+  };
+
+  const inspectOrSelectSeat = (seat: SeatData) => {
+    const booking = dash?.recentBookings.find(
+      (b) =>
+        (b.status === "PENDING" || b.status === "CONFIRMED") &&
+        b.bookingSeats.some((bs) => bs.seatId === seat.id)
+    );
+    if ((seat.status === "WAITING" || seat.status === "OCCUPIED") && booking) {
+      setInspectedBookingId(booking.id);
+      return;
+    }
+    toggleSeatSelect(seat.id);
   };
 
   const selectAllByStatus = (status: SeatStatus) => {
@@ -341,6 +355,9 @@ export default function OwnerDashboard() {
   const openCount   = seats.filter((s) => s.status === "OPEN").length;
   const occupiedCount = seats.filter((s) => s.status === "OCCUPIED").length;
   const dashLoading = !dash && !authLoading;
+  const inspectedBooking = inspectedBookingId
+    ? dash?.recentBookings.find((b) => b.id === inspectedBookingId) ?? null
+    : null;
 
   return (
     <main className="owner-dark min-h-screen text-white">
@@ -826,7 +843,10 @@ export default function OwnerDashboard() {
                     typeName: s.typeName,
                   }))}
                   selectedIds={selectedSeats}
-                  onToggle={toggleSeatSelect}
+                  onToggle={(id) => {
+                    const seat = seats.find((s) => s.id === id);
+                    if (seat) inspectOrSelectSeat(seat);
+                  }}
                   floorName="SEAT MAP"
                 />
               ) : seatView === "grid" ? (
@@ -838,7 +858,7 @@ export default function OwnerDashboard() {
                       status={s.status}
                       selected={selectedSeats.has(s.id)}
                       title={`${s.number} · ${s.status}${s.typeName ? ` · ${s.typeName}` : ""}`}
-                      onClick={() => toggleSeatSelect(s.id)}
+                      onClick={() => inspectOrSelectSeat(s)}
                     />
                   ))}
                 </div>
@@ -883,7 +903,7 @@ export default function OwnerDashboard() {
                               status={s.status}
                               selected={selectedSeats.has(s.id)}
                               title={`${s.number} · ${s.status}${s.typeName ? ` · ${s.typeName}` : ""}`}
-                              onClick={() => toggleSeatSelect(s.id)}
+                              onClick={() => inspectOrSelectSeat(s)}
                             />
                           ))}
                         </div>
@@ -911,6 +931,71 @@ export default function OwnerDashboard() {
 
         </div>
       </div>
+
+      {inspectedBooking && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 backdrop-blur-sm md:items-center">
+          <div className="w-full max-w-xl border border-white/10 bg-[#080808] p-5 text-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.3em] text-white/30">SEAT BOOKING</p>
+                <h2 className="display mt-2 text-4xl">{inspectedBooking.code}</h2>
+              </div>
+              <button
+                onClick={() => setInspectedBookingId(null)}
+                className="border border-white/10 px-3 py-2 text-[10px] uppercase tracking-widest text-white/40 hover:bg-white hover:text-black"
+              >
+                CLOSE
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 border-b border-white/10 py-4 text-sm">
+              <div>
+                <div className="text-[9px] uppercase tracking-widest text-white/25">Customer</div>
+                <div className="mt-1 font-black">{inspectedBooking.user.name}</div>
+              </div>
+              <div>
+                <div className="text-[9px] uppercase tracking-widest text-white/25">Phone</div>
+                <div className="mt-1 mono">{inspectedBooking.user.phone}</div>
+              </div>
+              <div>
+                <div className="text-[9px] uppercase tracking-widest text-white/25">Seats</div>
+                <div className="mt-1 font-black">{inspectedBooking.bookingSeats.map((bs) => bs.seat.number).join(", ")}</div>
+              </div>
+              <div>
+                <div className="text-[9px] uppercase tracking-widest text-white/25">Time</div>
+                <div className="mt-1 mono">
+                  {new Date(inspectedBooking.startTime).toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })} · {inspectedBooking.hours}h
+                </div>
+              </div>
+              <div>
+                <div className="text-[9px] uppercase tracking-widest text-white/25">Status</div>
+                <div className="mt-1 font-black">{inspectedBooking.bookingSeats.every((bs) => bs.seat.status === "OCCUPIED") ? "PLAYING" : "WAITING"}</div>
+              </div>
+              <div>
+                <div className="text-[9px] uppercase tracking-widest text-white/25">Paid</div>
+                <div className="mt-1 mono">{inspectedBooking.totalPrice.toLocaleString()}₮</div>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                disabled={busy === inspectedBooking.id}
+                onClick={() => markArrived(inspectedBooking.id)}
+                className="bg-white px-4 py-3 text-[10px] font-black uppercase tracking-[0.24em] text-black disabled:opacity-40"
+              >
+                CHECK-IN
+              </button>
+              <button
+                disabled={busy === inspectedBooking.id}
+                onClick={() => markNoShow(inspectedBooking.id)}
+                className="border border-white/10 px-4 py-3 text-[10px] font-black uppercase tracking-[0.24em] text-white/50 hover:bg-white hover:text-black disabled:opacity-40"
+              >
+                NO-SHOW
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
