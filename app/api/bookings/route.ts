@@ -25,10 +25,6 @@ function isSerializableConflict(error: unknown) {
   );
 }
 
-function seatStatusForConfirmedBooking(start: Date, end: Date, now = new Date()) {
-  return start <= now && end > now ? "OCCUPIED" : "WAITING";
-}
-
 // POST /api/bookings — create booking (multi-seat)
 export async function POST(req: Request) {
   try {
@@ -209,13 +205,13 @@ export async function POST(req: Request) {
         },
       });
 
-      // Paid bookings must become visible immediately on every seat map.
-      // Active bookings are OCCUPIED; future paid bookings are reserved as WAITING.
+      // Paid bookings must become visible immediately, but the player is not
+      // playing until staff/owner checks them in.
       if (!isPending) {
         await tx.seat.updateMany({
           where: { id: { in: uniqueSeatIds } },
           data: {
-            status: seatStatusForConfirmedBooking(start, end, now),
+            status: "WAITING",
             freeAt: end,
           },
         });
@@ -256,12 +252,11 @@ export async function POST(req: Request) {
     });
 
     if (!isPending) {
-      const nextSeatStatus = seatStatusForConfirmedBooking(start, end, now);
       // Emit realtime updates for each seat
       for (const bs of booking.bookingSeats) {
         emitSeatUpdate(center.id, {
           id: bs.seatId,
-          status: nextSeatStatus,
+          status: "WAITING",
           code: bs.seat.number,
           freeAt: end,
         });

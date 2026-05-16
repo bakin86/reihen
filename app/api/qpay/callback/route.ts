@@ -25,10 +25,6 @@ function rateLimitCallback(ip: string): boolean {
   return b.count <= CB_LIMIT;
 }
 
-function seatStatusForConfirmedBooking(start: Date, end: Date, now = new Date()) {
-  return start <= now && end > now ? "OCCUPIED" : "WAITING";
-}
-
 /**
  * GET /api/qpay/callback?qpay_payment_id=xxx
  *
@@ -141,7 +137,7 @@ export async function GET(req: Request) {
           await tx.seat.updateMany({
             where: { id: { in: seatIds } },
             data: {
-              status: seatStatusForConfirmedBooking(booking.startTime, booking.endTime, now),
+              status: "WAITING",
               freeAt: booking.endTime,
             },
           });
@@ -165,7 +161,6 @@ export async function GET(req: Request) {
         }
 
         const seatNumbers = booking.bookingSeats.map((bs) => bs.seat.number).join(", ");
-        const nextSeatStatus = seatStatusForConfirmedBooking(booking.startTime, booking.endTime);
 
         emitBookingUpdate(booking.centerId, {
           id: booking.id,
@@ -177,7 +172,7 @@ export async function GET(req: Request) {
         for (const bs of booking.bookingSeats) {
           emitSeatUpdate(booking.centerId, {
             id: bs.seatId,
-            status: nextSeatStatus,
+            status: "WAITING",
             code: bs.seat.number,
             freeAt: booking.endTime,
           });

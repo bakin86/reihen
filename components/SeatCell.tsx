@@ -13,11 +13,11 @@ export const SEAT_STATUS_STYLE: Record<SeatStatus, string> = {
 };
 
 export const SEAT_STATUS_LABEL: Record<SeatStatus, string> = {
-  OPEN: "СУЛ",
-  OCCUPIED: "ТОГЛОЖ БУЙ",
-  WAITING: "ХҮЛЭЭЛ",
-  REPAIR: "ЗАСВАР",
-  CLOSED: "ХААЛТТАЙ",
+  OPEN: "OPEN",
+  OCCUPIED: "PLAYING",
+  WAITING: "WAITING",
+  REPAIR: "REPAIR",
+  CLOSED: "CLOSED",
 };
 
 export const SeatCell = memo(function SeatCell({
@@ -41,7 +41,7 @@ export const SeatCell = memo(function SeatCell({
   return (
     <button
       onClick={onClick}
-      title={title ?? `${number} · ${status}`}
+      title={title ?? `${number} · ${SEAT_STATUS_LABEL[status]}`}
       className={cn(
         "relative aspect-square min-h-[48px] min-w-[48px] rounded-lg text-sm font-black transition-all duration-200",
         SEAT_STATUS_STYLE[status],
@@ -49,15 +49,8 @@ export const SeatCell = memo(function SeatCell({
         selected && "seat-selected"
       )}
     >
-      {/* Seat number */}
-      <span className={cn(
-        "relative z-10",
-        selected && "text-white"
-      )}>
-        {number}
-      </span>
+      <span className={cn("relative z-10", selected && "text-white")}>{number}</span>
 
-      {/* Status indicator dot */}
       {status === "OPEN" && !selected && (
         <span className="absolute right-1 top-1 flex h-1.5 w-1.5">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
@@ -65,7 +58,6 @@ export const SeatCell = memo(function SeatCell({
         </span>
       )}
 
-      {/* Countdown for occupied seats */}
       {status === "OCCUPIED" && remaining != null && (
         <span
           className={cn(
@@ -73,11 +65,10 @@ export const SeatCell = memo(function SeatCell({
             freeingSoon ? "text-yellow-400 animate-pulse" : "text-white/40"
           )}
         >
-          {remaining}м
+          {remaining}m
         </span>
       )}
 
-      {/* Selected checkmark */}
       {selected && (
         <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-black text-[8px] font-black text-white shadow-lg">
           ✓
