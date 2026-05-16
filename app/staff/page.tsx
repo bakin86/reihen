@@ -54,7 +54,7 @@ export default function StaffDashboard() {
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
   const [seatView, setSeatView] = useState<"grid" | "grouped">("grid");
 
-  useEffect(() => {
+  const loadStaffDashboard = useCallback(() => {
     if (!token) return;
     apiFetch<{ centers: Center[]; bookings: Booking[]; seats: SeatData[] }>(
       "/api/staff/dashboard",
@@ -64,18 +64,35 @@ export default function StaffDashboard() {
         setCenters(data.centers);
         setBookings(data.bookings);
         setSeats(data.seats);
-        if (data.centers.length > 0) setActiveCenter(data.centers[0].id);
+        if (data.centers.length > 0) setActiveCenter((current) => current || data.centers[0].id);
       })
       .catch(() => {});
   }, [token]);
 
+  useEffect(() => {
+    loadStaffDashboard();
+  }, [loadStaffDashboard]);
+
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(loadStaffDashboard, 12_000);
+    return () => clearInterval(interval);
+  }, [token, loadStaffDashboard]);
+
   // Socket updates for active center
   const handleSeatUpdate = useCallback(
-    (u: SeatUpdate) =>
-      setSeats((prev) => prev.map((s) => (s.id === u.id ? { ...s, status: u.status } : s))),
-    []
+    (u: SeatUpdate) => {
+      setSeats((prev) => prev.map((s) => (s.id === u.id ? { ...s, status: u.status } : s)));
+      loadStaffDashboard();
+    },
+    [loadStaffDashboard]
   );
-  useSeatSocket(activeCenter, handleSeatUpdate, token);
+  useSeatSocket(
+    activeCenter,
+    handleSeatUpdate,
+    token,
+    loadStaffDashboard
+  );
 
   const center = centers.find((c) => c.id === activeCenter);
   const perms = center?.permissions;

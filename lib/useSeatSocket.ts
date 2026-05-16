@@ -11,6 +11,13 @@ export interface SeatUpdate {
   freeAt?: string | null;
 }
 
+export interface BookingUpdate {
+  id: string;
+  code?: string;
+  status: string;
+  paymentStatus?: string;
+}
+
 interface SeatRealtimeRow {
   id: string;
   centerId: string;
@@ -19,11 +26,26 @@ interface SeatRealtimeRow {
   freeAt: string | null;
 }
 
-export function useSeatSocket(branchId: string, onUpdate: (u: SeatUpdate) => void, token?: string | null) {
+interface BookingRealtimeRow {
+  id: string;
+  centerId: string;
+  code: string;
+  status: string;
+  paymentStatus: string;
+}
+
+export function useSeatSocket(
+  branchId: string,
+  onUpdate: (u: SeatUpdate) => void,
+  token?: string | null,
+  onBookingUpdate?: (u: BookingUpdate) => void
+) {
   // Stable ref so realtime/socket effects never need onUpdate in their deps.
   const onUpdateRef = useRef(onUpdate);
+  const onBookingUpdateRef = useRef(onBookingUpdate);
   useEffect(() => {
     onUpdateRef.current = onUpdate;
+    onBookingUpdateRef.current = onBookingUpdate;
   });
 
   useEffect(() => {
@@ -57,6 +79,25 @@ export function useSeatSocket(branchId: string, onUpdate: (u: SeatUpdate) => voi
               });
             }
           )
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "Booking",
+              filter: `centerId=eq.${branchId}`,
+            },
+            (payload) => {
+              const row = payload.new as BookingRealtimeRow;
+              if (!row?.id) return;
+              onBookingUpdateRef.current?.({
+                id: row.id,
+                code: row.code,
+                status: row.status,
+                paymentStatus: row.paymentStatus,
+              });
+            }
+          )
           .subscribe();
 
         subscriptions.push(channel);
@@ -82,6 +123,7 @@ export function useSeatSocket(branchId: string, onUpdate: (u: SeatUpdate) => voi
 
         socket.emit("branch:join", branchId);
         socket.on("seat:update", (u: SeatUpdate) => onUpdateRef.current(u));
+        socket.on("booking:update", (u: BookingUpdate) => onBookingUpdateRef.current?.(u));
       });
     }
 

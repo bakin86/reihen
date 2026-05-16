@@ -3,7 +3,7 @@ import { isDynamicUsageError } from "next/dist/export/helpers/is-dynamic-usage-e
 import { prisma } from "@/lib/prisma";
 import { checkPayment, createEbarimt, QPAY_MODE } from "@/lib/qpay";
 import { processRefund } from "@/lib/payment";
-import { emitSeatUpdate } from "@/lib/socket";
+import { emitBookingUpdate, emitSeatUpdate } from "@/lib/socket";
 import { sendPushToUser } from "@/lib/push";
 import { sendPaymentConfirm } from "@/lib/sms";
 import { cacheDel } from "@/lib/redis";
@@ -23,6 +23,10 @@ function rateLimitCallback(ip: string): boolean {
   }
   b.count += 1;
   return b.count <= CB_LIMIT;
+}
+
+function seatStatusForConfirmedBooking(start: Date, end: Date, now = new Date()) {
+  return start <= now && end > now ? "OCCUPIED" : "WAITING";
 }
 
 /**
@@ -134,12 +138,13 @@ export async function GET(req: Request) {
           });
 
           const now = new Date();
-          if (booking.startTime <= now && booking.endTime > now) {
-            await tx.seat.updateMany({
-              where: { id: { in: seatIds } },
-              data: { status: "OCCUPIED", freeAt: booking.endTime },
-            });
-          }
+          await tx.seat.updateMany({
+            where: { id: { in: seatIds } },
+            data: {
+              status: seatStatusForConfirmedBooking(booking.startTime, booking.endTime, now),
+              freeAt: booking.endTime,
+            },
+          });
         });
 
         if (slotTakenAfterPayment) {
@@ -160,12 +165,21 @@ export async function GET(req: Request) {
         }
 
         const seatNumbers = booking.bookingSeats.map((bs) => bs.seat.number).join(", ");
+        const nextSeatStatus = seatStatusForConfirmedBooking(booking.startTime, booking.endTime);
+
+        emitBookingUpdate(booking.centerId, {
+          id: booking.id,
+          code: booking.code,
+          status: "CONFIRMED",
+          paymentStatus: "PAID",
+        });
 
         for (const bs of booking.bookingSeats) {
           emitSeatUpdate(booking.centerId, {
             id: bs.seatId,
-            status: "OCCUPIED",
+            status: nextSeatStatus,
             code: bs.seat.number,
+            freeAt: booking.endTime,
           });
         }
 

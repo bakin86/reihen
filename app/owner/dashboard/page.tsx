@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { DashStatSkeleton } from "@/components/Skeleton";
@@ -110,6 +110,7 @@ export default function OwnerDashboard() {
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
   const [seatView, setSeatView] = useState<"grid" | "grouped" | "blueprint">("grid");
   const [activeCenterId, setActiveCenterId] = useState("");
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const centerId = activeCenterId || dash?.centerIds?.[0] || centers[0]?.id || "";
   const activeCenter = centers.find((c) => c.id === centerId) ?? null;
@@ -119,11 +120,32 @@ export default function OwnerDashboard() {
         .filter(Boolean)
     : [];
 
-  useEffect(() => {
+  const loadDashboard = useCallback(() => {
     if (!token) return;
     apiFetch<DashData>("/api/owner/dashboard", { token })
       .then(setDash)
       .catch(() => {});
+  }, [token]);
+
+  const refreshDashboardSoon = useCallback(() => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    refreshTimer.current = setTimeout(() => {
+      loadDashboard();
+    }, 250);
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(loadDashboard, 12_000);
+    return () => clearInterval(interval);
+  }, [token, loadDashboard]);
+
+  useEffect(() => {
+    if (!token) return;
     apiFetch<{ centers: CenterItem[] }>("/api/owner/centers", { token })
       .then(({ centers: c }) => {
         setCenters(c);
@@ -133,6 +155,12 @@ export default function OwnerDashboard() {
   }, [token]);
 
   useEffect(() => {
+    return () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    };
+  }, []);
+
+  const loadSeats = useCallback(() => {
     if (!centerId || !token) return;
     apiFetch<{ seats: { id: string; number: string; status: SeatStatus; type: { name: string } }[] }>(
       `/api/centers/${centerId}/seats`
@@ -142,15 +170,27 @@ export default function OwnerDashboard() {
   }, [centerId, token]);
 
   useEffect(() => {
+    loadSeats();
+  }, [loadSeats]);
+
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(loadSeats, 12_000);
+    return () => clearInterval(interval);
+  }, [token, loadSeats]);
+
+  useEffect(() => {
     setSelectedSeats(new Set());
   }, [centerId]);
 
   const handleSeatUpdate = useCallback(
-    (u: SeatUpdate) =>
-      setSeats((prev) => prev.map((s) => (s.id === u.id ? { ...s, status: u.status } : s))),
-    []
+    (u: SeatUpdate) => {
+      setSeats((prev) => prev.map((s) => (s.id === u.id ? { ...s, status: u.status } : s)));
+      refreshDashboardSoon();
+    },
+    [refreshDashboardSoon]
   );
-  useSeatSocket(centerId, handleSeatUpdate, token);
+  useSeatSocket(centerId, handleSeatUpdate, token, refreshDashboardSoon);
 
   const changeSeatStatus = async (ids: string[], status: SeatStatus) => {
     if (!token || ids.length === 0) return;

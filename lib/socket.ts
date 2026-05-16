@@ -65,9 +65,16 @@ export function initSocket(server: HTTPServer) {
 
 export function emitSeatUpdate(
   branchId: string,
-  seat: { id: string; status: string; code?: string }
+  seat: { id: string; status: string; code?: string; freeAt?: string | Date | null }
 ) {
   io?.to(`branch:${branchId}`).emit("seat:update", seat);
+}
+
+export function emitBookingUpdate(
+  branchId: string,
+  booking: { id: string; status: string; paymentStatus?: string; code?: string }
+) {
+  io?.to(`branch:${branchId}`).emit("booking:update", booking);
 }
 
 export function emitTournamentUpdate(

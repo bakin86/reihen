@@ -6,7 +6,7 @@ import { authErrorResponse, getSession } from "@/lib/auth";
 import { generateBookingCode } from "@/lib/booking-code";
 import { processPayment, processRefund, cancelQPayInvoice } from "@/lib/payment";
 import { sendPushToUser } from "@/lib/push";
-import { emitSeatUpdate } from "@/lib/socket";
+import { emitBookingUpdate, emitSeatUpdate } from "@/lib/socket";
 import { sendBookingConfirm } from "@/lib/sms";
 import { cacheDel } from "@/lib/redis";
 import { seatsCacheKey } from "@/lib/cache-keys";
@@ -23,6 +23,10 @@ function isSerializableConflict(error: unknown) {
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2034"
   );
+}
+
+function seatStatusForConfirmedBooking(start: Date, end: Date, now = new Date()) {
+  return start <= now && end > now ? "OCCUPIED" : "WAITING";
 }
 
 // POST /api/bookings — create booking (multi-seat)
@@ -205,11 +209,15 @@ export async function POST(req: Request) {
         },
       });
 
-      // Update seat statuses for immediate payments
-      if (!isPending && start <= now && end > now) {
+      // Paid bookings must become visible immediately on every seat map.
+      // Active bookings are OCCUPIED; future paid bookings are reserved as WAITING.
+      if (!isPending) {
         await tx.seat.updateMany({
           where: { id: { in: uniqueSeatIds } },
-          data: { status: "OCCUPIED", freeAt: end },
+          data: {
+            status: seatStatusForConfirmedBooking(start, end, now),
+            freeAt: end,
+          },
         });
       }
 
@@ -240,10 +248,23 @@ export async function POST(req: Request) {
     // Invalidate seat cache so next request reflects new booking
     cacheDel(seatsCacheKey(center.id)).catch(() => {});
 
+    emitBookingUpdate(center.id, {
+      id: booking.id,
+      code: booking.code,
+      status: booking.status,
+      paymentStatus: booking.paymentStatus,
+    });
+
     if (!isPending) {
+      const nextSeatStatus = seatStatusForConfirmedBooking(start, end, now);
       // Emit realtime updates for each seat
       for (const bs of booking.bookingSeats) {
-        emitSeatUpdate(center.id, { id: bs.seatId, status: "OCCUPIED", code: bs.seat.number });
+        emitSeatUpdate(center.id, {
+          id: bs.seatId,
+          status: nextSeatStatus,
+          code: bs.seat.number,
+          freeAt: end,
+        });
       }
 
       // Fire-and-forget: don't block response for push/SMS
