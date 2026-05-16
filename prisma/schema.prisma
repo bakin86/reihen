@@ -112,12 +112,33 @@ model User {
   smsOtps               SmsOtp[]
   tournamentTeams       TournamentTeam[]
   tournamentMemberships TournamentMember[]
+  walletTopUps          WalletTopUp[]
   auditLogs             AuditLog[]
 
   @@index([email])
   @@index([role])
   @@index([phone])
   @@index([isRestricted])
+}
+
+model WalletTopUp {
+  id            String        @id @default(cuid())
+  userId        String
+  amount        Int
+  paymentMethod PaymentMethod @default(QPAY)
+  paymentStatus PaymentStatus @default(UNPAID)
+  paymentRef    String?
+  qpayInvoiceId String?       @unique
+  qpayPaymentId String?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([paymentStatus])
+  @@index([createdAt])
 }
 
 model PasswordResetToken {

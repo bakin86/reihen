@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -52,6 +52,14 @@ interface FavCenter {
 
 type StatusFilter = "ALL" | "CONFIRMED" | "CANCELLED" | "NOSHOW";
 
+interface TopUpPending {
+  id: string;
+  amount: number;
+  invoiceId?: string;
+  qrImage?: string;
+  shortUrl?: string;
+}
+
 const ROLE_LABELS: Record<string, string> = {
   PLAYER: "Тоглогч",
   STAFF:  "Ажилтан",
@@ -65,6 +73,10 @@ export default function ProfilePage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [cancelling, setCancelling]     = useState<string | null>(null);
   const [tab, setTab]                   = useState<"stats" | "history" | "favorites">("stats");
+  const [topUpAmount, setTopUpAmount]   = useState(50_000);
+  const [topUpPending, setTopUpPending] = useState<TopUpPending | null>(null);
+  const [topUpBusy, setTopUpBusy]       = useState(false);
+  const [topUpError, setTopUpError]     = useState("");
   const qc = useQueryClient();
 
   const { data: activeData } = useQuery<{ bookings: Booking[] }>({
@@ -113,6 +125,54 @@ export default function ProfilePage() {
       apiFetch(`/api/favorites/${centerId}`, { method: "DELETE", token }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["favorites"] }),
   });
+
+  const startTopUp = async () => {
+    if (!token || topUpBusy) return;
+    setTopUpError("");
+    setTopUpBusy(true);
+    try {
+      const res = await apiFetch<{
+        topUp: { id: string; amount: number; qpayInvoiceId?: string };
+        payment: { invoiceId?: string; qrImage?: string; shortUrl?: string };
+      }>("/api/wallet/topup", {
+        method: "POST",
+        token,
+        body: JSON.stringify({ amount: topUpAmount }),
+      });
+      setTopUpPending({
+        id: res.topUp.id,
+        amount: res.topUp.amount,
+        invoiceId: res.payment.invoiceId ?? res.topUp.qpayInvoiceId,
+        qrImage: res.payment.qrImage,
+        shortUrl: res.payment.shortUrl,
+      });
+    } catch (e: any) {
+      setTopUpError(e.message ?? "Top-up failed");
+    } finally {
+      setTopUpBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!topUpPending || !token) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await apiFetch<{
+          topUp: { paymentStatus: string };
+          balance: number;
+        }>(`/api/wallet/topup/${topUpPending.id}`, { token });
+        if (res.topUp.paymentStatus === "PAID") {
+          clearInterval(interval);
+          setTopUpPending(null);
+          window.dispatchEvent(new Event("reihen:auth-refresh"));
+          qc.invalidateQueries({ queryKey: ["me", "stats"] });
+        }
+      } catch {
+        // keep polling while QPay is pending
+      }
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [topUpPending, token, qc]);
 
   if (authLoading) return null;
 
@@ -213,6 +273,72 @@ export default function ProfilePage() {
       </section>
 
       {/* ── STATS STRIP ── */}
+      <section className="border-b border-white/[0.06] px-6 py-6 md:px-12">
+        <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+          <div>
+            <h2 className="text-[9px] font-medium uppercase tracking-[0.32em] text-white/28">WALLET TOP-UP</h2>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {[20_000, 50_000, 100_000, 200_000].map((amount) => (
+                <button
+                  key={amount}
+                  type="button"
+                  onClick={() => setTopUpAmount(amount)}
+                  className={`rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-colors ${
+                    topUpAmount === amount
+                      ? "border-white bg-white text-black"
+                      : "border-white/10 text-white/35 hover:border-white/30 hover:text-white"
+                  }`}
+                >
+                  {(amount / 1000).toFixed(0)}K₮
+                </button>
+              ))}
+            </div>
+            {topUpError && <p className="mt-3 text-xs text-red-400">{topUpError}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={startTopUp}
+            disabled={topUpBusy || Boolean(topUpPending)}
+            className="rounded-full bg-white px-6 py-3 text-[10px] font-black uppercase tracking-[0.24em] text-black transition-opacity disabled:opacity-35"
+          >
+            {topUpBusy ? "CREATING..." : "PAY WITH QPAY"}
+          </button>
+        </div>
+
+        {topUpPending && (
+          <div className="mt-6 grid gap-5 border border-white/10 bg-white/[0.03] p-5 md:grid-cols-[auto_1fr] md:items-center">
+            <div className="bg-white p-3">
+              {topUpPending.qrImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={`data:image/png;base64,${topUpPending.qrImage}`} alt="QPay top-up QR" className="h-40 w-40" />
+              ) : topUpPending.shortUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={topUpPending.shortUrl} alt="QPay top-up QR" className="h-40 w-40" />
+              ) : (
+                <div className="flex h-40 w-40 items-center justify-center text-xs font-black text-black">QR</div>
+              )}
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.28em] text-white/28">QPAY PAYMENT PENDING</p>
+              <div className="mono mt-2 text-3xl font-black text-white">{topUpPending.amount.toLocaleString()}₮</div>
+              <p className="mt-2 max-w-md text-xs text-white/35">
+                QR unshuulaad tulburuu hii. Demo mode deer auto-confirm ajillana, esvel doorkh tovchoor shalgaj bolno.
+              </p>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!topUpPending.invoiceId) return;
+                  await fetch(`/api/qpay/callback?qpay_payment_id=${topUpPending.invoiceId}&mock=1`).catch(() => {});
+                }}
+                className="mt-4 rounded-full border border-white/15 px-5 py-2.5 text-[9px] uppercase tracking-[0.22em] text-white/45 hover:border-white/35 hover:text-white"
+              >
+                CHECK PAYMENT
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
       {!stats && (
         <section className="border-b border-white/[0.06]">
           <StatsStripSkeleton />

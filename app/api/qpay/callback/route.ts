@@ -201,6 +201,66 @@ export async function GET(req: Request) {
       }
     }
 
+    // Confirm wallet top-up QPay payments
+    const pendingTopUps = await prisma.walletTopUp.findMany({
+      where: {
+        paymentMethod: "QPAY",
+        paymentStatus: "UNPAID",
+        qpayInvoiceId: isMock ? qpayPaymentId : { not: null },
+      },
+      include: {
+        user: { select: { id: true, phone: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: isMock ? 1 : 50,
+    });
+
+    for (const topUp of pendingTopUps) {
+      if (!topUp.qpayInvoiceId) continue;
+      try {
+        let paymentId: string;
+
+        if (isMock) {
+          if (topUp.qpayInvoiceId !== qpayPaymentId) continue;
+          paymentId = `MOCK-PAY-TOPUP-${Date.now()}`;
+        } else {
+          const result = await checkPayment(topUp.qpayInvoiceId);
+          if (!result.paid || !result.paymentId) continue;
+          paymentId = result.paymentId;
+        }
+
+        await prisma.$transaction([
+          prisma.walletTopUp.update({
+            where: { id: topUp.id },
+            data: {
+              paymentStatus: "PAID",
+              qpayPaymentId: paymentId,
+              paidAt: new Date(),
+            },
+          }),
+          prisma.user.update({
+            where: { id: topUp.userId },
+            data: { balance: { increment: topUp.amount } },
+          }),
+        ]);
+
+        if (!isMock) {
+          createEbarimt(paymentId).catch((e) =>
+            console.error(`[qpay:callback] ebarimt failed for top-up ${topUp.id}:`, e)
+          );
+        }
+
+        if (topUp.user.phone) {
+          sendPaymentConfirm(topUp.user.phone, `TOPUP-${topUp.id.slice(-6).toUpperCase()}`, topUp.amount).catch(() => {});
+        }
+
+        console.log(`[qpay:callback] Confirmed wallet top-up ${topUp.id} (payment=${paymentId})${isMock ? " [MOCK]" : ""}`);
+        break;
+      } catch (e) {
+        console.error(`[qpay:callback] top-up check failed for invoice ${topUp.qpayInvoiceId}:`, e);
+      }
+    }
+
     // Also confirm any pending tournament team QPay payments
     const pendingTeams = await prisma.tournamentTeam.findMany({
       where: {
