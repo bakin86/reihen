@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { authErrorResponse, requireOwner } from "@/lib/auth";
+import { isClerkConfigured } from "@/lib/clerk-config";
 
 // GET /api/owner/dashboard?centerId=...
 export async function GET(req: Request) {
@@ -30,7 +31,7 @@ export async function GET(req: Request) {
 
     const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 3_600_000);
 
-    const [income, bookingCount, openSeats, totalSeats, hourlyRaw, recent, riskRaw] = await Promise.all([
+    const [income, bookingCount, openSeats, totalSeats, statusCounts, hourlyRaw, recent, riskRaw, auditLogs] = await Promise.all([
       prisma.booking.aggregate({
         _sum: { totalPrice: true },
         where: {
@@ -44,6 +45,11 @@ export async function GET(req: Request) {
       }),
       prisma.seat.count({ where: { centerId: { in: centerIds }, status: "OPEN" } }),
       prisma.seat.count({ where: { centerId: { in: centerIds } } }),
+      prisma.seat.groupBy({
+        by: ["status"],
+        where: { centerId: { in: centerIds } },
+        _count: { _all: true },
+      }),
       // Peak hours: group by hour using raw SQL for efficiency
       prisma.$queryRaw<{ h: number; cnt: bigint; inc: bigint }[]>(
         Prisma.sql`
@@ -73,7 +79,31 @@ export async function GET(req: Request) {
         orderBy: { _count: { userId: "desc" } },
         take: 12,
       }),
+      prisma.auditLog.findMany({
+        where: {
+          ownerId: session.sub,
+          ...(centerIdParam ? { centerId: centerIdParam } : {}),
+        },
+        orderBy: { createdAt: "desc" },
+        take: 12,
+        include: { actor: { select: { id: true, name: true, role: true } } },
+      }).catch(() => []),
     ]);
+
+    const paidToday = await prisma.booking.count({
+      where: {
+        centerId: { in: centerIds },
+        paymentStatus: "PAID",
+        createdAt: { gte: start, lt: end },
+      },
+    });
+    const noShowToday = await prisma.booking.count({
+      where: {
+        centerId: { in: centerIds },
+        status: "NOSHOW",
+        updatedAt: { gte: start, lt: end },
+      },
+    });
 
     const peakHours = Array.from({ length: 24 }, (_, h) => ({ hour: h, count: 0, income: 0 }));
     for (const row of hourlyRaw) {
@@ -115,10 +145,40 @@ export async function GET(req: Request) {
         openSeats,
         totalSeats,
         occupancy: totalSeats === 0 ? 0 : 1 - openSeats / totalSeats,
+        avgRevenue: bookingCount === 0 ? 0 : Math.round((income._sum.totalPrice ?? 0) / bookingCount),
+        paidBookings: paidToday,
+        noShows: noShowToday,
+        seatStatus: Object.fromEntries(statusCounts.map((s) => [s.status, s._count._all])),
+      },
+      systemStatus: {
+        clerk: isClerkConfigured(),
+        legacyAuth: true,
+        paymentMode: process.env.PAYMENT_MODE ?? "mock",
+        smsMode: process.env.SMS_MODE ?? "mock",
+        realtime: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+          ? "supabase"
+          : process.env.NEXT_PUBLIC_WS_URL
+            ? "socket"
+            : "local",
+      },
+      conflictProtection: {
+        serializableBooking: true,
+        qpayCallbackRecheck: true,
+        extendRecheck: true,
+        seatOpenGuard: true,
       },
       peakHours,
       recentBookings: recent,
       riskCustomers,
+      auditLogs: auditLogs.map((log) => ({
+        id: log.id,
+        action: log.action,
+        message: log.message,
+        targetType: log.targetType,
+        targetId: log.targetId,
+        createdAt: log.createdAt,
+        actor: log.actor,
+      })),
     });
   } catch (e) {
     return authErrorResponse(e);

@@ -6,6 +6,7 @@ import { emitSeatUpdate } from "@/lib/socket";
 import { sendPushToUser } from "@/lib/push";
 import { cacheDel } from "@/lib/redis";
 import { seatsCacheKey } from "@/lib/cache-keys";
+import { writeAuditLog } from "@/lib/audit";
 
 // PATCH /api/owner/bookings/:id/noshow — release ALL seats
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -67,6 +68,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       title: "Ирэлгүй тэмдэглэгдлээ",
       body: `${booking.code} цуцлагдсан`,
       tag: booking.id,
+    }).catch(() => {});
+    writeAuditLog({
+      session,
+      ownerId: booking.center.ownerId,
+      centerId: booking.centerId,
+      action: "BOOKING_NO_SHOW",
+      targetType: "Booking",
+      targetId: booking.id,
+      message: `${booking.code} marked no-show`,
+      metadata: { code: booking.code, seats: booking.bookingSeats.map((bs) => bs.seat.number) },
     }).catch(() => {});
 
     return NextResponse.json({ booking: updated, user });

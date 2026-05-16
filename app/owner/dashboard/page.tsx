@@ -42,10 +42,42 @@ interface RiskCustomer {
 
 interface DashData {
   centerIds: string[];
-  today: { income: number; bookingCount: number; openSeats: number; totalSeats: number; occupancy: number };
+  today: {
+    income: number;
+    bookingCount: number;
+    openSeats: number;
+    totalSeats: number;
+    occupancy: number;
+    avgRevenue: number;
+    paidBookings: number;
+    noShows: number;
+    seatStatus: Record<string, number>;
+  };
+  systemStatus: {
+    clerk: boolean;
+    legacyAuth: boolean;
+    paymentMode: string;
+    smsMode: string;
+    realtime: string;
+  };
+  conflictProtection: {
+    serializableBooking: boolean;
+    qpayCallbackRecheck: boolean;
+    extendRecheck: boolean;
+    seatOpenGuard: boolean;
+  };
   peakHours: { hour: number; count: number; income: number }[];
   recentBookings: Booking[];
   riskCustomers: RiskCustomer[];
+  auditLogs: {
+    id: string;
+    action: string;
+    message: string;
+    targetType: string;
+    targetId?: string | null;
+    createdAt: string;
+    actor: { id: string; name: string; role: string };
+  }[];
 }
 
 interface SeatData {
@@ -362,6 +394,67 @@ export default function OwnerDashboard() {
             </div>
           </div>
 
+          {dash && (
+            <div className="col-span-2 row-span-1 grid grid-cols-2 gap-px overflow-hidden border border-white/[0.06] bg-white/[0.06] md:col-span-6 lg:col-span-6">
+              {[
+                ["AVG SALE", `${dash.today.avgRevenue.toLocaleString()}₮`],
+                ["PAID", String(dash.today.paidBookings)],
+                ["NO-SHOW", String(dash.today.noShows)],
+                ["REPAIR", String(dash.today.seatStatus.REPAIR ?? 0)],
+              ].map(([label, value]) => (
+                <div key={label} className="bg-[#0a0a0a] p-4">
+                  <div className="text-[9px] uppercase tracking-[0.25em] text-white/25">{label}</div>
+                  <div className="mono mt-3 text-2xl font-black text-white">{value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {dash && (
+            <div className="col-span-2 row-span-1 border border-white/[0.06] bg-white/[0.03] p-4 md:col-span-6 lg:col-span-6">
+              <div className="mb-4 flex items-center justify-between">
+                <span className="text-[10px] uppercase tracking-[0.3em] text-white/30">SYSTEM STATUS</span>
+                <span className="rounded-full bg-green-500/10 px-2 py-1 text-[8px] uppercase tracking-widest text-green-300">DEMO READY</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+                {[
+                  ["Clerk", dash.systemStatus.clerk ? "ON" : "OFF"],
+                  ["Legacy", dash.systemStatus.legacyAuth ? "ON" : "OFF"],
+                  ["Payment", dash.systemStatus.paymentMode],
+                  ["SMS", dash.systemStatus.smsMode],
+                  ["Realtime", dash.systemStatus.realtime],
+                ].map(([label, value]) => (
+                  <div key={label} className="border border-white/[0.06] bg-black/30 p-3">
+                    <div className="text-[8px] uppercase tracking-[0.22em] text-white/20">{label}</div>
+                    <div className="mt-2 text-[10px] font-black uppercase tracking-widest text-white/70">{value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {dash && (
+            <div className="col-span-2 row-span-1 border border-green-500/15 bg-green-500/[0.035] p-4 md:col-span-6 lg:col-span-12">
+              <div className="mb-4 flex items-center justify-between">
+                <span className="text-[10px] uppercase tracking-[0.3em] text-green-300/70">CONFLICT PROTECTION</span>
+                <span className="text-[9px] uppercase tracking-widest text-white/25">Double booking prevention</span>
+              </div>
+              <div className="grid gap-2 md:grid-cols-4">
+                {[
+                  ["Serializable booking", dash.conflictProtection.serializableBooking],
+                  ["QPay callback re-check", dash.conflictProtection.qpayCallbackRecheck],
+                  ["Extension re-check", dash.conflictProtection.extendRecheck],
+                  ["Active seat open guard", dash.conflictProtection.seatOpenGuard],
+                ].map(([label, ok]) => (
+                  <div key={label as string} className="flex items-center justify-between border border-green-500/10 bg-black/30 px-3 py-3">
+                    <span className="text-[9px] uppercase tracking-[0.18em] text-white/45">{label as string}</span>
+                    <span className={`h-2 w-2 rounded-full ${ok ? "bg-green-400" : "bg-red-400"}`} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Peak Hours — wide tile */}
           {dash && (
             <div className="col-span-2 row-span-1 border border-white/[0.06] bg-white/[0.03] p-4 md:col-span-6 md:p-6 lg:col-span-8">
@@ -505,6 +598,38 @@ export default function OwnerDashboard() {
               })}
             </div>
           </div>
+
+          {dash && (
+            <div className="col-span-2 row-span-2 flex flex-col border border-white/[0.06] bg-white/[0.03] md:col-span-6 lg:col-span-12">
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+                <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">AUDIT LOG</span>
+                <span className="mono text-[9px] text-white/20">{dash.auditLogs.length}</span>
+              </div>
+              <div className="grid gap-px bg-white/[0.03] md:grid-cols-2 lg:grid-cols-3">
+                {dash.auditLogs.length === 0 && (
+                  <p className="bg-[#0a0a0a] p-6 text-xs text-white/20 md:col-span-2 lg:col-span-3">
+                    No owner actions recorded yet. Check-in, no-show, or seat status changes will appear here.
+                  </p>
+                )}
+                {dash.auditLogs.map((log) => (
+                  <div key={log.id} className="bg-[#0a0a0a] p-5">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <span className="rounded-full border border-white/[0.08] px-2 py-1 text-[8px] uppercase tracking-widest text-white/35">
+                        {log.action.replaceAll("_", " ")}
+                      </span>
+                      <span className="mono text-[9px] text-white/20">
+                        {new Date(log.createdAt).toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    <div className="text-sm font-bold text-white/80">{log.message}</div>
+                    <div className="mt-2 text-[10px] uppercase tracking-[0.2em] text-white/25">
+                      {log.actor.name} · {log.actor.role}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Seat Map — full-width tile */}
           <div className="col-span-2 row-span-2 flex flex-col border border-white/[0.06] bg-white/[0.03] md:col-span-6 lg:col-span-12">

@@ -6,6 +6,7 @@ import { emitSeatUpdate } from "@/lib/socket";
 import { sendPushToUser } from "@/lib/push";
 import { cacheDel } from "@/lib/redis";
 import { seatsCacheKey } from "@/lib/cache-keys";
+import { writeAuditLog } from "@/lib/audit";
 
 // PATCH /api/owner/bookings/:id/checkin — mark all seats as occupied
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -57,6 +58,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       title: "Тоглолт эхэллээ",
       body: `${booking.code} · ${seatNumbers}`,
       tag: booking.id,
+    }).catch(() => {});
+    writeAuditLog({
+      session,
+      ownerId: booking.center.ownerId,
+      centerId: booking.centerId,
+      action: "BOOKING_CHECKED_IN",
+      targetType: "Booking",
+      targetId: booking.id,
+      message: `${booking.code} checked in on seats ${seatNumbers}`,
+      metadata: { code: booking.code, seats: booking.bookingSeats.map((bs) => bs.seat.number) },
     }).catch(() => {});
 
     return NextResponse.json({ booking: updated, checkedInAt: new Date() });

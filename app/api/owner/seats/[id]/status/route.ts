@@ -6,6 +6,7 @@ import { assertCenterAccess } from "@/lib/owner-guard";
 import { emitSeatUpdate } from "@/lib/socket";
 import { cacheDel } from "@/lib/redis";
 import { seatsCacheKey } from "@/lib/cache-keys";
+import { writeAuditLog } from "@/lib/audit";
 
 const schema = z.object({
   status: z.enum(["OPEN", "CLOSED", "REPAIR", "WAITING", "OCCUPIED"]),
@@ -24,7 +25,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const seat = await prisma.seat.findUnique({
       where: { id: params.id },
-      select: { id: true, centerId: true, number: true },
+      select: { id: true, centerId: true, number: true, status: true, center: { select: { ownerId: true } } },
     });
     if (!seat) return NextResponse.json({ error: "Seat not found" }, { status: 404 });
 
@@ -64,6 +65,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       code: seat.number,
     });
     cacheDel(seatsCacheKey(seat.centerId)).catch(() => {});
+    writeAuditLog({
+      session,
+      ownerId: seat.center.ownerId,
+      centerId: seat.centerId,
+      action: "SEAT_STATUS_CHANGED",
+      targetType: "Seat",
+      targetId: seat.id,
+      message: `Seat ${seat.number} changed from ${seat.status} to ${updated.status}`,
+      metadata: { seatNumber: seat.number, from: seat.status, to: updated.status, force: !!parsed.data.force },
+    }).catch(() => {});
 
     return NextResponse.json({ seat: updated });
   } catch (e) {
