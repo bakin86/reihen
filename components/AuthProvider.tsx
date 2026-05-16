@@ -103,12 +103,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [doRefresh]);
 
   useEffect(() => {
+    const refreshAuthState = () => {
+      loadCurrentUser().catch(() => {
+        setUser(null);
+        setToken(null);
+      });
+    };
+    window.addEventListener("reihen:auth-refresh", refreshAuthState);
+    return () => window.removeEventListener("reihen:auth-refresh", refreshAuthState);
+  }, [loadCurrentUser]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function restore() {
       setLoading(true);
+      let restoredLegacySession = false;
       try {
         await loadCurrentUser();
+        restoredLegacySession = true;
         if (!cancelled) scheduleRefresh();
       } catch {
         if (!CLERK_ENABLED) {
@@ -118,7 +131,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setToken(null);
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        // When Clerk is enabled, ClerkAuthSync owns the final loading state.
+        // Setting loading=false here creates a race where protected owner pages
+        // render before Clerk has finished hydrating the signed-in user.
+        if (!cancelled && (!CLERK_ENABLED || restoredLegacySession)) setLoading(false);
       }
     }
 

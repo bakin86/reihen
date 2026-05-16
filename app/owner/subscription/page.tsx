@@ -71,6 +71,7 @@ export default function SubscriptionPage() {
         body: JSON.stringify({ plan: selected, paymentMethod: method }),
       });
       setData((d) => (d ? { ...d, subscription: res.subscription } : d));
+      window.dispatchEvent(new Event("reihen:auth-refresh"));
       setSuccess(true);
       setSelected(null);
     } catch (e: any) {
@@ -81,7 +82,7 @@ export default function SubscriptionPage() {
   };
 
   if (authLoading) return null;
-  if (!user || (user.role !== "OWNER" && user.role !== "ADMIN")) {
+  if (!user || (user.role !== "PLAYER" && user.role !== "OWNER" && user.role !== "ADMIN")) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-6">
         <h1 className="display text-5xl">OWNERS ONLY</h1>
@@ -154,7 +155,7 @@ export default function SubscriptionPage() {
           </h1>
           <p className="mt-6 max-w-lg text-sm font-light text-gray">
             PC Center-ee Reihen platform-d nemehiin tuld bagts songono. Mock tulbur demo gorimd
-            automataar batalgaajina.
+            automataar batalgaajina. Bagts songosnii daraa account chini owner bolno.
           </p>
         </section>
       )}
