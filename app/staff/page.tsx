@@ -5,6 +5,7 @@ import { SeatCell, SeatLegend, type SeatStatus } from "@/components/SeatCell";
 import { useAuth } from "@/lib/useAuth";
 import { apiFetch } from "@/lib/api";
 import { useSeatSocket, type SeatUpdate } from "@/lib/useSeatSocket";
+import { useNotificationSound } from "@/lib/useNotificationSound";
 
 interface Permissions {
   canCheckin: boolean;
@@ -54,6 +55,7 @@ export default function StaffDashboard() {
   const [checkedInIds, setCheckedInIds] = useState<Set<string>>(new Set());
   const [seatView, setSeatView] = useState<"grid" | "grouped">("grid");
   const [inspectedBookingId, setInspectedBookingId] = useState<string | null>(null);
+  const { enabled: soundEnabled, enable: enableSound, play: playSound } = useNotificationSound();
 
   const loadStaffDashboard = useCallback(() => {
     if (!token) return;
@@ -88,11 +90,17 @@ export default function StaffDashboard() {
     },
     [loadStaffDashboard]
   );
+
+  const handleBookingRealtime = useCallback(() => {
+    playSound();
+    loadStaffDashboard();
+  }, [playSound, loadStaffDashboard]);
+
   useSeatSocket(
     activeCenter,
     handleSeatUpdate,
     token,
-    loadStaffDashboard
+    handleBookingRealtime
   );
 
   const center = centers.find((c) => c.id === activeCenter);
@@ -203,6 +211,15 @@ export default function StaffDashboard() {
         <Link href="/" className="text-xs uppercase tracking-[0.3em] text-white/50 hover:text-white transition-colors">← HOME</Link>
         <span className="display text-xl">STAFF</span>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={enableSound}
+            className={`text-[9px] uppercase tracking-[0.25em] transition-colors ${
+              soundEnabled ? "text-green-300" : "text-white/30 hover:text-white"
+            }`}
+          >
+            SOUND {soundEnabled ? "ON" : "OFF"}
+          </button>
           <span className="hidden rounded-full border border-white/10 px-3 py-1 text-[8px] uppercase tracking-widest text-white/25 md:inline">
             Ops only
           </span>

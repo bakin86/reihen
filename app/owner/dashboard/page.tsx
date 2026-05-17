@@ -8,6 +8,7 @@ import { Counter } from "@/components/SplitFlap";
 import { useAuth } from "@/lib/useAuth";
 import { apiFetch } from "@/lib/api";
 import { useSeatSocket, type SeatUpdate } from "@/lib/useSeatSocket";
+import { useNotificationSound } from "@/lib/useNotificationSound";
 
 const BlueprintSeatMap = dynamic(
   () => import("@/components/BlueprintSeatMap").then((m) => m.BlueprintSeatMap),
@@ -112,6 +113,7 @@ export default function OwnerDashboard() {
   const [activeCenterId, setActiveCenterId] = useState("");
   const [inspectedBookingId, setInspectedBookingId] = useState<string | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { enabled: soundEnabled, enable: enableSound, play: playSound } = useNotificationSound();
 
   const centerId = activeCenterId || dash?.centerIds?.[0] || centers[0]?.id || "";
   const activeCenter = centers.find((c) => c.id === centerId) ?? null;
@@ -191,7 +193,12 @@ export default function OwnerDashboard() {
     },
     [refreshDashboardSoon]
   );
-  useSeatSocket(centerId, handleSeatUpdate, token, refreshDashboardSoon);
+  const handleBookingRealtime = useCallback(() => {
+    playSound();
+    refreshDashboardSoon();
+  }, [playSound, refreshDashboardSoon]);
+
+  useSeatSocket(centerId, handleSeatUpdate, token, handleBookingRealtime);
 
   const changeSeatStatus = async (ids: string[], status: SeatStatus) => {
     if (!token || ids.length === 0) return;
@@ -375,6 +382,15 @@ export default function OwnerDashboard() {
           <Link href="/owner/staff" className="text-[10px] uppercase tracking-[0.3em] text-white/30 hover:text-white transition-colors">STAFF</Link>
           <Link href="/owner/reviews" className="text-[10px] uppercase tracking-[0.3em] text-white/30 hover:text-white transition-colors">REVIEWS</Link>
           <Link href="/owner/subscription" className="text-[10px] uppercase tracking-[0.3em] text-white/30 hover:text-white transition-colors">PLAN</Link>
+          <button
+            type="button"
+            onClick={enableSound}
+            className={`text-[10px] uppercase tracking-[0.3em] transition-colors ${
+              soundEnabled ? "text-green-300" : "text-white/30 hover:text-white"
+            }`}
+          >
+            SOUND {soundEnabled ? "ON" : "OFF"}
+          </button>
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-[10px] font-black">
             {user.name.charAt(0).toUpperCase()}
           </div>
