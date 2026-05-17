@@ -70,7 +70,7 @@ function BookingInner() {
   // track whether we've already auto-switched (ref avoids adding to effect deps)
   const autoSwitchedRef = useRef(false);
 
-  useEffect(() => {
+  const loadCenterSeats = useCallback(() => {
     if (!centerId) return;
     apiFetch<{ center: { name: string; maxSeatsPerBooking?: number }; seats: SeatData[] }>(`/api/centers/${centerId}/seats`)
       .then(({ center, seats: s }) => {
@@ -86,6 +86,16 @@ function BookingInner() {
       })
       .catch(() => {});
   }, [centerId]);
+
+  useEffect(() => {
+    loadCenterSeats();
+  }, [loadCenterSeats]);
+
+  useEffect(() => {
+    if (!centerId) return;
+    const interval = setInterval(loadCenterSeats, 4_000);
+    return () => clearInterval(interval);
+  }, [centerId, loadCenterSeats]);
 
   const handleUpdate = useCallback((u: SeatUpdate) => {
     setSeats((prev) =>

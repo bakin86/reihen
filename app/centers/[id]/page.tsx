@@ -88,7 +88,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
     invoiceId?: string;
   } | null>(null);
 
-  useEffect(() => {
+  const loadCenterSeats = useCallback(() => {
     apiFetch<{ center: CenterInfo; seats: SeatData[]; qpaySurchargePct: number }>(`/api/centers/${params.id}/seats`)
       .then(({ center: c, seats: s, qpaySurchargePct: pct }) => {
         setCenter(c);
@@ -97,6 +97,10 @@ export default function CenterPage({ params }: { params: { id: string } }) {
         if (s.length) setFloor(s[0].floor.floorNumber);
       })
       .catch(() => {});
+  }, [params.id]);
+
+  useEffect(() => {
+    loadCenterSeats();
     apiFetch<{ reviews: Review[]; myUnreviewedBookingId: string | null }>(`/api/centers/${params.id}/reviews`, { token: token ?? undefined })
       .then(({ reviews: r, myUnreviewedBookingId: bid }) => {
         setReviews(r);
@@ -111,7 +115,12 @@ export default function CenterPage({ params }: { params: { id: string } }) {
         .then(({ favorited }) => setIsFav(favorited))
         .catch(() => {});
     }
-  }, [params.id, token]);
+  }, [params.id, token, loadCenterSeats]);
+
+  useEffect(() => {
+    const interval = setInterval(loadCenterSeats, 4_000);
+    return () => clearInterval(interval);
+  }, [loadCenterSeats]);
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href).catch(() => {});

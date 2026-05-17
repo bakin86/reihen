@@ -78,7 +78,7 @@ export default function StaffDashboard() {
 
   useEffect(() => {
     if (!token) return;
-    const interval = setInterval(loadStaffDashboard, 12_000);
+    const interval = setInterval(loadStaffDashboard, 4_000);
     return () => clearInterval(interval);
   }, [token, loadStaffDashboard]);
 

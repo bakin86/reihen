@@ -143,7 +143,7 @@ export default function OwnerDashboard() {
 
   useEffect(() => {
     if (!token) return;
-    const interval = setInterval(loadDashboard, 12_000);
+    const interval = setInterval(loadDashboard, 4_000);
     return () => clearInterval(interval);
   }, [token, loadDashboard]);
 
@@ -178,7 +178,7 @@ export default function OwnerDashboard() {
 
   useEffect(() => {
     if (!token) return;
-    const interval = setInterval(loadSeats, 12_000);
+    const interval = setInterval(loadSeats, 4_000);
     return () => clearInterval(interval);
   }, [token, loadSeats]);
 
