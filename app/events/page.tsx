@@ -92,7 +92,7 @@ export default function EventsPage() {
               className={`rounded-lg border px-4 py-2 text-[10px] uppercase tracking-[0.18em] transition-colors ${
                 filter === item
                   ? "border-white bg-white text-black"
-                  : "border-white/10 bg-white/[0.03] text-white/45 hover:border-white/30 hover:text-white"
+                  : "border-white/[0.12] bg-white/[0.06] text-white/55 hover:border-white/30 hover:bg-white/[0.10] hover:text-white"
               }`}
             >
               {item === "ALL" ? "БҮГД" : STATUS_LABEL[item]}

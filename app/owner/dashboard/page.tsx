@@ -781,7 +781,7 @@ export default function OwnerDashboard() {
                 {centerId && (
                   <Link
                     href={`/owner/centers/${centerId}/layout`}
-                    className="border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-[8px] uppercase tracking-widest text-white/40 hover:bg-white hover:text-black transition-colors"
+                    className="border border-white/[0.14] bg-white/[0.07] px-3 py-1 text-[8px] uppercase tracking-widest text-white/55 hover:bg-white hover:text-black transition-colors"
                   >
                     LAYOUT EDITOR
                   </Link>
@@ -794,7 +794,7 @@ export default function OwnerDashboard() {
                     <button
                       key={st}
                       onClick={() => selectAllByStatus(st)}
-                      className="border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[8px] uppercase tracking-widest text-white/40 hover:bg-white hover:text-black transition-colors"
+                      className="border border-white/[0.14] bg-white/[0.07] px-2.5 py-1 text-[8px] uppercase tracking-widest text-white/55 hover:bg-white hover:text-black transition-colors"
                     >
                       {st} {count}
                     </button>
@@ -827,7 +827,7 @@ export default function OwnerDashboard() {
                       key={st}
                       disabled={bulkBusy}
                       onClick={() => changeSeatStatus(Array.from(selectedSeats), st)}
-                      className="btn-lift border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-[9px] uppercase tracking-widest text-white/50 hover:bg-white hover:text-black disabled:opacity-40 transition-colors"
+                      className="btn-lift border border-white/[0.14] bg-white/[0.07] px-3 py-2 text-[9px] uppercase tracking-widest text-white/60 hover:bg-white hover:text-black disabled:opacity-40 transition-colors"
                     >
                       {st}
                     </button>

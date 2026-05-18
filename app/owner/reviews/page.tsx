@@ -128,7 +128,7 @@ export default function OwnerReviewsPage() {
                 {!r.ownerReply && replyingId !== r.id && (
                   <button
                     onClick={() => { setReplyingId(r.id); setReplyText(""); }}
-                    className="owner-action shrink-0 border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[9px] uppercase tracking-[0.2em] text-white/40 hover:border-white/30 hover:text-white transition-colors"
+                    className="owner-action shrink-0 border border-white/[0.14] bg-white/[0.07] px-3 py-1.5 text-[9px] uppercase tracking-[0.2em] text-white/55 hover:border-white/30 hover:bg-white/[0.12] hover:text-white transition-colors"
                   >
                     ХАРИУЛАХ
                   </button>
