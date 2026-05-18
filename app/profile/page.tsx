@@ -56,7 +56,7 @@ export default function ProfilePage() {
     (b) => b.status === "PENDING" || b.status === "CONFIRMED"
   );
 
-  const { data: favData } = useQuery<{ centers: FavCenter[] }>({
+  const { data: favData, isLoading: favoritesLoading } = useQuery<{ centers: FavCenter[] }>({
     queryKey: ["favorites"],
     queryFn:  () => apiFetch("/api/favorites", { token }),
     enabled:  !!token,
@@ -64,7 +64,7 @@ export default function ProfilePage() {
   });
   const favorites = favData?.centers ?? [];
 
-  const { data: historyData } = useBookingHistory(historyPage, statusFilter);
+  const { data: historyData, isLoading: historyLoading, isFetching: historyFetching } = useBookingHistory(historyPage, statusFilter);
   const history           = historyData?.bookings ?? [];
   const historyTotal      = historyData?.pagination?.total ?? 0;
   const totalHistoryPages = Math.ceil(historyTotal / 10);
@@ -233,7 +233,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Empty / skeleton */}
-            {history.length === 0 && historyTotal === 0 && (
+            {historyLoading && history.length === 0 && (
               <div className="space-y-0 divide-y divide-white/[0.04]">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="flex items-center gap-4 px-5 py-4">
@@ -248,8 +248,18 @@ export default function ProfilePage() {
               </div>
             )}
 
+            {!historyLoading && history.length === 0 && historyTotal === 0 && (
+              <div className="px-6 py-14 text-center">
+                <p className="text-sm font-semibold text-white/55">Захиалгын түүх алга</p>
+                <p className="mt-1 text-[11px] text-white/40">Шүүлтүүрээ өөрчлөх эсвэл шинэ захиалга үүсгэнэ үү.</p>
+                <Link href="/booking" className="glass-action mt-5 px-5 py-2.5 text-[10px] uppercase tracking-[0.18em]">
+                  Захиалах
+                </Link>
+              </div>
+            )}
+
             {/* Rows */}
-            <div className="divide-y divide-white/[0.05]">
+            <div className={`divide-y divide-white/[0.05] transition-opacity ${historyFetching && !historyLoading ? "opacity-60" : "opacity-100"}`}>
               {history.map((b: any) => (
                 <div key={b.id} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-white/[0.03]">
                   <div className="min-w-0 flex-1">
@@ -302,7 +312,20 @@ export default function ProfilePage() {
         {/* ── FAVORITES ── */}
         {tab === "favorites" && (
           <div className="soft-glass-panel-muted rounded-3xl overflow-hidden">
-            {favorites.length === 0 ? (
+            {favoritesLoading ? (
+              <div className="space-y-0 divide-y divide-white/[0.04]">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 px-5 py-4">
+                    <div className="h-12 w-12 animate-pulse rounded-xl bg-white/[0.07]" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-2 w-20 animate-pulse rounded-full bg-white/[0.06]" />
+                      <div className="h-3 w-36 animate-pulse rounded-full bg-white/[0.08]" />
+                      <div className="h-2 w-28 animate-pulse rounded-full bg-white/[0.05]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : favorites.length === 0 ? (
               <div className="flex flex-col items-center gap-3 py-20 text-center">
                 <div className="text-3xl opacity-20">♡</div>
                 <p className="text-sm font-medium text-white/55">Дуртай центр байхгүй</p>

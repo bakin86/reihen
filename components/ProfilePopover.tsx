@@ -28,7 +28,7 @@ export function ProfilePopover({
   const [rendered, setRendered] = useState(open);
 
   const { data, isFetching } = useQuery<{ bookings: Booking[] }>({
-    queryKey: ["activeBookings", "popover"],
+    queryKey: ["activeBookings"],
     queryFn: () => apiFetch("/api/bookings", { token }),
     enabled: open && !!token,
     staleTime: 30_000,
@@ -72,7 +72,7 @@ export function ProfilePopover({
   return (
     <div
       ref={panelRef}
-      className={`absolute right-0 top-10 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-black/10 bg-white/88 p-3 text-black shadow-[0_24px_80px_rgba(0,0,0,0.20)] backdrop-blur-2xl ${
+      className={`fixed left-4 right-4 top-16 overflow-hidden rounded-2xl border border-black/10 bg-white/88 p-3 text-black shadow-[0_24px_80px_rgba(0,0,0,0.20)] backdrop-blur-2xl sm:absolute sm:left-auto sm:right-0 sm:top-10 sm:w-[min(22rem,calc(100vw-2rem))] ${
         open ? "profile-popover-enter" : "profile-popover-exit"
       }`}
       role="dialog"
@@ -138,6 +138,16 @@ export function ProfilePopover({
             </Link>
           ))}
         </div>
+
+        {activeBookings.length > 0 && (
+          <Link
+            href="/profile"
+            onClick={onClose}
+            className="mt-2 block rounded-lg px-3 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.16em] text-black/45 transition hover:bg-black/[0.04] hover:text-black"
+          >
+            View all bookings
+          </Link>
+        )}
       </div>
 
       <div className="profile-popover-item mt-2 grid grid-cols-2 gap-2" style={{ animationDelay: "140ms" }}>
