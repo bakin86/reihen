@@ -65,8 +65,10 @@ export default function CenterPage({ params }: { params: { id: string } }) {
   // Star rating
   const [myUnreviewedBookingId, setMyUnreviewedBookingId] = useState<string | null>(null);
   const [hoverStar, setHoverStar] = useState(0);
+  const [selectedRating, setSelectedRating] = useState(0);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [ratingPending, setRatingPending] = useState(false);
+  const [ratingError, setRatingError] = useState("");
 
   // Multi-seat selection + booking
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -209,6 +211,30 @@ export default function CenterPage({ params }: { params: { id: string } }) {
       if (prev.length >= maxSeats) return prev; // enforce limit
       return [...prev, id];
     });
+  };
+
+  const submitStarRating = async (rating: number) => {
+    if (!myUnreviewedBookingId || ratingPending) return;
+    setSelectedRating(rating);
+    setRatingPending(true);
+    setRatingError("");
+    try {
+      await apiFetch("/api/reviews", {
+        method: "POST",
+        token,
+        body: JSON.stringify({ bookingId: myUnreviewedBookingId, rating }),
+      });
+      setRatingSubmitted(true);
+      setMyUnreviewedBookingId(null);
+      setCenter((c) =>
+        c ? { ...c, reviewCount: c.reviewCount + 1, rating: parseFloat(((c.rating * reviews.length + rating) / (reviews.length + 1)).toFixed(2)) } : c
+      );
+    } catch (err: any) {
+      setRatingError(err.message ?? "Үнэлгээ илгээж чадсангүй");
+      setSelectedRating(0);
+    } finally {
+      setRatingPending(false);
+    }
   };
 
   const confirmBooking = () => {
@@ -918,42 +944,49 @@ export default function CenterPage({ params }: { params: { id: string } }) {
 
         {/* Star rating widget — only for users with unreviewed completed bookings */}
         {myUnreviewedBookingId && !ratingSubmitted && (
-          <div className="mx-4 mb-4 flex items-center gap-4 border border-white/10 bg-white/[0.03] px-5 py-4 md:mx-8">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-white/40 shrink-0">ҮНЭЛЭХ</span>
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map((s) => (
-                <button
-                  key={s}
-                  disabled={ratingPending}
-                  onMouseEnter={() => setHoverStar(s)}
-                  onMouseLeave={() => setHoverStar(0)}
-                  onClick={async () => {
-                    if (ratingPending) return;
-                    setRatingPending(true);
-                    try {
-                      await apiFetch("/api/reviews", {
-                        method: "POST", token,
-                        body: JSON.stringify({ bookingId: myUnreviewedBookingId, rating: s }),
-                      });
-                      setRatingSubmitted(true);
-                      setCenter((c) => c ? { ...c, rating: parseFloat(((c.rating * reviews.length + s) / (reviews.length + 1)).toFixed(2)) } : c);
-                    } catch { /* ignore */ } finally {
-                      setRatingPending(false);
-                    }
-                  }}
-                  className={`text-2xl transition-colors ${s <= (hoverStar || 0) ? "text-yellow-400" : "text-white/15"}`}
-                >
-                  ★
-                </button>
-              ))}
+          <div className="mx-4 mb-4 rounded-2xl border border-yellow-400/20 bg-yellow-400/[0.06] px-5 py-5 md:mx-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-yellow-200/70">Үнэлгээ өгөх</div>
+                <p className="mt-1 text-xs text-white/45">Сэтгэгдэл бичих шаардлагагүй. Зүгээр л одоо сонго.</p>
+              </div>
+              <div className="flex items-center gap-1" aria-label="Star rating">
+                {[1, 2, 3, 4, 5].map((s) => {
+                  const active = s <= (hoverStar || selectedRating);
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      disabled={ratingPending}
+                      onMouseEnter={() => setHoverStar(s)}
+                      onMouseLeave={() => setHoverStar(0)}
+                      onFocus={() => setHoverStar(s)}
+                      onBlur={() => setHoverStar(0)}
+                      onClick={() => submitStarRating(s)}
+                      aria-label={`${s} од өгөх`}
+                      className={`flex h-11 w-11 items-center justify-center rounded-xl text-3xl transition-all duration-200 disabled:cursor-wait disabled:opacity-55 ${
+                        active
+                          ? "bg-yellow-400/12 text-yellow-300 shadow-[0_0_24px_rgba(250,204,21,0.10)]"
+                          : "text-white/18 hover:bg-white/[0.05] hover:text-yellow-300/70"
+                      }`}
+                    >
+                      ★
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <span className="text-[10px] text-white/25">Та энэ газрыг үнэлнэ үү</span>
+            {(ratingPending || ratingError) && (
+              <div className={`mt-3 text-[10px] uppercase tracking-[0.18em] ${ratingError ? "text-red-300" : "text-yellow-200/45"}`}>
+                {ratingError || "Илгээж байна..."}
+              </div>
+            )}
           </div>
         )}
         {ratingSubmitted && (
-          <div className="mx-4 mb-4 flex items-center gap-3 border border-white/10 bg-white/[0.03] px-5 py-4 md:mx-8">
+          <div className="mx-4 mb-4 flex items-center gap-3 rounded-2xl border border-yellow-400/20 bg-yellow-400/[0.06] px-5 py-4 md:mx-8">
             <span className="text-yellow-400 text-lg">★</span>
-            <span className="text-[11px] text-white/40">Үнэлгээ илгээгдлээ. Баярлалаа!</span>
+            <span className="text-[11px] text-white/55">Үнэлгээ илгээгдлээ. Баярлалаа!</span>
           </div>
         )}
 
