@@ -103,15 +103,12 @@ export default function ProfilePage() {
   }
 
   return (
-    <main
-      className="min-h-screen text-white"
-      style={{ background: "linear-gradient(135deg, #0d0d18 0%, #080810 50%, #0a0a14 100%)" }}
-    >
-      {/* Ambient blobs */}
+    <main className="min-h-screen bg-[#0a0a0a] text-white">
+      {/* Ambient blobs — white only, matching site palette */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-indigo-500/[0.07] blur-[120px]" />
-        <div className="absolute -right-40 top-1/3 h-[400px] w-[400px] rounded-full bg-purple-500/[0.05] blur-[100px]" />
-        <div className="absolute bottom-0 left-1/3 h-[350px] w-[350px] rounded-full bg-blue-500/[0.04] blur-[100px]" />
+        <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-white/[0.025] blur-[120px]" />
+        <div className="absolute -right-40 top-1/3 h-[400px] w-[400px] rounded-full bg-white/[0.018] blur-[100px]" />
+        <div className="absolute bottom-0 left-1/3 h-[350px] w-[350px] rounded-full bg-white/[0.015] blur-[100px]" />
       </div>
 
       <div className="relative mx-auto max-w-2xl px-4 pb-24 pt-24 md:pt-28">
