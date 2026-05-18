@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,13 +7,7 @@ import { useAuth } from "@/lib/useAuth";
 import { apiFetch } from "@/lib/api";
 import { useBookingHistory } from "@/lib/hooks/useBookingHistory";
 import { getMainImage } from "@/lib/image-types";
-import {
-  StatsStripSkeleton,
-  ChartSkeleton,
-  BookingRowSkeleton,
-  TopCenterRowSkeleton,
-  Skeleton,
-} from "@/components/Skeleton";
+import { BookingRowSkeleton } from "@/components/Skeleton";
 
 interface Booking {
   id: string;
@@ -26,17 +20,6 @@ interface Booking {
   bookingSeats: { seat: { number: string } }[];
   center: { id: string; name: string; address: string; images: string[] };
   review: { id: string; rating: number } | null;
-}
-
-interface Stats {
-  totalHours: number;
-  totalSpent: number;
-  bookingCount: number;
-  noShowCount: number;
-  balance: number;
-  favoritesCount: number;
-  topCenters: { centerId: string; name: string; image: string | null; hours: number; spent: number; visits: number }[];
-  monthlySpending: { month: string; total: number }[];
 }
 
 interface FavCenter {
@@ -52,31 +35,19 @@ interface FavCenter {
 
 type StatusFilter = "ALL" | "CONFIRMED" | "CANCELLED" | "NOSHOW";
 
-interface TopUpPending {
-  id: string;
-  amount: number;
-  invoiceId?: string;
-  qrImage?: string;
-  shortUrl?: string;
-}
-
 const ROLE_LABELS: Record<string, string> = {
-  PLAYER: "Тоглогч",
-  STAFF:  "Ажилтан",
-  OWNER:  "Эзэн",
-  ADMIN:  "Админ",
+  PLAYER: "ТОГЛОГЧ",
+  STAFF:  "АЖИЛТАН",
+  OWNER:  "ЭЗЭН",
+  ADMIN:  "АДМИН",
 };
 
 export default function ProfilePage() {
   const { user, token, loading: authLoading, logout } = useAuth();
+  const [tab, setTab]                   = useState<"history" | "favorites">("history");
   const [historyPage, setHistoryPage]   = useState(1);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [cancelling, setCancelling]     = useState<string | null>(null);
-  const [tab, setTab]                   = useState<"stats" | "history" | "favorites">("stats");
-  const [topUpAmount, setTopUpAmount]   = useState(50_000);
-  const [topUpPending, setTopUpPending] = useState<TopUpPending | null>(null);
-  const [topUpBusy, setTopUpBusy]       = useState(false);
-  const [topUpError, setTopUpError]     = useState("");
   const qc = useQueryClient();
 
   const { data: activeData } = useQuery<{ bookings: Booking[] }>({
@@ -85,14 +56,9 @@ export default function ProfilePage() {
     enabled:  !!token,
     staleTime: 20_000,
   });
-  const activeBookings = activeData?.bookings ?? [];
-
-  const { data: stats } = useQuery<Stats>({
-    queryKey: ["me", "stats"],
-    queryFn:  () => apiFetch("/api/me/stats", { token }),
-    enabled:  !!token,
-    staleTime: 60_000,
-  });
+  const activeBookings = (activeData?.bookings ?? []).filter(
+    (b) => b.status === "PENDING" || b.status === "CONFIRMED"
+  );
 
   const { data: favData } = useQuery<{ centers: FavCenter[] }>({
     queryKey: ["favorites"],
@@ -105,6 +71,7 @@ export default function ProfilePage() {
   const { data: historyData } = useBookingHistory(historyPage, statusFilter);
   const history      = historyData?.bookings ?? [];
   const historyTotal = historyData?.pagination?.total ?? 0;
+  const totalHistoryPages = Math.ceil(historyTotal / 10);
 
   const cancelMutation = useMutation({
     mutationFn: (id: string) =>
@@ -126,59 +93,11 @@ export default function ProfilePage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["favorites"] }),
   });
 
-  const startTopUp = async () => {
-    if (!token || topUpBusy) return;
-    setTopUpError("");
-    setTopUpBusy(true);
-    try {
-      const res = await apiFetch<{
-        topUp: { id: string; amount: number; qpayInvoiceId?: string };
-        payment: { invoiceId?: string; qrImage?: string; shortUrl?: string };
-      }>("/api/wallet/topup", {
-        method: "POST",
-        token,
-        body: JSON.stringify({ amount: topUpAmount }),
-      });
-      setTopUpPending({
-        id: res.topUp.id,
-        amount: res.topUp.amount,
-        invoiceId: res.payment.invoiceId ?? res.topUp.qpayInvoiceId,
-        qrImage: res.payment.qrImage,
-        shortUrl: res.payment.shortUrl,
-      });
-    } catch (e: any) {
-      setTopUpError(e.message ?? "Top-up failed");
-    } finally {
-      setTopUpBusy(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!topUpPending || !token) return;
-    const interval = setInterval(async () => {
-      try {
-        const res = await apiFetch<{
-          topUp: { paymentStatus: string };
-          balance: number;
-        }>(`/api/wallet/topup/${topUpPending.id}`, { token });
-        if (res.topUp.paymentStatus === "PAID") {
-          clearInterval(interval);
-          setTopUpPending(null);
-          window.dispatchEvent(new Event("reihen:auth-refresh"));
-          qc.invalidateQueries({ queryKey: ["me", "stats"] });
-        }
-      } catch {
-        // keep polling while QPay is pending
-      }
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [topUpPending, token, qc]);
-
   if (authLoading) return null;
 
   if (!user) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-black">
+      <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[#080808]">
         <h1
           className="font-black text-white"
           style={{ fontFamily: "var(--font-display)", fontSize: "clamp(40px, 8vw, 100px)", letterSpacing: "-0.05em", lineHeight: 0.88 }}
@@ -187,7 +106,7 @@ export default function ProfilePage() {
         </h1>
         <Link
           href="/login"
-          className="text-[10px] font-medium uppercase tracking-[0.28em] text-white/35 transition-colors hover:text-white"
+          className="text-[10px] font-medium uppercase tracking-[0.28em] text-white/40 transition-colors hover:text-white"
         >
           НЭВТРЭХ →
         </Link>
@@ -195,50 +114,26 @@ export default function ProfilePage() {
     );
   }
 
-  const active          = activeBookings.filter((b) => b.status === "PENDING" || b.status === "CONFIRMED");
-  const totalHistoryPages = Math.ceil(historyTotal / 10);
-  const maxBar          = stats ? Math.max(...stats.monthlySpending.map((m) => m.total), 1) : 1;
-
   return (
     <main className="min-h-screen bg-[#080808] text-white">
 
-      {/* ── HEADER ── */}
-      <header className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4 md:px-12">
-        <Link
-          href="/"
-          className="text-[10px] font-medium uppercase tracking-[0.28em] text-white/35 transition-colors hover:text-white"
-        >
-          ← HOME
-        </Link>
-        <span
-          className="font-black text-white"
-          style={{ fontFamily: "var(--font-display)", fontSize: "13px", letterSpacing: "-0.02em", fontWeight: 900 }}
-        >
-          PROFILE
-        </span>
-        <button
-          onClick={logout}
-          className="text-[10px] font-medium uppercase tracking-[0.28em] text-white/18 transition-colors hover:text-red-400"
-        >
-          LOGOUT
-        </button>
-      </header>
+      {/* ── HERO ── */}
+      <section className="border-b border-white/[0.06] px-6 pb-10 pt-28 md:px-12 md:pt-32">
+        <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
 
-      {/* ── USER HERO ── */}
-      <section className="border-b border-white/[0.06] px-6 py-10 md:px-12 md:py-14">
-        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          {/* Name + role */}
           <div>
-            <div className="mb-3 flex items-center gap-3">
-              <span className="text-[9px] font-medium uppercase tracking-[0.3em] text-white/25">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="text-[9px] font-medium uppercase tracking-[0.35em] text-white/30">
                 {ROLE_LABELS[user.role] ?? user.role}
               </span>
-              {active.length > 0 && (
+              {activeBookings.length > 0 && (
                 <span className="flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-[0.2em] text-green-400">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-50" />
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-400" />
                   </span>
-                  {active.length} идэвхтэй
+                  {activeBookings.length} идэвхтэй
                 </span>
               )}
             </div>
@@ -246,7 +141,7 @@ export default function ProfilePage() {
               className="font-black text-white"
               style={{
                 fontFamily: "var(--font-display)",
-                fontSize: "clamp(40px, 6vw, 96px)",
+                fontSize: "clamp(48px, 7vw, 120px)",
                 letterSpacing: "-0.05em",
                 lineHeight: 0.86,
                 fontWeight: 900,
@@ -254,363 +149,179 @@ export default function ProfilePage() {
             >
               {user.name.toUpperCase()}
             </h1>
-            <p className="mono mt-3 text-[11px] text-white/22">{user.phone} · {user.email}</p>
+            <p className="mono mt-4 text-[11px] text-white/30">{user.email}</p>
           </div>
 
-          {/* Balance */}
-          <div className="text-right">
-            <div
-              className="mono font-black text-white"
-              style={{ fontSize: "clamp(24px, 3vw, 40px)", letterSpacing: "-0.04em", lineHeight: 1 }}
-            >
-              {user.balance.toLocaleString()}₮
-            </div>
-            <div className="mt-1 text-[9px] font-medium uppercase tracking-[0.28em] text-white/25">
-              ҮЛДЭГДЭЛ
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── STATS STRIP ── */}
-      <section className="border-b border-white/[0.06] px-6 py-6 md:px-12">
-        <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
-          <div>
-            <h2 className="text-[9px] font-medium uppercase tracking-[0.32em] text-white/28">WALLET TOP-UP</h2>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {[20_000, 50_000, 100_000, 200_000].map((amount) => (
-                <button
-                  key={amount}
-                  type="button"
-                  onClick={() => setTopUpAmount(amount)}
-                  className={`rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-colors ${
-                    topUpAmount === amount
-                      ? "border-white bg-white text-black"
-                      : "border-white/10 text-white/35 hover:border-white/30 hover:text-white"
-                  }`}
-                >
-                  {(amount / 1000).toFixed(0)}K₮
-                </button>
-              ))}
-            </div>
-            {topUpError && <p className="mt-3 text-xs text-red-400">{topUpError}</p>}
-          </div>
-          <button
-            type="button"
-            onClick={startTopUp}
-            disabled={topUpBusy || Boolean(topUpPending)}
-            className="rounded-full bg-white px-6 py-3 text-[10px] font-black uppercase tracking-[0.24em] text-black transition-opacity disabled:opacity-35"
-          >
-            {topUpBusy ? "CREATING..." : "PAY WITH QPAY"}
-          </button>
-        </div>
-
-        {topUpPending && (
-          <div className="mt-6 grid gap-5 border border-white/10 bg-white/[0.03] p-5 md:grid-cols-[auto_1fr] md:items-center">
-            <div className="bg-white p-3">
-              {topUpPending.qrImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={`data:image/png;base64,${topUpPending.qrImage}`} alt="QPay top-up QR" className="h-40 w-40" />
-              ) : topUpPending.shortUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={topUpPending.shortUrl} alt="QPay top-up QR" className="h-40 w-40" />
-              ) : (
-                <div className="flex h-40 w-40 items-center justify-center text-xs font-black text-black">QR</div>
-              )}
-            </div>
+          {/* Balance + logout */}
+          <div className="flex flex-col items-start gap-4 md:items-end">
             <div>
-              <p className="text-[9px] uppercase tracking-[0.28em] text-white/28">QPAY PAYMENT PENDING</p>
-              <div className="mono mt-2 text-3xl font-black text-white">{topUpPending.amount.toLocaleString()}₮</div>
-              <p className="mt-2 max-w-md text-xs text-white/35">
-                QR unshuulaad tulburuu hii. Demo mode deer auto-confirm ajillana, esvel doorkh tovchoor shalgaj bolno.
-              </p>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!topUpPending.invoiceId) return;
-                  await fetch(`/api/qpay/callback?qpay_payment_id=${topUpPending.invoiceId}&mock=1`).catch(() => {});
-                }}
-                className="mt-4 rounded-full border border-white/15 px-5 py-2.5 text-[9px] uppercase tracking-[0.22em] text-white/45 hover:border-white/35 hover:text-white"
+              <div className="text-[9px] font-medium uppercase tracking-[0.3em] text-white/30 md:text-right">
+                ҮЛДЭГДЭЛ
+              </div>
+              <div
+                className="mono mt-1 font-black text-white"
+                style={{ fontSize: "clamp(28px, 3.5vw, 52px)", letterSpacing: "-0.04em", lineHeight: 1 }}
               >
-                CHECK PAYMENT
-              </button>
+                {user.balance.toLocaleString()}₮
+              </div>
             </div>
+            <button
+              onClick={logout}
+              className="text-[9px] font-medium uppercase tracking-[0.28em] text-white/25 transition-colors hover:text-red-400"
+            >
+              ГАРАХ
+            </button>
           </div>
-        )}
+        </div>
       </section>
 
-      {!stats && (
-        <section className="border-b border-white/[0.06]">
-          <StatsStripSkeleton />
-        </section>
-      )}
-      {stats && (
-        <section className="grid grid-cols-3 border-b border-white/[0.06] md:grid-cols-6">
-          {[
-            { v: `${stats.totalHours.toFixed(0)}ц`,           l: "Нийт цаг" },
-            { v: `${(stats.totalSpent / 1000).toFixed(0)}к₮`, l: "Зарцуулсан" },
-            { v: String(stats.bookingCount),                   l: "Захиалга" },
-            { v: String(stats.noShowCount),                    l: "Ирээгүй" },
-            { v: String(stats.favoritesCount),                 l: "Дуртай" },
-            { v: `${(stats.balance / 1000).toFixed(0)}к₮`,    l: "Үлдэгдэл" },
-          ].map((s, i) => (
-            <div
-              key={i}
-              className="flex flex-col items-center justify-center border-white/[0.04] py-6 [&:not(:last-child)]:border-r"
-            >
-              <div
-                className="mono font-black text-white"
-                style={{ fontSize: "clamp(18px, 2.5vw, 32px)", letterSpacing: "-0.04em", lineHeight: 1 }}
-              >
-                {s.v}
+      {/* ── ACTIVE BOOKINGS (always visible if any) ── */}
+      {activeBookings.length > 0 && (
+        <section className="border-b border-white/[0.06] px-6 py-8 md:px-12">
+          <div className="mb-5 flex items-center gap-3">
+            <h2 className="text-[9px] font-medium uppercase tracking-[0.32em] text-white/30">ИДЭВХТЭЙ</h2>
+            <span className="mono text-[9px] text-white/20">{activeBookings.length}</span>
+          </div>
+          <div className="divide-y divide-white/[0.05]">
+            {activeBookings.map((b) => (
+              <div key={b.id} className="flex items-start justify-between gap-4 py-5">
+                <div>
+                  <div className="mono text-[9px] text-white/25">{b.code}</div>
+                  <div
+                    className="mt-1 font-black text-white"
+                    style={{ fontFamily: "var(--font-display)", fontSize: "clamp(18px, 2.5vw, 30px)", letterSpacing: "-0.04em", lineHeight: 1 }}
+                  >
+                    {b.bookingSeats.map((bs) => bs.seat.number).join(", ")}
+                  </div>
+                  <div className="mt-1 text-[12px] text-white/50">{b.center.name}</div>
+                  <div className="mono mt-1 text-[10px] text-white/25">
+                    {new Date(b.startTime).toLocaleDateString("mn-MN")} ·{" "}
+                    {new Date(b.startTime).toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })} ·{" "}
+                    {b.hours}ц · {b.totalPrice.toLocaleString()}₮
+                  </div>
+                </div>
+                <button
+                  disabled={cancelling === b.id}
+                  onClick={() => cancelMutation.mutate(b.id)}
+                  className="shrink-0 text-[9px] font-medium uppercase tracking-[0.22em] text-white/25 transition-colors hover:text-red-400 disabled:opacity-30"
+                >
+                  {cancelling === b.id ? "..." : "ЦУЦЛАХ"}
+                </button>
               </div>
-              <div className="mt-1.5 text-[8px] font-medium uppercase tracking-[0.22em] text-white/22">{s.l}</div>
-            </div>
-          ))}
+            ))}
+          </div>
         </section>
       )}
 
       {/* ── TABS ── */}
       <div className="flex border-b border-white/[0.06]">
-        {(["stats", "history", "favorites"] as const).map((t) => {
-          const badge =
-            t === "history"   && historyTotal > 0 ? historyTotal :
-            t === "favorites" && stats ? stats.favoritesCount : null;
+        {(["history", "favorites"] as const).map((t) => {
+          const count = t === "history" ? historyTotal : favorites.length;
           return (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex flex-1 items-center justify-center gap-2 py-4 text-[9px] font-medium uppercase tracking-[0.28em] transition-colors ${
-                tab === t ? "border-b border-white text-white" : "text-white/25 hover:text-white/50"
+              className={`relative flex flex-1 items-center justify-center gap-2.5 py-5 text-[9px] font-medium uppercase tracking-[0.28em] transition-colors ${
+                tab === t ? "text-white" : "text-white/30 hover:text-white/55"
               }`}
             >
-              {t === "stats" ? "Статистик" : t === "history" ? "Түүх" : "Дуртай"}
-              {badge != null && badge > 0 && (
-                <span className="mono text-[8px] text-white/25">{badge}</span>
+              {t === "history" ? "ТҮҮХ" : "ДУРТАЙ"}
+              {count > 0 && (
+                <span className="mono text-[8px] text-white/25">{count}</span>
+              )}
+              {tab === t && (
+                <span className="absolute bottom-0 left-0 right-0 h-px bg-white" />
               )}
             </button>
           );
         })}
       </div>
 
-      {/* ── STATS TAB ── */}
-      {tab === "stats" && (
-        <div className="divide-y divide-white/[0.05]">
-
-          {/* Monthly spending chart */}
-          {!stats && (
-            <section className="px-6 py-10 md:px-12">
-              <Skeleton dark className="mb-8 h-2 w-32" />
-              <ChartSkeleton />
-            </section>
-          )}
-          {stats && (
-            <section className="px-6 py-10 md:px-12">
-              <h3 className="mb-8 text-[9px] font-medium uppercase tracking-[0.32em] text-white/28">
-                САРЫН ЗАРЦУУЛАЛТ
-              </h3>
-              <div className="flex items-end gap-1.5" style={{ height: 120 }}>
-                {stats.monthlySpending.map((m) => {
-                  const pct = (m.total / maxBar) * 100;
-                  return (
-                    <div key={m.month} className="flex flex-1 flex-col items-center gap-1.5">
-                      <span className="mono text-[7px] text-white/22">
-                        {m.total > 0 ? `${(m.total / 1000).toFixed(0)}к` : ""}
-                      </span>
-                      <div className="flex w-full items-end" style={{ height: 80 }}>
-                        <div
-                          className="w-full transition-all duration-500 hover:opacity-70"
-                          style={{
-                            height: `${Math.max(pct, m.total > 0 ? 4 : 0)}%`,
-                            background: m.total > 0
-                              ? "linear-gradient(to top, rgba(255,255,255,0.28), rgba(255,255,255,0.06))"
-                              : "rgba(255,255,255,0.04)",
-                          }}
-                        />
-                      </div>
-                      <span className="mono text-[7px] text-white/18">{m.month.slice(5)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* Top centers */}
-          {!stats && (
-            <section className="px-6 py-8 md:px-12">
-              <Skeleton dark className="mb-6 h-2 w-24" />
-              {Array.from({ length: 3 }).map((_, i) => <TopCenterRowSkeleton key={i} />)}
-            </section>
-          )}
-          {stats && stats.topCenters.length > 0 && (
-            <section className="px-6 py-8 md:px-12">
-              <h3 className="mb-6 text-[9px] font-medium uppercase tracking-[0.32em] text-white/28">
-                ТОП ЦЕНТРҮҮД
-              </h3>
-              <div className="space-y-0 divide-y divide-white/[0.04]">
-                {stats.topCenters.map((tc, i) => (
-                  <Link
-                    key={tc.centerId}
-                    href={`/centers/${tc.centerId}`}
-                    className="flex items-center gap-5 py-4 transition-opacity hover:opacity-60"
-                  >
-                    <span
-                      className="mono shrink-0 font-black text-white/12"
-                      style={{ fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.04em", width: "2rem" }}
-                    >
-                      {i + 1}
-                    </span>
-                    {tc.image && (
-                      <div className="relative h-10 w-10 shrink-0 overflow-hidden bg-white/5">
-                        <Image src={tc.image} alt={tc.name} fill className="object-cover opacity-60" sizes="40px" />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-bold">{tc.name}</div>
-                      <div className="mono mt-0.5 text-[10px] text-white/28">
-                        {tc.hours.toFixed(0)}ц · {tc.visits} удаа · {tc.spent.toLocaleString()}₮
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-white/18">→</span>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Active bookings */}
-          <section className="px-6 py-8 md:px-12">
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-[9px] font-medium uppercase tracking-[0.32em] text-white/28">
-                ИДЭВХТЭЙ ЗАХИАЛГА
-              </h3>
-              <span className="mono text-[9px] text-white/18">{active.length}</span>
-            </div>
-
-            {active.length === 0 ? (
-              <p className="text-[11px] text-white/14">Идэвхтэй захиалга байхгүй.</p>
-            ) : (
-              <div className="divide-y divide-white/[0.04]">
-                {active.map((b) => (
-                  <div key={b.id} className="py-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="mono text-[10px] text-white/22">{b.code}</div>
-                        <div
-                          className="mt-1 font-black text-white"
-                          style={{ fontFamily: "var(--font-display)", fontSize: "clamp(20px, 2.5vw, 32px)", letterSpacing: "-0.04em", lineHeight: 1 }}
-                        >
-                          {b.bookingSeats.map((bs) => bs.seat.number).join(", ")}
-                        </div>
-                        <div className="mt-1 text-sm text-white/55">{b.center.name}</div>
-                        <div className="mono mt-1 text-[10px] text-white/22">
-                          {new Date(b.startTime).toLocaleDateString("mn-MN")} ·{" "}
-                          {new Date(b.startTime).toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })} ·{" "}
-                          {b.hours}ц · {b.totalPrice.toLocaleString()}₮
-                        </div>
-                      </div>
-                      <button
-                        disabled={cancelling === b.id}
-                        onClick={() => cancelMutation.mutate(b.id)}
-                        className="shrink-0 text-[9px] font-medium uppercase tracking-[0.22em] text-white/28 transition-colors hover:text-red-400 disabled:opacity-30"
-                      >
-                        {cancelling === b.id ? "..." : "ЦУЦЛАХ"}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-      )}
-
       {/* ── HISTORY TAB ── */}
       {tab === "history" && (
         <div>
           {/* Status filter */}
-          <div className="flex border-b border-white/[0.05]">
+          <div className="flex gap-0 border-b border-white/[0.05]">
             {(["ALL", "CONFIRMED", "CANCELLED", "NOSHOW"] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => { setStatusFilter(s); setHistoryPage(1); }}
-                className={`flex-1 py-3 text-[8px] font-medium uppercase tracking-[0.2em] transition-colors ${
+                className={`flex-1 py-3.5 text-[8px] font-medium uppercase tracking-[0.2em] transition-colors ${
                   statusFilter === s
-                    ? "border-b border-white text-white"
-                    : "text-white/20 hover:text-white/40"
+                    ? "text-white"
+                    : "text-white/25 hover:text-white/50"
                 }`}
               >
-                {s === "ALL" ? "Бүгд" : s === "CONFIRMED" ? "Баталгаасан" : s === "CANCELLED" ? "Цуцалсан" : "Ирээгүй"}
+                {s === "ALL" ? "БҮГД" : s === "CONFIRMED" ? "БАТАЛГАА" : s === "CANCELLED" ? "ЦУЦЛАГДСАН" : "ИРЭЭГҮЙ"}
               </button>
             ))}
           </div>
 
-          <div className="border-b border-white/[0.05] px-6 py-3 md:px-12">
-            <span className="mono text-[9px] text-white/18">{historyTotal} захиалга</span>
+          {/* Count */}
+          <div className="border-b border-white/[0.04] px-6 py-3 md:px-12">
+            <span className="mono text-[9px] text-white/20">{historyTotal} захиалга</span>
           </div>
 
+          {/* Skeleton while loading */}
           {history.length === 0 && historyTotal === 0 && (
             <div className="divide-y divide-white/[0.04]">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <BookingRowSkeleton key={i} />
-              ))}
+              {Array.from({ length: 5 }).map((_, i) => <BookingRowSkeleton key={i} />)}
             </div>
           )}
 
+          {/* Rows */}
           <div className="divide-y divide-white/[0.04]">
             {history.map((b: any) => (
               <div
                 key={b.id}
-                className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/[0.015] md:px-12"
+                className="flex items-center gap-4 px-6 py-5 transition-colors hover:bg-white/[0.02] md:px-12"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3">
-                    <span className="mono text-[10px] text-white/18">{b.code}</span>
-                    <span
-                      className={`text-[9px] font-medium uppercase tracking-[0.2em] ${
-                        b.status === "CONFIRMED" ? "text-green-400" :
-                        b.status === "CANCELLED" ? "text-red-400/70" :
-                        b.status === "NOSHOW"    ? "text-orange-400/70" : "text-white/28"
-                      }`}
-                    >
+                    <span className="mono text-[9px] text-white/22">{b.code}</span>
+                    <span className={`text-[9px] font-medium ${
+                      b.status === "CONFIRMED" ? "text-green-400" :
+                      b.status === "CANCELLED" ? "text-red-400/70" :
+                      "text-orange-400/70"
+                    }`}>
                       {b.status === "CONFIRMED" ? "✓" : b.status === "CANCELLED" ? "✕" : "—"}
                     </span>
                   </div>
-                  <div className="mt-0.5 text-sm font-medium">
+                  <div className="mt-1 text-[13px] font-semibold text-white">
                     {b.bookingSeats.map((bs: any) => bs.seat.number).join(", ")}
-                    <span className="ml-2 text-[12px] font-normal text-white/38">{b.center.name}</span>
+                    <span className="ml-2 text-[12px] font-normal text-white/35">{b.center.name}</span>
                   </div>
-                  <div className="mono mt-0.5 text-[10px] text-white/18">
+                  <div className="mono mt-0.5 text-[9px] text-white/22">
                     {new Date(b.startTime).toLocaleDateString("mn-MN")} · {b.hours}ц
                   </div>
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-1.5 text-right">
-                  <div className="mono text-sm text-white/55">{b.totalPrice.toLocaleString()}₮</div>
-                  {b.status === "CONFIRMED" && new Date(b.endTime) < new Date() && b.review && (
-                    <span className="mono text-[9px] text-yellow-400/55">{"★".repeat(b.review.rating)}</span>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <div className="mono text-[13px] text-white/60">{b.totalPrice.toLocaleString()}₮</div>
+                  {b.review && (
+                    <span className="mono text-[9px] text-yellow-400/60">{"★".repeat(b.review.rating)}</span>
                   )}
                 </div>
               </div>
             ))}
           </div>
 
+          {/* Pagination */}
           {totalHistoryPages > 1 && (
-            <div className="flex items-center justify-center gap-8 py-8">
+            <div className="flex items-center justify-between border-t border-white/[0.05] px-6 py-6 md:px-12">
               <button
                 disabled={historyPage <= 1}
                 onClick={() => setHistoryPage((p) => p - 1)}
-                className="text-[10px] font-medium uppercase tracking-[0.28em] text-white/18 transition-colors hover:text-white disabled:opacity-20"
+                className="text-[9px] font-medium uppercase tracking-[0.28em] text-white/25 transition-colors hover:text-white disabled:opacity-20"
               >
                 ← ӨМНӨХ
               </button>
-              <span className="mono text-[10px] text-white/28">
+              <span className="mono text-[9px] text-white/25">
                 {historyPage} / {totalHistoryPages}
               </span>
               <button
                 disabled={historyPage >= totalHistoryPages}
                 onClick={() => setHistoryPage((p) => p + 1)}
-                className="text-[10px] font-medium uppercase tracking-[0.28em] text-white/18 transition-colors hover:text-white disabled:opacity-20"
+                className="text-[9px] font-medium uppercase tracking-[0.28em] text-white/25 transition-colors hover:text-white disabled:opacity-20"
               >
                 ДАРААХ →
               </button>
@@ -621,65 +332,64 @@ export default function ProfilePage() {
 
       {/* ── FAVORITES TAB ── */}
       {tab === "favorites" && (
-        <div className="px-6 py-8 md:px-12">
+        <div>
           {favorites.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-5">
-              <div className="h-px w-8 bg-white/[0.08]" />
+            <div className="flex flex-col items-center justify-center gap-5 py-32">
               <p
                 className="font-black text-white/10"
-                style={{ fontFamily: "var(--font-display)", fontSize: "clamp(20px, 3vw, 36px)", letterSpacing: "-0.04em" }}
+                style={{ fontFamily: "var(--font-display)", fontSize: "clamp(20px, 3vw, 40px)", letterSpacing: "-0.04em" }}
               >
                 ДУРТАЙ ЦЕНТР БАЙХГҮЙ
               </p>
-              <p className="text-center text-[11px] text-white/18">
-                Центрийн хуудсан дээрх ♡ дарж нэмнэ үү.
-              </p>
+              <p className="text-[11px] text-white/25">Центрийн хуудсан дээрх ♡ дарж нэмнэ үү.</p>
               <Link
                 href="/"
-                className="mt-2 text-[10px] font-medium uppercase tracking-[0.28em] text-white/28 transition-colors hover:text-white"
+                className="mt-2 text-[10px] font-medium uppercase tracking-[0.28em] text-white/30 transition-colors hover:text-white"
               >
                 ЦЕНТРҮҮД ХАРАХ →
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-0 divide-y divide-white/[0.05] md:grid-cols-2 md:divide-y-0 md:gap-3">
+            <div className="divide-y divide-white/[0.05]">
               {favorites.map((c) => {
                 const img = getMainImage(c.images);
                 return (
-                  <div key={c.id} className="group relative overflow-hidden">
-                    <Link href={`/centers/${c.id}`} className="block">
-                      <div className="relative aspect-[16/7] bg-white/[0.03]">
-                        {img && (
-                          <Image
-                            src={img}
-                            alt={c.name}
-                            fill
-                            className="object-cover opacity-45 grayscale transition-opacity duration-500 group-hover:opacity-65"
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                          />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-4">
-                          <div className="mb-1 text-[8px] font-medium uppercase tracking-[0.28em] text-white/38">{c.district}</div>
-                          <div
-                            className="font-black text-white"
-                            style={{ fontFamily: "var(--font-display)", fontSize: "clamp(16px, 2vw, 24px)", letterSpacing: "-0.04em", lineHeight: 0.9 }}
-                          >
-                            {c.name.toUpperCase()}
-                          </div>
-                          <div className="mono mt-1.5 flex items-center gap-3 text-[10px] text-white/38">
-                            <span>{c.rating.toFixed(1)} ★</span>
-                            <span>{c.availableSeats}/{c.seatCount} сул</span>
-                            {c.minPricePerHour && <span>{c.minPricePerHour.toLocaleString()}₮/ц</span>}
-                          </div>
-                        </div>
+                  <div key={c.id} className="group relative flex items-center gap-5 px-6 py-5 transition-colors hover:bg-white/[0.02] md:px-12">
+
+                    {/* Thumbnail */}
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden bg-white/[0.04]">
+                      {img && (
+                        <Image
+                          src={img}
+                          alt={c.name}
+                          fill
+                          className="object-cover opacity-50 grayscale transition-opacity duration-300 group-hover:opacity-70"
+                          sizes="56px"
+                        />
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <Link href={`/centers/${c.id}`} className="min-w-0 flex-1">
+                      <div className="text-[9px] font-medium uppercase tracking-[0.28em] text-white/30">{c.district}</div>
+                      <div
+                        className="mt-0.5 truncate font-black text-white"
+                        style={{ fontFamily: "var(--font-display)", fontSize: "clamp(15px, 1.8vw, 22px)", letterSpacing: "-0.03em", lineHeight: 1.1 }}
+                      >
+                        {c.name.toUpperCase()}
+                      </div>
+                      <div className="mono mt-1 flex items-center gap-3 text-[10px] text-white/30">
+                        <span>{c.rating.toFixed(1)} ★</span>
+                        <span>{c.availableSeats}/{c.seatCount} сул</span>
+                        {c.minPricePerHour && <span>{c.minPricePerHour.toLocaleString()}₮/ц</span>}
                       </div>
                     </Link>
-                    {/* Unfavorite */}
+
+                    {/* Remove */}
                     <button
                       onClick={() => unfavoriteMutation.mutate(c.id)}
-                      className="absolute right-3 top-3 bg-black/50 px-2 py-1 text-[9px] font-medium uppercase tracking-[0.2em] text-white/38 transition-colors hover:text-white"
-                      title="Хасах"
+                      disabled={unfavoriteMutation.isPending}
+                      className="shrink-0 text-[9px] font-medium uppercase tracking-[0.22em] text-white/20 transition-colors hover:text-red-400 disabled:opacity-30"
                     >
                       ✕
                     </button>
