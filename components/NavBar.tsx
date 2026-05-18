@@ -47,7 +47,7 @@ export function NavBar() {
   return (
     <header className="anim-fade-down fixed left-0 right-0 top-3 z-50 flex justify-center px-4 pointer-events-none">
       <div className="pointer-events-auto w-fit">
-        <nav className="flex items-center gap-0.5 rounded-full border border-black/[0.09] bg-white/88 px-2 py-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.10)] backdrop-blur-xl">
+        <nav className="flex items-center gap-0.5 rounded-full border border-black/[0.09] bg-white/90 px-2 py-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.10)] backdrop-blur-xl">
 
           {/* Wordmark */}
           <Link
