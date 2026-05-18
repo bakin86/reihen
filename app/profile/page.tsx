@@ -116,6 +116,14 @@ export default function ProfilePage() {
 
       <div className="relative mx-auto max-w-2xl px-4 pb-24 pt-24 md:pt-28">
 
+        {/* Back */}
+        <Link
+          href="/"
+          className="mb-6 inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.2em] text-white/30 transition-colors hover:text-white/70"
+        >
+          ← Нүүр
+        </Link>
+
         {/* ── USER CARD ── */}
         <div className="mb-6 rounded-3xl border border-white/[0.08] bg-white/[0.05] p-6 backdrop-blur-2xl md:p-8">
           <div className="flex items-start justify-between gap-4">
