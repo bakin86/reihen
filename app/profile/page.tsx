@@ -252,8 +252,8 @@ export default function ProfilePage() {
               <div className="px-6 py-14 text-center">
                 <p className="text-sm font-semibold text-white/55">Захиалгын түүх алга</p>
                 <p className="mt-1 text-[11px] text-white/40">Шүүлтүүрээ өөрчлөх эсвэл шинэ захиалга үүсгэнэ үү.</p>
-                <Link href="/booking" className="glass-action mt-5 px-5 py-2.5 text-[10px] uppercase tracking-[0.18em]">
-                  Захиалах
+                <Link href="/#centers" className="glass-action mt-5 px-5 py-2.5 text-[10px] uppercase tracking-[0.18em]">
+                  Центр сонгох
                 </Link>
               </div>
             )}

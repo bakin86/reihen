@@ -127,7 +127,7 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col gap-1.5">
               <Link
-                href="/booking"
+                href="#centers"
                 className="ui-button ui-button-primary w-full"
               >
                 Захиалах →
@@ -181,7 +181,7 @@ export default function HomePage() {
           {/* Mobile CTA */}
           <div className="flex gap-2 md:hidden">
             <Link
-              href="/booking"
+              href="#centers"
               className="ui-button ui-button-primary"
             >
               Захиалах
@@ -191,7 +191,7 @@ export default function HomePage() {
       </section>
 
       {/* ── CENTER INDEX ── */}
-      <section className="pb-28">
+      <section id="centers" className="scroll-mt-24 pb-28">
 
         {/* Toolbar */}
         <div className="h-px bg-black/[0.07]" />
@@ -421,7 +421,7 @@ export default function HomePage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-6 text-[9px] font-medium uppercase tracking-[0.24em] text-white/16">
-              <Link href="/booking" className="transition-colors hover:text-white">Захиалах</Link>
+              <Link href="/#centers" className="transition-colors hover:text-white">Центр сонгох</Link>
               <Link href="/events"  className="transition-colors hover:text-white">Events</Link>
               <Link href="/profile" className="transition-colors hover:text-white">Профайл</Link>
             </div>

@@ -457,12 +457,13 @@ export default function CenterPage({ params }: { params: { id: string } }) {
             >
               {copied ? "COPIED!" : "SHARE"}
             </button>
-            <Link
-              href={`/booking?center=${params.id}`}
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: document.getElementById("seats-section")?.offsetTop ?? 0, behavior: "smooth" })}
               className="ui-button border border-white bg-white text-black hover:border-green-400 hover:bg-green-400"
             >
               BOOK →
-            </Link>
+            </button>
           </div>
         </div>
 
