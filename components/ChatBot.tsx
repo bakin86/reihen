@@ -189,7 +189,7 @@ export function ChatBot() {
                     <button
                       key={q}
                       onClick={() => send(q)}
-                      className="border border-white/20 bg-white/[0.06] px-2.5 py-1.5 text-[9px] uppercase tracking-wider text-white/70 transition-all duration-200 hover:border-white/50 hover:bg-white/[0.12] hover:text-white"
+                      className="border border-white/40 bg-white/[0.10] px-2.5 py-1.5 text-[9px] uppercase tracking-wider text-white transition-all duration-200 hover:border-white hover:bg-white hover:text-black"
                     >
                       {q}
                     </button>
