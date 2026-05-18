@@ -1,6 +1,11 @@
 import { Server as IOServer } from "socket.io";
 import { jwtVerify } from "jose";
 import type { Server as HTTPServer } from "http";
+import {
+  publishBookingUpdateToFirebase,
+  publishSeatUpdateToFirebase,
+  publishTournamentUpdateToFirebase,
+} from "@/lib/firebase-admin";
 
 const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? "dev-secret-change-me-min-32-chars!!"
@@ -68,6 +73,7 @@ export function emitSeatUpdate(
   seat: { id: string; status: string; code?: string; freeAt?: string | Date | null }
 ) {
   io?.to(`branch:${branchId}`).emit("seat:update", seat);
+  publishSeatUpdateToFirebase(branchId, seat).catch(() => {});
 }
 
 export function emitBookingUpdate(
@@ -75,6 +81,7 @@ export function emitBookingUpdate(
   booking: { id: string; status: string; paymentStatus?: string; code?: string }
 ) {
   io?.to(`branch:${branchId}`).emit("booking:update", booking);
+  publishBookingUpdateToFirebase(branchId, booking).catch(() => {});
 }
 
 export function emitTournamentUpdate(
@@ -82,6 +89,7 @@ export function emitTournamentUpdate(
   tournament: { id: string; status: string; teamCount: number }
 ) {
   io?.to(`branch:${branchId}`).emit("tournament:update", tournament);
+  publishTournamentUpdateToFirebase(branchId, tournament).catch(() => {});
 }
 
 export function getIO() {

@@ -52,6 +52,7 @@ export function useSeatSocket(
     if (!branchId) return;
 
     const subscriptions: { unsubscribe: () => Promise<unknown> }[] = [];
+    const firebaseUnsubs: (() => void)[] = [];
     let socket: Socket | null = null;
     let cancelled = false;
 
@@ -104,6 +105,38 @@ export function useSeatSocket(
       });
     }
 
+    if (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL) {
+      import("@/lib/firebase-client").then(({ getFirebaseDatabase, isFirebaseRealtimeConfigured }) => {
+        if (cancelled || !isFirebaseRealtimeConfigured) return;
+        const db = getFirebaseDatabase();
+        if (!db) return;
+
+        import("firebase/database").then(({ onChildChanged, onChildAdded, ref }) => {
+          if (cancelled) return;
+
+          const seatsRef = ref(db, `reihen/centers/${branchId}/seats`);
+          const bookingsRef = ref(db, `reihen/centers/${branchId}/bookings`);
+
+          const handleSeatSnapshot = (snapshot: any) => {
+            const row = snapshot.val() as SeatUpdate | null;
+            if (!row?.id || !row?.status) return;
+            onUpdateRef.current(row);
+          };
+
+          const handleBookingSnapshot = (snapshot: any) => {
+            const row = snapshot.val() as BookingUpdate | null;
+            if (!row?.id || !row?.status) return;
+            onBookingUpdateRef.current?.(row);
+          };
+
+          firebaseUnsubs.push(onChildAdded(seatsRef, handleSeatSnapshot));
+          firebaseUnsubs.push(onChildChanged(seatsRef, handleSeatSnapshot));
+          firebaseUnsubs.push(onChildAdded(bookingsRef, handleBookingSnapshot));
+          firebaseUnsubs.push(onChildChanged(bookingsRef, handleBookingSnapshot));
+        });
+      });
+    }
+
     const url = process.env.NEXT_PUBLIC_WS_URL;
     if (url) {
       const socketToken = token && token !== "cookie-auth" ? token : undefined;
@@ -132,6 +165,7 @@ export function useSeatSocket(
       for (const sub of subscriptions) {
         sub.unsubscribe().catch(() => {});
       }
+      for (const unsub of firebaseUnsubs) unsub();
       if (socket) {
         socket.emit("branch:leave", branchId);
         socket.disconnect();
