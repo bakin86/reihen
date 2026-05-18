@@ -260,7 +260,7 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
   }
 
   return (
-    <main className="owner-light min-h-screen text-black">
+    <main className="soft-glass-page-light min-h-screen text-black">
       {/* Toast */}
       {toast && (
         <div className={`fixed left-1/2 top-4 z-50 -translate-x-1/2 border px-6 py-3 text-xs uppercase tracking-widest ${toast.err ? "border-red-500 bg-red-50 text-red-600" : "border-black bg-black text-white"}`}>
@@ -283,7 +283,7 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
         </span>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="owner-action border border-black bg-white/60 px-4 py-2 text-xs uppercase tracking-widest hover:bg-black hover:text-white transition-colors"
+          className="soft-action-light soft-action-light-primary px-4 py-2 text-xs uppercase tracking-widest"
         >
           {showCreate ? "ХААХ" : "+ ТЭМЦЭЭН НЭМЭХ"}
         </button>
@@ -292,72 +292,72 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
       {/* Create form */}
       {showCreate && (
         <div className="mx-auto max-w-6xl px-5 pb-6 md:px-12">
-        <div className="owner-card-light space-y-4 p-6 md:p-8">
+        <div className="soft-glass-panel-light space-y-4 rounded-2xl p-6 md:p-8">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="text-[10px] uppercase tracking-[0.3em] text-gray">НЭР *</label>
               <input value={name} onChange={(e) => setName(e.target.value)}
-                className="mt-1 w-full border border-black px-3 py-2 text-sm" placeholder="CS2 5v5 Tournament" />
+                className="owner-field-light mt-1 w-full px-3 py-2 text-sm outline-none" placeholder="CS2 5v5 Tournament" />
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-[0.3em] text-gray">ТОГЛООМ *</label>
               <select value={game} onChange={(e) => setGame(e.target.value)}
-                className="mt-1 w-full border border-black px-3 py-2 text-sm bg-white">
+                className="owner-field-light mt-1 w-full px-3 py-2 text-sm outline-none">
                 {GAMES.map((g) => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-[0.3em] text-gray">ЭХЛЭХ ОГНОО *</label>
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                className="mt-1 w-full border border-black px-3 py-2 text-sm" />
+                className="owner-field-light mt-1 w-full px-3 py-2 text-sm outline-none" />
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-[0.3em] text-gray">ЭХЛЭХ ЦАГ *</label>
               <input type="time" value={startHour} onChange={(e) => setStartHour(e.target.value)}
-                className="mt-1 w-full border border-black px-3 py-2 text-sm" />
+                className="owner-field-light mt-1 w-full px-3 py-2 text-sm outline-none" />
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-[0.3em] text-gray">ДУУСАХ ОГНОО</label>
               <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                className="mt-1 w-full border border-black px-3 py-2 text-sm" />
+                className="owner-field-light mt-1 w-full px-3 py-2 text-sm outline-none" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] uppercase tracking-[0.3em] text-gray">MAX TEAMS</label>
                 <input type="number" min={2} max={256} value={maxTeams} onChange={(e) => setMaxTeams(+e.target.value)}
-                  className="mt-1 w-full border border-black px-3 py-2 text-sm" />
+                  className="owner-field-light mt-1 w-full px-3 py-2 text-sm outline-none" />
               </div>
               <div>
                 <label className="text-[10px] uppercase tracking-[0.3em] text-gray">TEAM SIZE</label>
                 <input type="number" min={1} max={10} value={teamSize} onChange={(e) => setTeamSize(+e.target.value)}
-                  className="mt-1 w-full border border-black px-3 py-2 text-sm" />
+                  className="owner-field-light mt-1 w-full px-3 py-2 text-sm outline-none" />
               </div>
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-[0.3em] text-gray">ОРОЛЦОХ ХУРААМЖ (₮)</label>
               <input type="number" min={0} value={entryFee} onChange={(e) => setEntryFee(+e.target.value)}
-                className="mt-1 w-full border border-black px-3 py-2 text-sm" />
+                className="owner-field-light mt-1 w-full px-3 py-2 text-sm outline-none" />
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-[0.3em] text-gray">ШАГНАЛЫН САН (₮)</label>
               <input type="number" min={0} value={prizePool} onChange={(e) => setPrizePool(+e.target.value)}
-                className="mt-1 w-full border border-black px-3 py-2 text-sm" />
+                className="owner-field-light mt-1 w-full px-3 py-2 text-sm outline-none" />
             </div>
           </div>
           <div>
             <label className="text-[10px] uppercase tracking-[0.3em] text-gray">ТАЙЛБАР</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-              rows={3} className="mt-1 w-full border border-black px-3 py-2 text-sm" />
+              rows={3} className="owner-field-light mt-1 w-full px-3 py-2 text-sm outline-none" />
           </div>
           <div>
             <label className="text-[10px] uppercase tracking-[0.3em] text-gray">ДҮРЭМ</label>
             <textarea value={rules} onChange={(e) => setRules(e.target.value)}
-              rows={3} className="mt-1 w-full border border-black px-3 py-2 text-sm" />
+              rows={3} className="owner-field-light mt-1 w-full px-3 py-2 text-sm outline-none" />
           </div>
           <button
             onClick={createTournament}
             disabled={saving || !name.trim() || !startDate}
-            className="w-full bg-black py-3 text-xs uppercase tracking-widest text-white hover:bg-[#333] transition-colors disabled:opacity-50"
+            className="soft-action-light soft-action-light-primary w-full py-3 text-xs uppercase tracking-widest disabled:opacity-50"
           >
             {saving ? "CREATING..." : "ТЭМЦЭЭН ҮҮСГЭХ"}
           </button>
@@ -368,7 +368,7 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
       {/* Tournament list */}
       <div className="mx-auto grid max-w-6xl gap-4 px-5 pb-10 md:px-12">
         {tournaments.map((t) => (
-          <div key={t.id} className="owner-card-light p-5 md:p-6">
+          <div key={t.id} className="soft-glass-panel-light rounded-2xl p-5 md:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3">
@@ -390,32 +390,32 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
               <div className="flex gap-2">
                 <button
                   onClick={() => selectedId === t.id ? setSelectedId(null) : fetchDetail(t.id)}
-                  className="border border-black px-3 py-1.5 text-[10px] uppercase tracking-widest hover:bg-black hover:text-white transition-colors"
+                  className="soft-action-light px-3 py-1.5 text-[10px] uppercase tracking-widest"
                 >
                   {selectedId === t.id ? "ХААХ" : "ДЭЛГЭРЭНГҮЙ"}
                 </button>
 
                 {t.status === "UPCOMING" && (
                   <button onClick={() => updateStatus(t.id, "REGISTRATION_CLOSED")} disabled={saving}
-                    className="border border-black px-3 py-1.5 text-[10px] uppercase tracking-widest hover:bg-black hover:text-white transition-colors disabled:opacity-50">
+                    className="soft-action-light px-3 py-1.5 text-[10px] uppercase tracking-widest disabled:opacity-50">
                     БҮРТГЭЛ ХААХ
                   </button>
                 )}
                 {t.status === "REGISTRATION_CLOSED" && (
                   <button onClick={() => updateStatus(t.id, "LIVE")} disabled={saving}
-                    className="bg-black px-3 py-1.5 text-[10px] uppercase tracking-widest text-white hover:bg-[#333] transition-colors disabled:opacity-50">
+                    className="soft-action-light soft-action-light-primary px-3 py-1.5 text-[10px] uppercase tracking-widest disabled:opacity-50">
                     ЭХЛҮҮЛЭХ
                   </button>
                 )}
                 {t.status === "LIVE" && (
                   <button onClick={() => updateStatus(t.id, "COMPLETED")} disabled={saving}
-                    className="border border-black px-3 py-1.5 text-[10px] uppercase tracking-widest hover:bg-black hover:text-white transition-colors disabled:opacity-50">
+                    className="soft-action-light px-3 py-1.5 text-[10px] uppercase tracking-widest disabled:opacity-50">
                     ДУУСГАХ
                   </button>
                 )}
                 {!["COMPLETED", "CANCELLED"].includes(t.status) && (
                   <button onClick={() => deleteTournament(t.id)} disabled={saving}
-                    className="border border-red-500 px-3 py-1.5 text-[10px] uppercase tracking-widest text-red-500 hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50">
+                    className="soft-action-light border-red-500/35 bg-red-500/[0.06] px-3 py-1.5 text-[10px] uppercase tracking-widest text-red-600 hover:bg-red-500 hover:text-white disabled:opacity-50">
                     ЦУЦЛАХ
                   </button>
                 )}
@@ -431,7 +431,7 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
                 <button
                   onClick={() => generateBracket(selected.id)}
                   disabled={saving || selected.teams.filter((team) => team.paymentStatus === "PAID").length < 2}
-                  className="mb-4 border border-black px-3 py-1.5 text-[10px] uppercase tracking-widest hover:bg-black hover:text-white transition-colors disabled:opacity-40"
+                  className="soft-action-light mb-4 px-3 py-1.5 text-[10px] uppercase tracking-widest disabled:opacity-40"
                   title={selected.matches?.length ? "Existing bracket will be replaced" : undefined}
                 >
                   {selected.matches?.length ? "REGENERATE BRACKET" : "GENERATE BRACKET"}
@@ -479,7 +479,7 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
                             {selected.matches!
                               .filter((match) => match.round === round)
                               .map((match) => (
-                                <div key={match.id} className="border border-black/15 bg-white p-3 shadow-[4px_4px_0_#eee]">
+                                <div key={match.id} className="rounded-xl border border-black/10 bg-white/70 p-3 shadow-[0_12px_34px_rgba(0,0,0,0.08)] backdrop-blur">
                                   <div className="mb-3 flex items-center justify-between gap-3 text-[10px] text-[#888]">
                                     <span>Match {match.matchNumber}</span>
                                     <select
@@ -551,7 +551,7 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
                                           <button
                                             onClick={() => updateMatch(selected.id, match.id, { winnerTeamId: team.id })}
                                             disabled={saving || isWinner}
-                                            className="mt-2 w-full border border-black px-2 py-1 text-[10px] uppercase tracking-widest hover:bg-black hover:text-white disabled:opacity-40"
+                                            className="soft-action-light mt-2 w-full px-2 py-1 text-[10px] uppercase tracking-widest disabled:opacity-40"
                                           >
                                             {isWinner ? "WINNER" : "SET WINNER"}
                                           </button>
@@ -563,7 +563,7 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
                                     <button
                                       onClick={() => updateMatch(selected.id, match.id, { winnerTeamId: null })}
                                       disabled={saving}
-                                      className="mt-1 w-full border border-[#ddd] px-2 py-1 text-[10px] uppercase tracking-widest text-[#888] hover:border-black hover:text-black disabled:opacity-40"
+                                      className="soft-action-light mt-1 w-full px-2 py-1 text-[10px] uppercase tracking-widest disabled:opacity-40"
                                     >
                                       CLEAR WINNER
                                     </button>
@@ -585,7 +585,7 @@ export default function OwnerTournamentsPage({ params }: { params: { id: string 
           <div className="px-6 py-16 text-center md:px-12">
             <p className="text-sm text-[#888]">Тэмцээн алга</p>
             <button onClick={() => setShowCreate(true)}
-              className="mt-4 border border-black px-6 py-2 text-xs uppercase tracking-widest hover:bg-black hover:text-white transition-colors">
+              className="soft-action-light soft-action-light-primary mt-4 px-6 py-2 text-xs uppercase tracking-widest">
               + ТЭМЦЭЭН НЭМЭХ
             </button>
           </div>

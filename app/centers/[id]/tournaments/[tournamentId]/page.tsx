@@ -46,6 +46,18 @@ interface TournamentMatch {
   stationSeat: { id: string; number: string } | null;
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  UPCOMING: "УДАХГҮЙ",
+  REGISTRATION_CLOSED: "БҮРТГЭЛ ХААГДСАН",
+  LIVE: "LIVE",
+  COMPLETED: "ДУУССАН",
+  CANCELLED: "ЦУЦЛАГДСАН",
+};
+
+/* ── Glassmorphism helpers ── */
+const glass = "soft-glass-panel-muted rounded-2xl";
+const glassStrong = "soft-glass-panel rounded-2xl";
+
 export default function TournamentPage({
   params,
 }: {
@@ -60,8 +72,6 @@ export default function TournamentPage({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  // QPay pending state
   const [qpayPending, setQpayPending] = useState<{
     qrImage?: string;
     shortUrl?: string;
@@ -69,9 +79,7 @@ export default function TournamentPage({
   } | null>(null);
 
   const fetchTournament = () => {
-    apiFetch<{ tournament: TournamentDetail }>(
-      `/api/tournaments/${params.tournamentId}`
-    )
+    apiFetch<{ tournament: TournamentDetail }>(`/api/tournaments/${params.tournamentId}`)
       .then(({ tournament }) => setT(tournament))
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -79,24 +87,13 @@ export default function TournamentPage({
 
   useEffect(fetchTournament, [params.tournamentId]);
 
-  // Check if current user is already registered
-  const myTeam = t?.teams.find((team) =>
-    team.members.some((m) => m.user.id === user?.id)
-  );
-
+  const myTeam = t?.teams.find((team) => team.members.some((m) => m.user.id === user?.id));
   const isFull = t ? t._count.teams >= t.maxTeams : false;
-  const canRegister =
-    t?.status === "UPCOMING" && !myTeam && !isFull && !!user;
+  const canRegister = t?.status === "UPCOMING" && !myTeam && !isFull && !!user;
 
   async function handleRegister() {
-    if (!teamName.trim()) {
-      setError("Багийн нэр оруулна уу");
-      return;
-    }
-    setSubmitting(true);
-    setError("");
-    setSuccess("");
-    setQpayPending(null);
+    if (!teamName.trim()) { setError("Багийн нэр оруулна уу"); return; }
+    setSubmitting(true); setError(""); setSuccess(""); setQpayPending(null);
     try {
       const res = await apiFetch<{
         team: any;
@@ -105,461 +102,355 @@ export default function TournamentPage({
         method: "POST",
         body: JSON.stringify({
           teamName: teamName.trim(),
-          playerNames: playerNamesText
-            .split("\n")
-            .map((name) => name.trim())
-            .filter(Boolean),
+          playerNames: playerNamesText.split("\n").map((n) => n.trim()).filter(Boolean),
           paymentMethod: payMethod,
         }),
         token,
       });
-
       if (res.payment?.pending) {
-        setQpayPending({
-          qrImage: res.payment.qrImage,
-          shortUrl: res.payment.shortUrl,
-          deeplinks: res.payment.deeplinks,
-        });
+        setQpayPending({ qrImage: res.payment.qrImage, shortUrl: res.payment.shortUrl, deeplinks: res.payment.deeplinks });
       } else {
         setSuccess("Бүртгэл амжилттай!");
-        setTeamName("");
-        setPlayerNamesText("");
+        setTeamName(""); setPlayerNamesText("");
         fetchTournament();
       }
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Алдаа гарлаа");
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   }
 
   async function handleUnregister() {
     if (!confirm("Бүртгэлээ цуцлах уу?")) return;
-    setSubmitting(true);
-    setError("");
-    setSuccess("");
+    setSubmitting(true); setError(""); setSuccess("");
     try {
-      await apiFetch(`/api/tournaments/${params.tournamentId}/register`, {
-        method: "DELETE",
-        token,
-      });
+      await apiFetch(`/api/tournaments/${params.tournamentId}/register`, { method: "DELETE", token });
       setSuccess("Бүртгэл цуцлагдлаа");
       fetchTournament();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Алдаа гарлаа");
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   }
 
+  /* ── Loading ── */
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <span className="mono text-xs animate-pulse">LOADING...</span>
+      <main className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
+        <div className="space-y-3 text-center">
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border border-white/10 border-t-white/50" />
+          <p className="text-[10px] uppercase tracking-[0.3em] text-white/20">Loading</p>
+        </div>
       </main>
     );
   }
 
   if (!t) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <span className="display text-2xl">ОЛДСОНГҮЙ</span>
-        <Link href={`/centers/${params.id}`} className="mono text-xs underline">
-          ← Буцах
-        </Link>
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#0a0a0a]">
+        <span className="text-2xl font-black text-white/20">ОЛДСОНГҮЙ</span>
+        <Link href={`/centers/${params.id}`} className="text-[10px] uppercase tracking-[0.2em] text-white/30 hover:text-white">← Буцах</Link>
       </main>
     );
   }
 
   const start = new Date(t.startTime);
   const end = t.endTime ? new Date(t.endTime) : null;
-  const statusLabel: Record<string, string> = {
-    UPCOMING: "УДАХГҮЙ",
-    REGISTRATION_CLOSED: "БҮРТГЭЛ ХААГДСАН",
-    LIVE: "LIVE",
-    COMPLETED: "ДУУССАН",
-    CANCELLED: "ЦУЦЛАГДСАН",
-  };
-
-  const bracketRounds = Array.from(new Set(t.matches.map((match) => match.round))).sort((a, b) => a - b);
-  const matchStatusStyle: Record<string, string> = {
-    PENDING: "border-black/20 text-[#888]",
-    LIVE: "border-black bg-black text-white animate-pulse",
-    COMPLETED: "border-black text-black",
-  };
+  const bracketRounds = Array.from(new Set(t.matches.map((m) => m.round))).sort((a, b) => a - b);
+  const slotsLeft = t.maxTeams - t._count.teams;
 
   return (
-    <main className="min-h-screen bg-white text-black">
-      {/* Header */}
-      <div className="border-b border-black px-6 py-5 md:px-12">
-        <Link
-          href={`/centers/${params.id}`}
-          className="mono text-[10px] text-[#888] hover:text-black transition-colors"
-        >
-          ← {t.center.name}
-        </Link>
+    <main className="soft-glass-page text-white">
+
+      {/* Ambient blobs */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -left-32 top-20 h-[400px] w-[400px] rounded-full bg-white/[0.02] blur-[120px]" />
+        <div className="absolute -right-32 top-1/2 h-[350px] w-[350px] rounded-full bg-white/[0.015] blur-[100px]" />
       </div>
 
-      {/* Title + Status */}
-      <div className="border-b border-black px-6 py-8 md:px-12">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="display text-3xl md:text-5xl">{t.name}</h1>
-            <p className="mt-2 text-sm text-[#888]">{t.game}</p>
-          </div>
-          <span
-            className={`shrink-0 px-3 py-1 text-[10px] uppercase tracking-widest ${
-              t.status === "LIVE"
-                ? "bg-black text-white animate-pulse"
-                : t.status === "CANCELLED"
-                ? "bg-red-500 text-white"
-                : "border border-black"
-            }`}
-          >
-            {statusLabel[t.status] ?? t.status}
-          </span>
-        </div>
-      </div>
+      <div className="relative mx-auto max-w-3xl px-4 pb-24 pt-24 md:pt-28">
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-black divide-x divide-black">
-        <div className="px-6 py-5 md:px-12">
-          <div className="mono text-xl md:text-2xl">
-            {start.toLocaleDateString("mn-MN", { month: "short", day: "numeric" })}
-          </div>
-          <div className="text-[9px] text-[#888] tracking-widest mt-1">ОГНОО</div>
+        {/* Back */}
+        <div className="mb-6 animate-[fadeUp_0.4s_ease_forwards] opacity-0" style={{ animationDelay: "0ms" }}>
+          <Link href={`/centers/${params.id}`} className="inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.2em] text-white/55 transition-colors hover:text-white">
+            ← {t.center.name}
+          </Link>
         </div>
-        <div className="px-6 py-5 md:px-12">
-          <div className="mono text-xl md:text-2xl">
-            {start.toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })}
-            {end && ` — ${end.toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })}`}
-          </div>
-          <div className="text-[9px] text-[#888] tracking-widest mt-1">ЦАГ</div>
-        </div>
-        <div className="px-6 py-5 md:px-12">
-          <div className="mono text-xl md:text-2xl">
-            {t._count.teams}/{t.maxTeams}
-          </div>
-          <div className="text-[9px] text-[#888] tracking-widest mt-1">
-            {t.teamSize === 1 ? "ТОГЛОГЧ" : "БАГ"}
-          </div>
-        </div>
-        <div className="px-6 py-5 md:px-12">
-          <div className="mono text-xl md:text-2xl">
-            {t.teamSize === 1 ? "Solo" : `${t.teamSize}v${t.teamSize}`}
-          </div>
-          <div className="text-[9px] text-[#888] tracking-widest mt-1">ФОРМАТ</div>
-        </div>
-      </div>
 
-      {/* Prize + Fee row */}
-      {(t.entryFee > 0 || t.prizePool > 0) && (
-        <div className="grid grid-cols-2 border-b border-black divide-x divide-black">
-          <div className="px-6 py-5 md:px-12">
-            <div className="mono text-xl md:text-2xl">
-              {t.entryFee > 0 ? `${t.entryFee.toLocaleString()}₮` : "ҮНЭГҮЙ"}
-            </div>
-            <div className="text-[9px] text-[#888] tracking-widest mt-1">ОРОЛЦОХ ХУРААМЖ</div>
-          </div>
-          <div className="px-6 py-5 md:px-12">
-            <div className="mono text-xl md:text-2xl">
-              {t.prizePool > 0 ? `${t.prizePool.toLocaleString()}₮` : "—"}
-            </div>
-            <div className="text-[9px] text-[#888] tracking-widest mt-1">ШАГНАЛЫН САН</div>
-          </div>
-        </div>
-      )}
-
-      {/* Description */}
-      {t.description && (
-        <div className="border-b border-black px-6 py-6 md:px-12">
-          <h3 className="text-[10px] text-[#888] tracking-widest mb-3">ТАЙЛБАР</h3>
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{t.description}</p>
-        </div>
-      )}
-
-      {/* Prize description */}
-      {t.prizeDescription && (
-        <div className="border-b border-black px-6 py-6 md:px-12">
-          <h3 className="text-[10px] text-[#888] tracking-widest mb-3">ШАГНАЛ</h3>
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{t.prizeDescription}</p>
-        </div>
-      )}
-
-      {/* Rules */}
-      {t.rules && (
-        <div className="border-b border-black px-6 py-6 md:px-12">
-          <h3 className="text-[10px] text-[#888] tracking-widest mb-3">ДҮРЭМ</h3>
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{t.rules}</p>
-        </div>
-      )}
-
-      {/* Registration section */}
-      {canRegister && (
-        <div className="border-b border-black px-6 py-8 md:px-12">
-          <h3 className="display text-xl mb-5">БҮРТГҮҮЛЭХ</h3>
-
-          {error && (
-            <div className="mb-4 border border-red-400 bg-red-50 px-4 py-2 text-xs text-red-700">
-              {error}
-            </div>
-          )}
-          {success && (
-            <div className="mb-4 border border-green-400 bg-green-50 px-4 py-2 text-xs text-green-700">
-              {success}
-            </div>
-          )}
-
-          <div className="flex flex-col gap-4 max-w-md">
-            <input
-              type="text"
-              placeholder={t.teamSize === 1 ? "Нэр / IGN" : "Багийн нэр"}
-              value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
-              className="border border-black px-4 py-3 text-sm focus:outline-none"
-              maxLength={64}
-            />
-            <textarea
-              placeholder={t.teamSize === 1 ? "Player name / IGN" : `Player names (${t.teamSize} lines max)`}
-              value={playerNamesText}
-              onChange={(e) => setPlayerNamesText(e.target.value)}
-              rows={Math.min(Math.max(t.teamSize, 2), 6)}
-              className="border border-black px-4 py-3 text-sm focus:outline-none"
-              maxLength={400}
-            />
-
-            {t.entryFee > 0 && (
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPayMethod("QPAY")}
-                  className={`flex-1 border px-4 py-3 text-xs transition-colors ${
-                    payMethod === "QPAY"
-                      ? "border-black bg-black text-white"
-                      : "border-black/20 hover:border-black"
-                  }`}
-                >
-                  QPAY
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPayMethod("BALANCE")}
-                  className={`flex-1 border px-4 py-3 text-xs transition-colors ${
-                    payMethod === "BALANCE"
-                      ? "border-black bg-black text-white"
-                      : "border-black/20 hover:border-black"
-                  }`}
-                >
-                  ҮЛДЭГДЭЛ
-                </button>
+        {/* ── Hero card ── */}
+        <div className={`${glassStrong} mb-4 overflow-hidden animate-[fadeUp_0.5s_ease_forwards] opacity-0`} style={{ animationDelay: "60ms" }}>
+          <div className="p-6 md:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <div className="mb-2 flex items-center gap-2.5 flex-wrap">
+                  <span className="mono text-[9px] font-medium uppercase tracking-[0.25em] text-white/58">{t.game}</span>
+                  <span className="text-white/15">·</span>
+                  <span className="mono text-[9px] text-white/50">{t.center.name}</span>
+                </div>
+                <h1 className="font-black text-white leading-tight" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(22px, 4vw, 40px)", letterSpacing: "-0.03em" }}>
+                  {t.name}
+                </h1>
               </div>
-            )}
-
-            <button
-              onClick={handleRegister}
-              disabled={submitting}
-              className="bg-black text-white px-6 py-3 text-sm hover:bg-black/80 transition-colors disabled:opacity-50"
-            >
-              {submitting
-                ? "..."
-                : t.entryFee > 0
-                ? `БҮРТГҮҮЛЭХ · ${t.entryFee.toLocaleString()}₮`
-                : "БҮРТГҮҮЛЭХ"}
-            </button>
+              <span className={`shrink-0 rounded-full px-3 py-1 text-[9px] font-semibold uppercase tracking-widest ${
+                t.status === "LIVE"
+                  ? "animate-pulse bg-green-500/20 text-green-400"
+                  : t.status === "CANCELLED"
+                  ? "bg-red-500/20 text-red-400"
+                  : t.status === "COMPLETED"
+                  ? "bg-white/10 text-white/40"
+                  : "bg-white/10 text-white/70"
+              }`}>
+                {STATUS_LABELS[t.status] ?? t.status}
+              </span>
+            </div>
           </div>
 
-          {/* QPay pending */}
-          {qpayPending && (
-            <div className="mt-6 border border-black p-6 max-w-md">
-              <h4 className="display text-sm mb-4">QPAY ТӨЛБӨР</h4>
-              {(qpayPending.qrImage || qpayPending.shortUrl) && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={qpayPending.qrImage || qpayPending.shortUrl}
-                  alt="QPay QR"
-                  className="w-48 h-48 mx-auto mb-4"
-                />
-              )}
-              {qpayPending.deeplinks && qpayPending.deeplinks.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {qpayPending.deeplinks.map((dl) => (
-                    <a
-                      key={dl.name}
-                      href={dl.link}
-                      className="border border-black px-3 py-1.5 text-[10px] hover:bg-black hover:text-white transition-colors"
+          {/* Stats strip */}
+          <div className="grid grid-cols-2 divide-x divide-white/[0.06] border-t border-white/[0.06] sm:grid-cols-4">
+            {[
+              { label: "ОГНОО", value: start.toLocaleDateString("mn-MN", { month: "short", day: "numeric" }) },
+              { label: "ЦАГ", value: `${start.toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })}${end ? `–${end.toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })}` : ""}` },
+              { label: t.teamSize === 1 ? "ТОГЛОГЧ" : "БАГ", value: `${t._count.teams}/${t.maxTeams}` },
+              { label: "ФОРМАТ", value: t.teamSize === 1 ? "Solo" : `${t.teamSize}v${t.teamSize}` },
+            ].map(({ label, value }) => (
+              <div key={label} className="px-5 py-4">
+                <div className="text-[9px] font-medium uppercase tracking-[0.2em] text-white/55">{label}</div>
+                <div className="mono mt-1 text-base font-black text-white">{value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Prize + Fee ── */}
+        {(t.entryFee > 0 || t.prizePool > 0) && (
+          <div className={`${glass} mb-4 grid grid-cols-2 divide-x divide-white/[0.06] animate-[fadeUp_0.5s_ease_forwards] opacity-0`} style={{ animationDelay: "120ms" }}>
+            <div className="px-6 py-5">
+              <div className="text-[9px] font-medium uppercase tracking-[0.2em] text-white/55">ОРОЛЦОХ ХУРААМЖ</div>
+              <div className="mono mt-1 text-xl font-black text-white">{t.entryFee > 0 ? `${t.entryFee.toLocaleString()}₮` : "ҮНЭГҮЙ"}</div>
+            </div>
+            <div className="px-6 py-5">
+              <div className="text-[9px] font-medium uppercase tracking-[0.2em] text-yellow-400/60">ШАГНАЛЫН САН</div>
+              <div className="mono mt-1 text-xl font-black text-yellow-400">{t.prizePool > 0 ? `${t.prizePool.toLocaleString()}₮` : "—"}</div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Description / Rules / Prize desc ── */}
+        {[
+          { label: "ТАЙЛБАР", content: t.description },
+          { label: "ШАГНАЛ", content: t.prizeDescription },
+          { label: "ДҮРЭМ", content: t.rules },
+        ].filter((s) => s.content).map((s, i) => (
+          <div key={s.label} className={`${glass} mb-4 p-6 animate-[fadeUp_0.5s_ease_forwards] opacity-0`} style={{ animationDelay: `${180 + i * 60}ms` }}>
+            <div className="mb-3 text-[9px] font-medium uppercase tracking-[0.25em] text-white/55">{s.label}</div>
+            <p className="text-sm leading-relaxed text-white/70 whitespace-pre-wrap">{s.content}</p>
+          </div>
+        ))}
+
+        {/* ── Registration ── */}
+        {canRegister && (
+          <div className={`${glassStrong} mb-4 p-6 animate-[fadeUp_0.5s_ease_forwards] opacity-0`} style={{ animationDelay: "300ms" }}>
+            <h3 className="mb-5 font-black text-white" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(16px, 2.5vw, 22px)", letterSpacing: "-0.02em" }}>
+              БҮРТГҮҮЛЭХ
+            </h3>
+
+            {error && <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/[0.08] px-4 py-3 text-[11px] text-red-400">{error}</div>}
+            {success && <div className="mb-4 rounded-xl border border-green-500/20 bg-green-500/[0.08] px-4 py-3 text-[11px] text-green-400">{success}</div>}
+
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder={t.teamSize === 1 ? "Нэр / IGN" : "Багийн нэр"}
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                className="w-full rounded-xl border border-white/[0.10] bg-white/[0.05] px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-white/30 focus:bg-white/[0.08] transition-all"
+                maxLength={64}
+              />
+              <textarea
+                placeholder={t.teamSize === 1 ? "Player name / IGN" : `Player names (${t.teamSize} lines)`}
+                value={playerNamesText}
+                onChange={(e) => setPlayerNamesText(e.target.value)}
+                rows={Math.min(Math.max(t.teamSize, 2), 5)}
+                className="w-full rounded-xl border border-white/[0.10] bg-white/[0.05] px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-white/30 focus:bg-white/[0.08] transition-all resize-none"
+                maxLength={400}
+              />
+
+              {t.entryFee > 0 && (
+                <div className="flex gap-2">
+                  {(["QPAY", "BALANCE"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setPayMethod(m)}
+                      className={`flex-1 rounded-xl py-2.5 text-[10px] font-semibold uppercase tracking-[0.15em] transition-all ${
+                        payMethod === m ? "bg-white text-black" : "border border-white/[0.14] bg-white/[0.07] text-white/70 hover:bg-white/[0.12] hover:text-white"
+                      }`}
                     >
-                      {dl.name}
-                    </a>
+                      {m === "BALANCE" ? "ҮЛДЭГДЭЛ" : m}
+                    </button>
                   ))}
                 </div>
               )}
-              <p className="text-[10px] text-[#888] mt-4">
-                Төлбөр төлсний дараа хуудсаа дахин ачаалж бүртгэлээ шалгана уу.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* Already registered — unregister option */}
-      {myTeam && t.status === "UPCOMING" && (
-        <div className="border-b border-black px-6 py-6 md:px-12">
-          <div className="flex items-center justify-between max-w-md">
+              <button
+                onClick={handleRegister}
+                disabled={submitting}
+                className="glass-action glass-action-primary w-full py-3.5 text-[11px] uppercase tracking-[0.2em] disabled:opacity-45"
+              >
+                {submitting ? "..." : t.entryFee > 0 ? `БҮРТГҮҮЛЭХ · ${t.entryFee.toLocaleString()}₮` : "БҮРТГҮҮЛЭХ"}
+              </button>
+            </div>
+
+            {qpayPending && (
+              <div className={`${glass} mt-4 p-5`}>
+                <div className="mb-3 text-[9px] font-medium uppercase tracking-[0.25em] text-white/55">QPAY ТӨЛБӨР</div>
+                {(qpayPending.qrImage || qpayPending.shortUrl) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={qpayPending.qrImage || qpayPending.shortUrl} alt="QPay QR" className="mx-auto mb-4 h-44 w-44 rounded-xl bg-white p-2" />
+                )}
+                {qpayPending.deeplinks && qpayPending.deeplinks.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {qpayPending.deeplinks.map((dl) => (
+                      <a key={dl.name} href={dl.link} className="glass-action min-h-0 rounded-lg px-3 py-1.5 text-[10px]">
+                        {dl.name}
+                      </a>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-3 text-[10px] text-white/50">Төлбөр төлсний дараа хуудсаа шинэчилнэ үү.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Already registered ── */}
+        {myTeam && t.status === "UPCOMING" && (
+          <div className={`${glass} mb-4 flex items-center justify-between p-5 animate-[fadeUp_0.5s_ease_forwards] opacity-0`} style={{ animationDelay: "300ms" }}>
             <div>
-              <span className="text-sm">Бүртгэгдсэн: </span>
-              <span className="display text-sm">{myTeam.name}</span>
+              <div className="text-[9px] font-medium uppercase tracking-[0.2em] text-white/55">Бүртгэгдсэн</div>
+              <div className="mt-0.5 font-semibold text-white">{myTeam.name}</div>
             </div>
             <button
               onClick={handleUnregister}
               disabled={submitting}
-              className="border border-red-400 text-red-600 px-4 py-2 text-xs hover:bg-red-50 transition-colors disabled:opacity-50"
+              className="glass-action min-h-0 rounded-lg border-red-400/30 bg-red-500/[0.10] px-4 py-2 text-[9px] uppercase tracking-[0.15em] text-red-300 hover:bg-red-500/[0.18] disabled:opacity-45"
             >
               {submitting ? "..." : "ЦУЦЛАХ"}
             </button>
           </div>
-          {error && (
-            <div className="mt-3 text-xs text-red-600">{error}</div>
-          )}
-          {success && (
-            <div className="mt-3 text-xs text-green-600">{success}</div>
-          )}
-        </div>
-      )}
+        )}
 
-      {/* Not logged in prompt */}
-      {!user && t.status === "UPCOMING" && !isFull && (
-        <div className="border-b border-black px-6 py-6 md:px-12">
-          <p className="text-sm text-[#888]">
-            Бүртгүүлэхийн тулд{" "}
-            <Link href="/login" className="underline text-black">
-              нэвтрэх
-            </Link>{" "}
-            шаардлагатай.
-          </p>
-        </div>
-      )}
+        {!user && t.status === "UPCOMING" && !isFull && (
+          <div className={`${glass} mb-4 p-5 text-center animate-[fadeUp_0.5s_ease_forwards] opacity-0`} style={{ animationDelay: "300ms" }}>
+            <p className="text-sm text-white/40">
+              Бүртгүүлэхийн тулд{" "}
+              <Link href="/login" className="text-white underline underline-offset-2 hover:text-white/70">нэвтрэх</Link>{" "}
+              шаардлагатай.
+            </p>
+          </div>
+        )}
 
-      {/* Full notice */}
-      {isFull && t.status === "UPCOMING" && !myTeam && (
-        <div className="border-b border-black px-6 py-6 md:px-12">
-          <p className="text-sm text-[#888]">Бүртгэл дүүрсэн байна.</p>
-        </div>
-      )}
+        {isFull && t.status === "UPCOMING" && !myTeam && (
+          <div className={`${glass} mb-4 p-5 text-center animate-[fadeUp_0.5s_ease_forwards] opacity-0`} style={{ animationDelay: "300ms" }}>
+            <p className="text-sm text-white/40">Бүртгэл дүүрсэн байна.</p>
+          </div>
+        )}
 
-      {/* Teams list */}
-      <div className="px-6 py-8 md:px-12">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="display text-xl">
-            {t.teamSize === 1 ? "ТОГЛОГЧИД" : "БҮРТГЭГДСЭН БАГУУД"}
-          </h3>
-          <span className="mono text-xs text-[#888]">
-            {t._count.teams}/{t.maxTeams}
-          </span>
-        </div>
+        {/* ── Teams ── */}
+        <div className={`${glass} mb-4 overflow-hidden animate-[fadeUp_0.5s_ease_forwards] opacity-0`} style={{ animationDelay: "360ms" }}>
+          <div className="flex items-center justify-between px-6 py-5">
+            <h3 className="font-black text-white" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(14px, 2vw, 18px)", letterSpacing: "-0.02em" }}>
+              {t.teamSize === 1 ? "ТОГЛОГЧИД" : "БҮРТГЭГДСЭН БАГУУД"}
+            </h3>
+            <span className="mono text-[10px] text-white/55">{t._count.teams}/{t.maxTeams}</span>
+          </div>
 
-        {t.teams.length === 0 ? (
-          <p className="text-sm text-[#888]">Одоогоор бүртгэл байхгүй.</p>
-        ) : (
-          <div className="divide-y divide-black/10">
-            {t.teams.map((team, i) => (
-              <div key={team.id} className="flex items-center justify-between py-3">
-                <div className="flex items-center gap-4">
-                  <span className="mono text-xs text-[#888] w-6">{i + 1}</span>
-                  <div>
-                    <span className="text-sm font-medium">{team.name}</span>
+          {t.teams.length === 0 ? (
+            <div className="px-6 pb-6 text-sm text-white/45">Одоогоор бүртгэл байхгүй.</div>
+          ) : (
+            <div className="divide-y divide-white/[0.05]">
+              {t.teams.map((team, i) => (
+                <div key={team.id} className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-white/[0.02]">
+                  <span className="mono w-5 shrink-0 text-[10px] text-white/42">{i + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-semibold text-white/90">{team.name}</div>
                     {(t.teamSize > 1 || team.playerNames.length > 0) && (
-                      <div className="text-[11px] text-[#888] mt-0.5">
-                        {team.playerNames.length > 0
-                          ? team.playerNames.join(", ")
-                          : team.members.map((m) => m.user.name).join(", ")}
+                      <div className="mt-0.5 truncate text-[10px] text-white/52">
+                        {team.playerNames.length > 0 ? team.playerNames.join(", ") : team.members.map((m) => m.user.name).join(", ")}
                       </div>
                     )}
                   </div>
+                  {team.members.some((m) => m.user.id === user?.id) && (
+                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[8px] font-medium uppercase tracking-widest text-white/50">ТА</span>
+                  )}
                 </div>
-                {team.members.some((m) => m.user.id === user?.id) && (
-                  <span className="text-[9px] tracking-widest text-[#888]">ТА</span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
 
-      {t.matches.length > 0 && (
-        <div className="border-t border-black px-6 py-8 md:px-12">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="display text-xl">BRACKET</h3>
-            <span className="mono text-xs text-[#888]">{t.matches.length} MATCHES · LIVE BOARD</span>
-          </div>
-          <div className="relative flex gap-4 overflow-x-auto pb-3">
-            {bracketRounds.map((round) => (
-              <div key={round} className="min-w-[280px] flex-1">
-                <div className="mb-3 text-[10px] uppercase tracking-[0.3em] text-[#888]">
-                  {round === bracketRounds.length ? "Final" : `Round ${round}`}
-                </div>
-                <div className="space-y-3">
-                  {t.matches
-                    .filter((match) => match.round === round)
-                    .map((match) => (
-                      <div key={match.id} className="border border-black/15 bg-white p-3 shadow-[4px_4px_0_#f1f1f1]">
-                        <div className="mb-2 flex items-center justify-between text-[10px] text-[#888]">
-                          <span>Match {match.matchNumber}</span>
-                          <span className={`border px-2 py-0.5 uppercase tracking-widest ${matchStatusStyle[match.status] ?? "border-black/20"}`}>
+          {slotsLeft > 0 && t.status === "UPCOMING" && (
+            <div className="border-t border-white/[0.05] px-6 py-3">
+              <span className="text-[10px] text-white/48">{slotsLeft} slot үлдсэн</span>
+            </div>
+          )}
+        </div>
+
+        {/* ── Bracket ── */}
+        {t.matches.length > 0 && (
+          <div className={`${glass} overflow-hidden animate-[fadeUp_0.5s_ease_forwards] opacity-0`} style={{ animationDelay: "420ms" }}>
+            <div className="flex items-center justify-between px-6 py-5">
+              <h3 className="font-black text-white" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(14px, 2vw, 18px)", letterSpacing: "-0.02em" }}>
+                BRACKET
+              </h3>
+              <span className="mono text-[10px] text-white/48">{t.matches.length} matches</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto px-6 pb-6">
+              {bracketRounds.map((round) => (
+                <div key={round} className="min-w-[220px] flex-1">
+                  <div className="mb-3 text-[9px] font-medium uppercase tracking-[0.25em] text-white/48">
+                    {round === bracketRounds.length ? "Final" : `Round ${round}`}
+                  </div>
+                  <div className="space-y-2">
+                    {t.matches.filter((m) => m.round === round).map((match) => (
+                      <div key={match.id} className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-3">
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="mono text-[9px] text-white/48">Match {match.matchNumber}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-[8px] font-medium uppercase tracking-widest ${
+                            match.status === "LIVE" ? "animate-pulse bg-green-500/20 text-green-400" :
+                            match.status === "COMPLETED" ? "bg-white/10 text-white/50" :
+                            "bg-white/[0.06] text-white/25"
+                          }`}>
                             {match.status}
                           </span>
                         </div>
-                        {[match.teamA, match.teamB].map((team, index) => {
+                        {[match.teamA, match.teamB].map((team, idx) => {
                           const isWinner = !!team && match.winnerTeam?.id === team.id;
-                          const score = index === 0 ? match.scoreA : match.scoreB;
+                          const score = idx === 0 ? match.scoreA : match.scoreB;
                           return (
-                            <div
-                              key={team?.id ?? index}
-                              className={`mb-1 flex items-start justify-between gap-3 border px-3 py-2 transition-colors ${
-                                isWinner ? "border-black bg-black text-white" : "border-black/10 bg-[#fafafa]"
-                              }`}
-                            >
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2 truncate text-sm font-medium">
-                                  <span className={isWinner ? "text-white" : "text-[#888]"}>
-                                    {index === 0 ? "A" : "B"}
-                                  </span>
-                                  {team?.name ?? "TBD"}
-                                </div>
-                                {!!team?.playerNames?.length && (
-                                  <div className={`mt-0.5 truncate text-[10px] ${isWinner ? "text-white/70" : "text-[#888]"}`}>
-                                    {team.playerNames.join(", ")}
-                                  </div>
-                                )}
+                            <div key={team?.id ?? idx} className={`mb-1 flex items-center justify-between rounded-lg px-3 py-2 ${
+                              isWinner ? "bg-white text-black" : "bg-white/[0.04] text-white/60"
+                            }`}>
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span className={`text-[9px] font-medium ${isWinner ? "text-black/50" : "text-white/25"}`}>
+                                  {idx === 0 ? "A" : "B"}
+                                </span>
+                                <span className="truncate text-[11px] font-semibold">{team?.name ?? "TBD"}</span>
                               </div>
-                              <span className="mono text-sm">{score ?? "-"}</span>
+                              <span className="mono ml-2 shrink-0 text-[11px]">{score ?? "–"}</span>
                             </div>
                           );
                         })}
                         {match.winnerTeam && (
-                          <div className="mt-2 border-t border-black/10 pt-2 text-[10px] uppercase tracking-widest text-[#888]">
-                            Winner: <span className="text-black">{match.winnerTeam.name}</span>
+                          <div className="mt-2 text-[9px] text-white/30">
+                            Winner: <span className="text-white/70">{match.winnerTeam.name}</span>
                           </div>
-                        )}
-                        {match.stationSeat && (
-                          <div className="mt-2 text-[10px] text-[#888]">PC {match.stationSeat.number}</div>
                         )}
                       </div>
                     ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* Center info footer */}
-      <div className="border-t border-black px-6 py-5 md:px-12">
-        <Link
-          href={`/centers/${params.id}`}
-          className="text-xs text-[#888] hover:text-black transition-colors"
-        >
-          {t.center.name} · {t.center.district} · {t.center.address}
-        </Link>
+        )}
       </div>
     </main>
   );
