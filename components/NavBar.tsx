@@ -89,7 +89,7 @@ export function NavBar() {
                     setOpen(false);
                     setProfileOpen((v) => !v);
                   }}
-                  className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold transition-all ${
+                  className={`profile-avatar-button flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold ${
                     profileActive || profileOpen
                       ? "bg-black text-white"
                       : "bg-black/[0.07] text-black hover:bg-black hover:text-white"
@@ -135,7 +135,7 @@ export function NavBar() {
 
         {/* Mobile dropdown */}
         {open && (
-          <div className="mt-2 overflow-hidden rounded-2xl border border-black/[0.08] bg-white/92 shadow-[0_8px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl">
+          <div className="nav-menu-enter mt-2 overflow-hidden rounded-2xl border border-black/[0.08] bg-white/92 shadow-[0_8px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl">
             <div className="grid gap-0.5 p-2">
               <MobileNavLink href="/events"  label="Events"  onClick={() => { setOpen(false); setProfileOpen(false); }} active={pathname.startsWith("/events")} />
               {roleLinks.map((link) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
@@ -25,6 +25,7 @@ export function ProfilePopover({
 }) {
   const { user, token, logout } = useAuth();
   const panelRef = useRef<HTMLDivElement>(null);
+  const [rendered, setRendered] = useState(open);
 
   const { data, isFetching } = useQuery<{ bookings: Booking[] }>({
     queryKey: ["activeBookings", "popover"],
@@ -36,6 +37,16 @@ export function ProfilePopover({
   const activeBookings = (data?.bookings ?? [])
     .filter((b) => b.status === "PENDING" || b.status === "CONFIRMED")
     .slice(0, 2);
+
+  useEffect(() => {
+    if (open) {
+      setRendered(true);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setRendered(false), 180);
+    return () => window.clearTimeout(timer);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -56,14 +67,18 @@ export function ProfilePopover({
     };
   }, [open, onClose]);
 
-  if (!open || !user) return null;
+  if (!rendered || !user) return null;
 
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-10 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-black/10 bg-white/88 p-3 text-black shadow-[0_24px_80px_rgba(0,0,0,0.20)] backdrop-blur-2xl"
+      className={`absolute right-0 top-10 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-black/10 bg-white/88 p-3 text-black shadow-[0_24px_80px_rgba(0,0,0,0.20)] backdrop-blur-2xl ${
+        open ? "profile-popover-enter" : "profile-popover-exit"
+      }`}
+      role="dialog"
+      aria-label="Profile summary"
     >
-      <div className="rounded-xl border border-black/[0.06] bg-white/72 p-4">
+      <div className="profile-popover-item rounded-xl border border-black/[0.06] bg-white/72 p-4" style={{ animationDelay: "40ms" }}>
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-black text-sm font-black text-white">
             {user.name.charAt(0).toUpperCase()}
@@ -82,9 +97,12 @@ export function ProfilePopover({
         </div>
       </div>
 
-      <div className="mt-2 rounded-xl border border-black/[0.06] bg-white/58 p-3">
+      <div className="profile-popover-item mt-2 rounded-xl border border-black/[0.06] bg-white/58 p-3" style={{ animationDelay: "80ms" }}>
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-black/45">Active</span>
+          <span className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-black/45">
+            <span className="profile-live-dot h-1.5 w-1.5 rounded-full bg-green-500" />
+            Active
+          </span>
           {isFetching && <span className="text-[9px] uppercase tracking-[0.16em] text-black/30">Loading</span>}
         </div>
 
@@ -93,12 +111,13 @@ export function ProfilePopover({
         )}
 
         <div className="space-y-2">
-          {activeBookings.map((booking) => (
+          {activeBookings.map((booking, index) => (
             <Link
               key={booking.id}
               href={`/centers/${booking.center.id}`}
               onClick={onClose}
-              className="block rounded-xl border border-black/[0.06] bg-white/72 px-3 py-2 transition hover:border-black/16 hover:bg-white"
+              className="profile-popover-item block rounded-xl border border-black/[0.06] bg-white/72 px-3 py-2 transition duration-200 hover:-translate-y-0.5 hover:border-black/16 hover:bg-white hover:shadow-[0_10px_24px_rgba(0,0,0,0.08)]"
+              style={{ animationDelay: `${120 + index * 45}ms` }}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
@@ -121,7 +140,7 @@ export function ProfilePopover({
         </div>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
+      <div className="profile-popover-item mt-2 grid grid-cols-2 gap-2" style={{ animationDelay: "140ms" }}>
         <Link
           href="/profile"
           onClick={onClose}

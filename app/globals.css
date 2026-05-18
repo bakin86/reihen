@@ -317,6 +317,42 @@ button, a, input, select, textarea {
   to   { opacity: 1; transform: scale(1); }
 }
 
+@keyframes profilePopoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.965);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes profilePopoverOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.975);
+    filter: blur(6px);
+  }
+}
+
+@keyframes profileItemIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes profilePulseDot {
+  0%, 100% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.55); opacity: 0.45; }
+}
+
 @keyframes cardRise {
   from { opacity: 0; transform: translateY(18px) scale(0.985); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -429,6 +465,40 @@ button, a, input, select, textarea {
 .anim-fade-in   { animation: fadeIn 0.55s ease-out both; }
 .anim-fade-down { animation: fadeDown 0.55s var(--ease-circ) both; }
 .anim-scale-in  { animation: scaleIn 0.5s var(--ease-circ) both; }
+.profile-popover-enter {
+  transform-origin: top right;
+  animation: profilePopoverIn 0.24s var(--ease-circ) both;
+}
+.profile-popover-exit {
+  pointer-events: none;
+  transform-origin: top right;
+  animation: profilePopoverOut 0.18s ease both;
+}
+.profile-popover-item {
+  opacity: 0;
+  animation: profileItemIn 0.32s var(--ease-circ) both;
+}
+.profile-live-dot {
+  animation: profilePulseDot 1.7s ease-in-out infinite;
+}
+.profile-avatar-button {
+  transition:
+    transform 0.2s var(--ease-circ),
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.profile-avatar-button:hover {
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.14);
+}
+.profile-avatar-button:active {
+  transform: translateY(0) scale(0.96);
+}
+.nav-menu-enter {
+  transform-origin: top center;
+  animation: profilePopoverIn 0.22s var(--ease-circ) both;
+}
 .anim-clip-up   { animation: clipUp 0.7s var(--ease-circ) both; }
 .anim-clip-left { animation: clipLeft 0.8s var(--ease-expo) both; }
 .anim-clip-right { animation: clipRight 0.8s var(--ease-expo) both; }
@@ -983,6 +1053,21 @@ button, a, input, select, textarea {
   .owner-action,
   .owner-card-dark,
   .owner-card-light {
+    transition: none !important;
+  }
+
+  .profile-popover-enter,
+  .profile-popover-exit,
+  .profile-popover-item,
+  .profile-live-dot,
+  .nav-menu-enter {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .profile-avatar-button {
     transition: none !important;
   }
 }
