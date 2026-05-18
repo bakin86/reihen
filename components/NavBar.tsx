@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ProfilePopover } from "@/components/ProfilePopover";
 import { useAuth } from "@/lib/useAuth";
 
 function NavLink({
@@ -34,6 +35,7 @@ export function NavBar() {
   const pathname          = usePathname();
   const profileActive     = pathname === "/profile";
   const [open, setOpen]   = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const roleLinks = !loading && user
     ? [
@@ -52,7 +54,7 @@ export function NavBar() {
           {/* Wordmark */}
           <Link
             href="/"
-            onClick={() => setOpen(false)}
+            onClick={() => { setOpen(false); setProfileOpen(false); }}
             className="rounded-full px-3 py-1.5 font-black uppercase text-black transition-colors hover:bg-black hover:text-white"
             style={{ fontSize: "12px", fontFamily: "var(--font-display)", fontWeight: 900, letterSpacing: 0 }}
           >
@@ -80,29 +82,38 @@ export function NavBar() {
             {loading ? (
               <div className="h-6 w-6 rounded-full bg-black/[0.05]" />
             ) : user ? (
-              <Link
-                href="/profile"
-                onClick={() => setOpen(false)}
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold transition-all ${
-                  profileActive
-                    ? "bg-black text-white"
-                    : "bg-black/[0.07] text-black hover:bg-black hover:text-white"
-                }`}
-              >
-                {user.name.charAt(0).toUpperCase()}
-              </Link>
+              <div className="relative" data-profile-popover-root>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    setProfileOpen((v) => !v);
+                  }}
+                  className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold transition-all ${
+                    profileActive || profileOpen
+                      ? "bg-black text-white"
+                      : "bg-black/[0.07] text-black hover:bg-black hover:text-white"
+                  }`}
+                  aria-expanded={profileOpen}
+                  aria-haspopup="dialog"
+                  aria-label="Open profile menu"
+                >
+                  {user.name.charAt(0).toUpperCase()}
+                </button>
+                <ProfilePopover open={profileOpen} onClose={() => setProfileOpen(false)} />
+              </div>
             ) : (
               <>
                 <Link
                   href="/login"
-                  onClick={() => setOpen(false)}
+                  onClick={() => { setOpen(false); setProfileOpen(false); }}
                   className="rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/45 transition-colors hover:bg-black/[0.06] hover:text-black"
                 >
                   Login
                 </Link>
                 <Link
                   href="/register"
-                  onClick={() => setOpen(false)}
+                  onClick={() => { setOpen(false); setProfileOpen(false); }}
                   className="hidden rounded-full bg-black px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-black/80 md:inline-flex"
                 >
                   Register
@@ -126,18 +137,18 @@ export function NavBar() {
         {open && (
           <div className="mt-2 overflow-hidden rounded-2xl border border-black/[0.08] bg-white/92 shadow-[0_8px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl">
             <div className="grid gap-0.5 p-2">
-              <MobileNavLink href="/events"  label="Events"  onClick={() => setOpen(false)} active={pathname.startsWith("/events")} />
+              <MobileNavLink href="/events"  label="Events"  onClick={() => { setOpen(false); setProfileOpen(false); }} active={pathname.startsWith("/events")} />
               {roleLinks.map((link) => (
                 <MobileNavLink
                   key={link.href}
                   href={link.href}
                   label={link.label}
-                  onClick={() => setOpen(false)}
+                  onClick={() => { setOpen(false); setProfileOpen(false); }}
                   active={pathname.startsWith(link.href)}
                 />
               ))}
               {!loading && !user && (
-                <MobileNavLink href="/register" label="Register" onClick={() => setOpen(false)} active={pathname.startsWith("/register")} />
+                <MobileNavLink href="/register" label="Register" onClick={() => { setOpen(false); setProfileOpen(false); }} active={pathname.startsWith("/register")} />
               )}
             </div>
           </div>
