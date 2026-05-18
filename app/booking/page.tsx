@@ -256,14 +256,8 @@ function BookingInner() {
 
         {/* Nav */}
         <InView from="up" distance={12} duration={600}>
-          <div className="mb-10 flex items-center justify-between pt-20">
-            <Link
-              href="/"
-              className="label text-[9px] text-white/20 transition-colors hover:text-white/50"
-            >
-              ← HOME
-            </Link>
-            <span className="label text-[9px] text-white/20">{centerName.toUpperCase()}</span>
+          <div className="mb-10 flex items-center justify-end pt-20">
+            <span className="label text-[9px] text-white/30">{centerName.toUpperCase()}</span>
           </div>
         </InView>
 

@@ -8,24 +8,26 @@ interface Message {
   content: string;
 }
 
-/** Turn /booking?center=... links in text into clickable Links */
+/** Turn /booking?center=... links in text into clickable Links pointing to the center page */
 function RichText({ text }: { text: string }) {
   const parts = text.split(/(\/booking\?center=[a-zA-Z0-9_-]+)/g);
   return (
     <>
-      {parts.map((part, i) =>
-        part.startsWith("/booking?center=") ? (
-          <Link
-            key={i}
-            href={part}
-            className="underline underline-offset-2 opacity-70 hover:opacity-100 transition-opacity"
-          >
-            Захиалах →
-          </Link>
-        ) : (
-          <span key={i}>{part}</span>
-        )
-      )}
+      {parts.map((part, i) => {
+        if (part.startsWith("/booking?center=")) {
+          const centerId = new URLSearchParams(part.slice(part.indexOf("?") + 1)).get("center");
+          return (
+            <Link
+              key={i}
+              href={`/centers/${centerId}`}
+              className="underline underline-offset-2 opacity-80 hover:opacity-100 transition-opacity"
+            >
+              Харах →
+            </Link>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
     </>
   );
 }
