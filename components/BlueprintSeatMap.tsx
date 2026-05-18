@@ -16,11 +16,12 @@ interface BlueprintSeat {
 interface BlueprintSeatMapProps {
   seats: BlueprintSeat[];
   selectedIds: Set<string>;
+  recentlyUpdatedIds?: Set<string>;
   onToggle: (id: string) => void;
   floorName?: string;
 }
 
-export function BlueprintSeatMap({ seats, selectedIds, onToggle, floorName }: BlueprintSeatMapProps) {
+export function BlueprintSeatMap({ seats, selectedIds, recentlyUpdatedIds, onToggle, floorName }: BlueprintSeatMapProps) {
   // Calculate grid bounds
   const positioned = seats.filter((s) => s.posX != null && s.posY != null);
   const unpositioned = seats.filter((s) => s.posX == null || s.posY == null);
@@ -63,6 +64,7 @@ export function BlueprintSeatMap({ seats, selectedIds, onToggle, floorName }: Bl
               key={seat.id}
               seat={seat}
               selected={selectedIds.has(seat.id)}
+              recentlyUpdated={recentlyUpdatedIds?.has(seat.id)}
               onClick={() => onToggle(seat.id)}
               style={{
                 gridColumn: seat.posX! + 1,
@@ -81,6 +83,7 @@ export function BlueprintSeatMap({ seats, selectedIds, onToggle, floorName }: Bl
               key={seat.id}
               seat={seat}
               selected={selectedIds.has(seat.id)}
+              recentlyUpdated={recentlyUpdatedIds?.has(seat.id)}
               onClick={() => onToggle(seat.id)}
             />
           ))}
@@ -112,11 +115,13 @@ export function BlueprintSeatMap({ seats, selectedIds, onToggle, floorName }: Bl
 const BlueprintSeatCell = memo(function BlueprintSeatCell({
   seat,
   selected,
+  recentlyUpdated,
   onClick,
   style,
 }: {
   seat: BlueprintSeat;
   selected: boolean;
+  recentlyUpdated?: boolean;
   onClick: () => void;
   style?: React.CSSProperties;
 }) {
@@ -131,9 +136,12 @@ const BlueprintSeatCell = memo(function BlueprintSeatCell({
 
   return (
     <button
+      type="button"
       onClick={onClick}
       data-status={seat.status}
-      className={`blueprint-seat flex flex-col items-center justify-center rounded-sm aspect-square min-h-[44px] text-[10px] font-bold ${selected ? "selected" : ""}`}
+      aria-label={`${seat.number}, ${seat.status}${selected ? ", selected" : ""}`}
+      aria-pressed={selected}
+      className={`blueprint-seat flex flex-col items-center justify-center rounded-sm aspect-square min-h-[44px] text-[10px] font-bold ${selected ? "selected" : ""} ${recentlyUpdated ? "seat-realtime-flash" : ""}`}
       style={style}
     >
       <span className={labelColor}>{seat.number}</span>

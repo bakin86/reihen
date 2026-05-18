@@ -94,6 +94,7 @@ export function ImageUpload({ images, onChange, token, max = 8 }: Props) {
       {images.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-1.5">
           <button
+            type="button"
             onClick={() => setActiveTag("all")}
             className={`px-2.5 py-1 text-[9px] uppercase tracking-widest transition-colors border ${
               activeTag === "all" ? "border-black bg-black text-white" : "border-gray text-gray hover:border-black"
@@ -105,6 +106,7 @@ export function ImageUpload({ images, onChange, token, max = 8 }: Props) {
             const count = images.filter((img) => img.tag === t.value).length;
             return (
               <button
+                type="button"
                 key={t.value}
                 onClick={() => setActiveTag(t.value)}
                 className={`px-2.5 py-1 text-[9px] uppercase tracking-widest transition-colors border ${
@@ -145,17 +147,17 @@ export function ImageUpload({ images, onChange, token, max = 8 }: Props) {
                   {/* Move + delete */}
                   <div className="flex items-center gap-1">
                     {realIdx > 0 && (
-                      <button onClick={() => move(realIdx, realIdx - 1)}
+                      <button type="button" onClick={() => move(realIdx, realIdx - 1)} aria-label="Move image left"
                         className="flex h-6 w-6 items-center justify-center bg-white text-[10px] text-black">
                         &larr;
                       </button>
                     )}
-                    <button onClick={() => remove(realIdx)}
+                    <button type="button" onClick={() => remove(realIdx)} aria-label="Remove image"
                       className="flex h-6 w-6 items-center justify-center bg-white text-[10px] text-black">
                       x
                     </button>
                     {realIdx < images.length - 1 && (
-                      <button onClick={() => move(realIdx, realIdx + 1)}
+                      <button type="button" onClick={() => move(realIdx, realIdx + 1)} aria-label="Move image right"
                         className="flex h-6 w-6 items-center justify-center bg-white text-[10px] text-black">
                         &rarr;
                       </button>

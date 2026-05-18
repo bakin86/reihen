@@ -841,6 +841,21 @@ button, a, input, select, textarea {
   100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
 }
 
+@keyframes seatRealtimeFlash {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(74,222,128,0.42), inset 0 0 0 1px rgba(255,255,255,0.12);
+  }
+  38% {
+    transform: scale(1.045);
+    box-shadow: 0 0 0 8px rgba(74,222,128,0), 0 0 24px rgba(74,222,128,0.24);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(74,222,128,0);
+  }
+}
+
 @keyframes ownerShimmer {
   from { background-position: 140% 0; }
   to { background-position: -140% 0; }
@@ -1006,6 +1021,25 @@ button, a, input, select, textarea {
   animation: ownerShimmer 1.6s linear infinite;
 }
 
+.seat-realtime-flash {
+  animation: seatRealtimeFlash 0.9s var(--ease-circ) both;
+  z-index: 1;
+}
+
+.ui-button:disabled,
+.glass-action:disabled,
+.soft-action-light:disabled,
+.owner-action:disabled {
+  pointer-events: none;
+}
+
+.ui-button,
+.glass-action,
+.soft-action-light,
+.owner-action {
+  text-wrap: balance;
+}
+
 .staff-create-button {
   font-size: 0;
 }
@@ -1046,7 +1080,8 @@ button, a, input, select, textarea {
   .owner-card-dark,
   .owner-card-light,
   .owner-realtime-flash,
-  .owner-shimmer {
+  .owner-shimmer,
+  .seat-realtime-flash {
     animation: none !important;
   }
 

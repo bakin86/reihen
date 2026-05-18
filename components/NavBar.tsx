@@ -48,8 +48,8 @@ export function NavBar() {
 
   return (
     <header className="anim-fade-down fixed left-0 right-0 top-3 z-50 flex justify-center px-4 pointer-events-none">
-      <div className="pointer-events-auto w-fit">
-        <nav className="flex items-center gap-0.5 rounded-full border border-black/[0.09] bg-white/90 px-2 py-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.10)] backdrop-blur-xl">
+      <div className="pointer-events-auto w-fit max-w-[calc(100vw-2rem)]">
+        <nav className="flex max-w-full items-center gap-0.5 rounded-full border border-black/[0.09] bg-white/90 px-2 py-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.10)] backdrop-blur-xl">
 
           {/* Wordmark */}
           <Link
@@ -123,8 +123,9 @@ export function NavBar() {
 
             {/* Mobile menu toggle */}
             <button
+              type="button"
               onClick={() => setOpen((v) => !v)}
-              className="rounded-full border border-black/10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/50 transition-colors hover:bg-black hover:text-white md:hidden"
+              className="inline-flex h-7 min-w-9 items-center justify-center rounded-full border border-black/10 px-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-black/50 transition-colors hover:bg-black hover:text-white md:hidden"
               aria-expanded={open}
               aria-label="Toggle navigation"
             >

@@ -25,6 +25,7 @@ export const SeatCell = memo(function SeatCell({
   status,
   freeAt,
   selected,
+  recentlyUpdated,
   onClick,
   title,
 }: {
@@ -32,6 +33,7 @@ export const SeatCell = memo(function SeatCell({
   status: SeatStatus;
   freeAt?: string | null;
   selected?: boolean;
+  recentlyUpdated?: boolean;
   onClick?: () => void;
   title?: string;
 }) {
@@ -40,12 +42,16 @@ export const SeatCell = memo(function SeatCell({
 
   return (
     <button
+      type="button"
       onClick={onClick}
       title={title ?? `${number} · ${SEAT_STATUS_LABEL[status]}`}
+      aria-label={`${number}, ${SEAT_STATUS_LABEL[status]}${selected ? ", selected" : ""}`}
+      aria-pressed={selected}
       className={cn(
-        "relative aspect-square min-h-[48px] min-w-[48px] rounded-lg text-sm font-black transition-all duration-200",
+        "relative aspect-square min-h-[48px] min-w-[48px] overflow-hidden rounded-lg text-sm font-black transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400",
         SEAT_STATUS_STYLE[status],
         freeingSoon && "seat-freeing-soon",
+        recentlyUpdated && "seat-realtime-flash",
         selected && "seat-selected"
       )}
     >

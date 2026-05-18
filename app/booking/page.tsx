@@ -67,6 +67,8 @@ function BookingInner() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [mapView, setMapView] = useState<"grid" | "blueprint">("grid");
+  const [maxReached, setMaxReached] = useState(false);
+  const [recentlyUpdatedSeats, setRecentlyUpdatedSeats] = useState<Set<string>>(new Set());
   // track whether we've already auto-switched (ref avoids adding to effect deps)
   const autoSwitchedRef = useRef(false);
 
@@ -102,6 +104,14 @@ function BookingInner() {
       prev.map((s) => s.id === u.id ? { ...s, status: u.status, freeAt: u.freeAt ?? s.freeAt } : s)
     );
     if (u.status !== "OPEN") setSelectedSeats((prev) => prev.filter((id) => id !== u.id));
+    setRecentlyUpdatedSeats((prev) => new Set(prev).add(u.id));
+    window.setTimeout(() => {
+      setRecentlyUpdatedSeats((prev) => {
+        const next = new Set(prev);
+        next.delete(u.id);
+        return next;
+      });
+    }, 950);
   }, []);
   useSeatSocket(centerId, handleUpdate, token);
 
@@ -326,8 +336,8 @@ function BookingInner() {
                     </button>
                   ))}
                 </div>
-                <span className={`mono text-[10px] transition-colors duration-300 ${pickedSeats.length >= maxSeats ? "text-white/70" : "text-white/25"}`}>
-                  {pickedSeats.length}/{maxSeats}
+                <span className={`mono text-[10px] transition-all duration-300 ${maxReached ? "text-red-400 scale-110" : pickedSeats.length >= maxSeats ? "text-white/70" : "text-white/25"}`}>
+                  {maxReached ? `MAX ${maxSeats}` : `${pickedSeats.length}/${maxSeats}`}
                 </span>
                 {pickedSeats.length > 0 && (
                   <button
@@ -385,13 +395,14 @@ function BookingInner() {
                     number={s.number}
                     status={s.status}
                     selected={selectedSeats.includes(s.id)}
+                    recentlyUpdated={recentlyUpdatedSeats.has(s.id)}
                     onClick={() => {
                       if (s.status !== "OPEN") return;
-                      setSelectedSeats((prev) =>
-                        prev.includes(s.id)
-                          ? prev.filter((id) => id !== s.id)
-                          : prev.length >= maxSeats ? prev : [...prev, s.id]
-                      );
+                      setSelectedSeats((prev) => {
+                        if (prev.includes(s.id)) return prev.filter((id) => id !== s.id);
+                        if (prev.length >= maxSeats) { setMaxReached(true); setTimeout(() => setMaxReached(false), 1500); return prev; }
+                        return [...prev, s.id];
+                      });
                     }}
                   />
                 ))}
@@ -404,14 +415,15 @@ function BookingInner() {
                   typeName: s.type.name,
                 }))}
                 selectedIds={new Set(selectedSeats)}
+                recentlyUpdatedIds={recentlyUpdatedSeats}
                 onToggle={(id) => {
                   const seat = seats.find((s) => s.id === id);
                   if (!seat || seat.status !== "OPEN") return;
-                  setSelectedSeats((prev) =>
-                    prev.includes(id)
-                      ? prev.filter((x) => x !== id)
-                      : prev.length >= maxSeats ? prev : [...prev, id]
-                  );
+                  setSelectedSeats((prev) => {
+                    if (prev.includes(id)) return prev.filter((x) => x !== id);
+                    if (prev.length >= maxSeats) { setMaxReached(true); setTimeout(() => setMaxReached(false), 1500); return prev; }
+                    return [...prev, id];
+                  });
                 }}
                 floorName={floors.find((f) => f.n === floor)?.name}
               />

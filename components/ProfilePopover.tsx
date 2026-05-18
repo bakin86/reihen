@@ -72,7 +72,7 @@ export function ProfilePopover({
   return (
     <div
       ref={panelRef}
-      className={`fixed left-4 right-4 top-16 overflow-hidden rounded-2xl border border-black/10 bg-white/88 p-3 text-black shadow-[0_24px_80px_rgba(0,0,0,0.20)] backdrop-blur-2xl sm:absolute sm:left-auto sm:right-0 sm:top-10 sm:w-[min(22rem,calc(100vw-2rem))] ${
+      className={`fixed left-4 right-4 top-16 z-[70] max-h-[calc(100vh-5rem)] overflow-y-auto rounded-2xl border border-black/10 bg-white/88 p-3 text-black shadow-[0_24px_80px_rgba(0,0,0,0.20)] backdrop-blur-2xl sm:absolute sm:left-auto sm:right-0 sm:top-10 sm:w-[min(22rem,calc(100vw-2rem))] ${
         open ? "profile-popover-enter" : "profile-popover-exit"
       }`}
       role="dialog"
@@ -159,6 +159,7 @@ export function ProfilePopover({
           Profile
         </Link>
         <button
+          type="button"
           onClick={() => {
             onClose();
             logout();

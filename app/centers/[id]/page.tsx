@@ -60,6 +60,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
   const [imgIdx, setImgIdx] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [isFav, setIsFav] = useState(false);
+  const [recentlyUpdatedSeats, setRecentlyUpdatedSeats] = useState<Set<string>>(new Set());
 
   // Star rating
   const [myUnreviewedBookingId, setMyUnreviewedBookingId] = useState<string | null>(null);
@@ -153,6 +154,14 @@ export default function CenterPage({ params }: { params: { id: string } }) {
       if (u.status !== "OPEN") {
         setSelectedIds((prev) => prev.filter((id) => id !== u.id));
       }
+      setRecentlyUpdatedSeats((prev) => new Set(prev).add(u.id));
+      window.setTimeout(() => {
+        setRecentlyUpdatedSeats((prev) => {
+          const next = new Set(prev);
+          next.delete(u.id);
+          return next;
+        });
+      }, 950);
     },
     []
   );
@@ -655,6 +664,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                   status={s.status}
                   freeAt={s.freeAt}
                   selected={selectedIds.includes(s.id)}
+                  recentlyUpdated={recentlyUpdatedSeats.has(s.id)}
                   onClick={() => toggleSeat(s.id, s.status)}
                 />
               ))}

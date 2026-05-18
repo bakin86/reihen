@@ -132,6 +132,7 @@ export function ChatBot() {
     <>
       {/* Toggle button */}
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center border border-white/10 bg-[#0a0a0a] text-white transition-all duration-300 hover:bg-white hover:text-black"
         aria-label={open ? "Чат хаах" : "Чат нээх"}
@@ -170,6 +171,7 @@ export function ChatBot() {
               </span>
             </div>
             <button
+              type="button"
               onClick={() => setOpen(false)}
               className="text-white/20 transition-colors hover:text-white"
             >
@@ -189,6 +191,7 @@ export function ChatBot() {
                 <div className="flex flex-wrap gap-1.5 justify-center">
                   {SUGGESTIONS.map((q) => (
                     <button
+                      type="button"
                       key={q}
                       onClick={() => send(q)}
                       className="border border-white/40 bg-white/[0.10] px-2.5 py-1.5 text-[9px] uppercase tracking-wider text-white transition-all duration-200 hover:border-white hover:bg-white hover:text-black"
@@ -239,6 +242,7 @@ export function ChatBot() {
               className="flex-1 bg-transparent px-4 py-3 text-[12px] text-white placeholder:text-white/45 outline-none disabled:opacity-50"
             />
             <button
+              type="button"
               onClick={() => send()}
               disabled={streaming || !input.trim()}
               className="px-4 py-3 text-[9px] uppercase tracking-[0.25em] text-white/60 transition-all duration-200 hover:text-white disabled:opacity-30"
