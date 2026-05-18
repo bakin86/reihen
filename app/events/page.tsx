@@ -66,6 +66,12 @@ export default function EventsPage() {
       <NavBar />
 
       <section className="relative overflow-hidden border-b border-white/10 px-6 pb-10 pt-32 md:px-12 md:pb-14">
+        <Link
+          href="/"
+          className="mb-8 inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.2em] text-white/30 transition-colors hover:text-white/70"
+        >
+          ← Нүүр
+        </Link>
         <div className="pointer-events-none absolute inset-x-6 top-24 h-px bg-white/10 md:inset-x-12" />
         <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
           <div>
