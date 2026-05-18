@@ -441,7 +441,7 @@ function BookingInner() {
                   className={`mono py-3 text-[11px] transition-all duration-300 ${
                     start === h
                       ? "bg-white text-black"
-                      : "bg-white/[0.03] text-white/40 hover:bg-white/[0.07] hover:text-white/70"
+                      : "border border-white/[0.10] bg-white/[0.04] text-white/50 hover:border-white/20 hover:bg-white/[0.09] hover:text-white/80"
                   }`}
                 >
                   {h}
@@ -468,7 +468,7 @@ function BookingInner() {
                   className={`mono px-5 py-3 text-sm transition-all duration-300 ${
                     hours === h
                       ? "bg-white text-black"
-                      : "bg-white/[0.03] text-white/40 hover:bg-white/[0.07] hover:text-white/70"
+                      : "border border-white/[0.10] bg-white/[0.04] text-white/50 hover:border-white/20 hover:bg-white/[0.09] hover:text-white/80"
                   }`}
                 >
                   {h}h
@@ -490,7 +490,7 @@ function BookingInner() {
                   className={`flex-1 py-3 text-[10px] uppercase tracking-[0.2em] transition-all duration-300 ${
                     method === m
                       ? "bg-white text-black"
-                      : "bg-white/[0.03] text-white/40 hover:bg-white/[0.07] hover:text-white/70"
+                      : "border border-white/[0.10] bg-white/[0.04] text-white/50 hover:border-white/20 hover:bg-white/[0.09] hover:text-white/80"
                   }`}
                 >
                   {m}
@@ -519,7 +519,7 @@ function BookingInner() {
 
         <InView from="right" distance={20} duration={700}>
           <div>
-            <span className="label text-[9px] text-white/15">SUMMARY</span>
+            <span className="label text-[9px] text-white/30">SUMMARY</span>
 
             {/* Stats */}
             <div className="mt-8 space-y-5">
@@ -531,8 +531,8 @@ function BookingInner() {
                 { label: "METHOD", value: method },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-baseline justify-between">
-                  <span className="label text-[8px] text-white/15">{label}</span>
-                  <span className="mono text-[13px] text-white/50">{value}</span>
+                  <span className="label text-[8px] text-white/30">{label}</span>
+                  <span className="mono text-[13px] text-white/70">{value}</span>
                 </div>
               ))}
             </div>
@@ -573,7 +573,7 @@ function BookingInner() {
               <button
                 onClick={submit}
                 disabled={!canSubmit}
-                className="w-full bg-white py-4 text-[10px] uppercase tracking-[0.2em] text-black transition-all duration-500 hover:bg-white/90 disabled:bg-white/[0.04] disabled:text-white/20"
+                className="w-full bg-white py-4 text-[10px] uppercase tracking-[0.2em] text-black transition-all duration-500 hover:bg-white/90 disabled:border disabled:border-white/[0.12] disabled:bg-transparent disabled:text-white/25"
               >
                 {submitLabel}
               </button>
