@@ -69,8 +69,7 @@ export default function EventsPage() {
         <div className="pointer-events-none absolute inset-x-6 top-24 h-px bg-white/10 md:inset-x-12" />
         <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="label text-[10px] text-green-400">REIHEN EVENTS</p>
-            <h1 className="display mt-4 text-5xl leading-none md:text-8xl">EVENTS</h1>
+            <h1 className="display text-5xl leading-none md:text-8xl">EVENTS</h1>
             <p className="mt-5 max-w-2xl text-sm leading-relaxed text-white/45">
               PC center-үүдийн тэмцээн, event, live registration-уудыг нэг дороос харж бүртгүүлнэ.
             </p>
