@@ -73,7 +73,6 @@ export default function OwnerStaffPage() {
   const [identifier, setIdentifier] = useState("");
   const [staffName, setStaffName] = useState("");
   const [staffEmail, setStaffEmail] = useState("");
-  const [staffPassword, setStaffPassword] = useState("staff123");
   const [centerId, setCenterId] = useState("");
   const [assignCenterIds, setAssignCenterIds] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -104,8 +103,8 @@ export default function OwnerStaffPage() {
   const invite = async () => {
     const effectiveCenterId = centerId || centers[0]?.id || "";
     if (!token) return;
-    if (!staffName.trim() || !staffEmail.trim() || !identifier.trim() || !staffPassword.trim()) {
-      setMsg({ text: "Staff name, email, phone, password bugdiig buglunu.", ok: false });
+    if (!staffName.trim() || !staffEmail.trim() || !identifier.trim()) {
+      setMsg({ text: "Staff name, email, phone bugdiig buglunu.", ok: false });
       return;
     }
     setSubmitting(true);
@@ -121,7 +120,6 @@ export default function OwnerStaffPage() {
             name: staffName.trim(),
             email: staffEmail.trim(),
             phone: cleanIdentifier,
-            password: staffPassword,
             ...(effectiveCenterId ? { centerId: effectiveCenterId } : {}),
           }),
         }
@@ -134,7 +132,6 @@ export default function OwnerStaffPage() {
       setIdentifier("");
       setStaffName("");
       setStaffEmail("");
-      setStaffPassword("staff123");
       fetchData();
     } catch (e: any) {
       setMsg({ text: e.message ?? "Алдаа гарлаа", ok: false });
@@ -269,19 +266,6 @@ export default function OwnerStaffPage() {
                 placeholder="staff@mail.com"
                 value={staffEmail}
                 onChange={(e) => setStaffEmail(e.target.value)}
-                className="owner-field-dark px-4 py-3 text-sm font-semibold placeholder:text-white/30 outline-none transition-colors"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/70">
-                LOGIN PASSWORD
-              </label>
-              <input
-                type="text"
-                placeholder="staff123"
-                value={staffPassword}
-                onChange={(e) => setStaffPassword(e.target.value)}
                 className="owner-field-dark px-4 py-3 text-sm font-semibold placeholder:text-white/30 outline-none transition-colors"
               />
             </div>

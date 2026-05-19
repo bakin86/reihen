@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { authErrorResponse, hashPassword, requireOwner } from "@/lib/auth";
+import { authErrorResponse, requireOwner } from "@/lib/auth";
 import { z } from "zod";
 import { sendPushToUser } from "@/lib/push";
 import { normalizeIdentifier } from "@/lib/phone";
@@ -9,7 +9,6 @@ const InviteSchema = z.object({
   name: z.string().trim().min(2).max(64).optional(),
   email: z.string().trim().email().toLowerCase().optional(),
   phone: z.string().trim().min(4),
-  password: z.string().min(6).max(128).optional(),
   centerId: z.string().optional(),
   canCheckin: z.boolean().optional().default(true),
   canSeatStatus: z.boolean().optional().default(true),
@@ -149,10 +148,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ added: true, user: existingUser });
     }
 
-    // User doesn't exist — create invite token (store identifier in phone field)
-    if (!data.name || !data.email || !data.password) {
+    // User doesn't exist. Clerk owns credentials, so create a STAFF shadow
+    // record that links when the staff member signs in with this email.
+    if (!data.name || !data.email) {
       return NextResponse.json(
-        { error: "Name, email and password are required for a new staff account" },
+        { error: "Name and email are required for a new staff account" },
         { status: 400 }
       );
     }
@@ -163,7 +163,7 @@ export async function POST(req: Request) {
           name: data.name!,
           email: data.email!,
           phone,
-          password: await hashPassword(data.password!),
+          password: "CLERK_MANAGED",
           role: "STAFF",
         },
         select: { id: true, name: true, email: true, phone: true, role: true },
