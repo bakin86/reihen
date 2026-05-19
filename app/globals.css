@@ -1043,7 +1043,6 @@ button, a, input, select, textarea {
 .owner-action {
   border-radius: 8px;
   min-height: 36px;
-  color: inherit;
   transition:
     transform 0.2s var(--ease-circ),
     background 0.2s ease,
