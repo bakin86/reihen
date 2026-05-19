@@ -61,3 +61,13 @@ export async function HEAD() {
     });
   }
 }
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      Allow: "GET, HEAD, OPTIONS",
+      "Cache-Control": "no-store",
+    },
+  });
+}
