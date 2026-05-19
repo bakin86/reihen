@@ -152,6 +152,7 @@ export default function CentersPage() {
             centers={plotted}
             selectedId={selected?.id}
             onSelect={setSelectedId}
+            userLocation={location}
             className="absolute inset-0"
             dark
           />

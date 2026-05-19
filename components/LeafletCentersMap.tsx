@@ -17,6 +17,7 @@ interface LeafletCentersMapProps {
   centers: LeafletCenter[];
   selectedId?: string | null;
   onSelect?: (id: string) => void;
+  userLocation?: { lat: number; lng: number } | null;
   className?: string;
   dark?: boolean;
 }
@@ -39,14 +40,17 @@ export function LeafletCentersMap({
   centers,
   selectedId,
   onSelect,
+  userLocation,
   className = "",
   dark = false,
 }: LeafletCentersMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
-  const viewInitRef = useRef(false); // true once we've set the initial bounds
+  const userMarkerRef = useRef<any>(null);
+  const viewInitRef = useRef(false);
 
+  // ── Map setup ──────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     let resizeObserver: ResizeObserver | null = null;
@@ -54,9 +58,6 @@ export function LeafletCentersMap({
     async function setup() {
       if (!containerRef.current || mapRef.current) return;
 
-      // Wait until the container has real pixel dimensions before handing
-      // it to Leaflet — otherwise the map initialises at 0×0 and tiles
-      // are never requested for the visible viewport.
       await waitForSize(containerRef.current);
       if (cancelled || !containerRef.current) return;
 
@@ -107,15 +108,77 @@ export function LeafletCentersMap({
         mapRef.current = null;
       }
       markersRef.current = [];
+      userMarkerRef.current = null;
     };
   }, [dark]);
 
+  // ── User location marker + zoom ────────────────────────────────────────────
+  useEffect(() => {
+    if (!userLocation) return;
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    async function placeUserPin() {
+      if (!mapRef.current) {
+        retryTimer = setTimeout(placeUserPin, 50);
+        return;
+      }
+      if (cancelled) return;
+
+      const L = await import("leaflet");
+      if (cancelled || !mapRef.current) return;
+
+      // Remove old user pin
+      if (userMarkerRef.current) {
+        userMarkerRef.current.remove();
+        userMarkerRef.current = null;
+      }
+
+      const { lat, lng } = userLocation;
+      const userLatLng = L.latLng(lat, lng);
+
+      // "You are here" marker
+      userMarkerRef.current = L.marker(userLatLng, {
+        icon: L.divIcon({
+          className: "",
+          html: `<div class="lcm-you-marker"><div class="lcm-you-pulse"></div></div>`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
+        }),
+        zIndexOffset: 1000,
+      }).addTo(mapRef.current);
+
+      // Fit bounds: user location + all plotted centers
+      const plotted = centers.filter((c) => c.lat != null && c.lng != null);
+      const points = [
+        userLatLng,
+        ...plotted.map((c) => L.latLng(c.lat as number, c.lng as number)),
+      ];
+
+      if (points.length === 1) {
+        mapRef.current.setView(userLatLng, 14, { animate: true });
+      } else {
+        mapRef.current.fitBounds(L.latLngBounds(points).pad(0.2), {
+          animate: true,
+          maxZoom: 14,
+        });
+      }
+    }
+
+    placeUserPin();
+
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, [userLocation]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Center markers ─────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
     async function renderMarkers() {
-      // Map may still be initialising (waitForSize in setup); retry until ready.
       if (!mapRef.current) {
         retryTimer = setTimeout(renderMarkers, 50);
         return;
@@ -176,8 +239,6 @@ export function LeafletCentersMap({
         markersRef.current.push(marker);
       });
 
-      // Only fit bounds when centers first load — not on every selectedId
-      // change, which would zoom out every time the user clicks a marker.
       if (!viewInitRef.current) {
         if (latLngs.length === 1) {
           map.setView(latLngs[0], 15);
@@ -198,7 +259,7 @@ export function LeafletCentersMap({
     };
   }, [centers, selectedId, onSelect]);
 
-  // Reset view flag when the centers list itself changes so new data re-fits.
+  // Reset view flag when centers list changes so new data re-fits bounds.
   const centersKeyRef = useRef("");
   const centersKey = centers.map((c) => c.id).join(",");
   if (centersKey !== centersKeyRef.current) {

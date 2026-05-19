@@ -70,6 +70,39 @@
   color: rgba(255, 255, 255, 0.35);
 }
 
+/* "You are here" marker */
+.lcm-you-marker {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lcm-you-marker::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #3b82f6;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.6);
+  z-index: 1;
+}
+.lcm-you-pulse {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.2);
+  animation: lcm-pulse 2s ease-out infinite;
+}
+@keyframes lcm-pulse {
+  0%   { transform: scale(0.4); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
 /* ── Shared marker styles ── */
 .leaflet-center-marker {
   display: inline-flex;
