@@ -74,7 +74,11 @@ export function LocationPickerMap({
       };
 
       if (lat != null && lng != null) {
-        markerRef.current = L.marker([lat, lng], { icon: createCustomIcon() }).addTo(map);
+        markerRef.current = L.marker([lat, lng], { icon: createCustomIcon(), draggable: true }).addTo(map);
+        markerRef.current.on("dragend", () => {
+          const next = markerRef.current.getLatLng();
+          onChangeRef.current(parseFloat(next.lat.toFixed(6)), parseFloat(next.lng.toFixed(6)));
+        });
       }
     }
 
@@ -110,7 +114,11 @@ export function LocationPickerMap({
 
       if (lat != null && lng != null) {
         if (!markerRef.current) {
-          markerRef.current = L.marker([lat, lng], { icon: createCustomIcon() }).addTo(mapRef.current);
+          markerRef.current = L.marker([lat, lng], { icon: createCustomIcon(), draggable: true }).addTo(mapRef.current);
+          markerRef.current.on("dragend", () => {
+            const next = markerRef.current.getLatLng();
+            onChangeRef.current(parseFloat(next.lat.toFixed(6)), parseFloat(next.lng.toFixed(6)));
+          });
           mapRef.current.setView([lat, lng], 15);
         } else {
           markerRef.current.setLatLng([lat, lng]);
@@ -135,7 +143,7 @@ export function LocationPickerMap({
       <div ref={containerRef} className="h-full w-full" />
       <div className="pointer-events-none absolute bottom-4 left-0 right-0 z-[1000] flex justify-center">
         <div className="bg-white/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] shadow-lg backdrop-blur-md border border-black">
-          MAP-ДЭЭР ДАРЖ БАЙРШИЛ СОНГОНО УУ
+          MAP ДЭЭР ДАРАХ ЭСВЭЛ PIN-ИЙГ ЧИРЖ БАЙРШИЛ СОНГОНО УУ
         </div>
       </div>
     </div>

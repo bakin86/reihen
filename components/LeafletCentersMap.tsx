@@ -18,6 +18,8 @@ interface LeafletCentersMapProps {
   selectedId?: string | null;
   onSelect?: (id: string) => void;
   userLocation?: { lat: number; lng: number } | null;
+  editableCenterId?: string;
+  onLocationChange?: (lat: number, lng: number) => void;
   className?: string;
   dark?: boolean;
 }
@@ -41,6 +43,8 @@ export function LeafletCentersMap({
   selectedId,
   onSelect,
   userLocation,
+  editableCenterId,
+  onLocationChange,
   className = "",
   dark = false,
 }: LeafletCentersMapProps) {
@@ -203,6 +207,7 @@ export function LeafletCentersMap({
           : "";
 
         const marker = L.marker(latLng, {
+          draggable: center.id === editableCenterId,
           icon: L.divIcon({
             className: "",
             html: `
@@ -225,6 +230,10 @@ export function LeafletCentersMap({
           </div>
         `);
         marker.on("click", () => onSelect?.(center.id));
+        marker.on("dragend", () => {
+          const next = marker.getLatLng();
+          onLocationChange?.(Number(next.lat.toFixed(6)), Number(next.lng.toFixed(6)));
+        });
         markersRef.current.push(marker);
       });
 
@@ -255,7 +264,7 @@ export function LeafletCentersMap({
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [centers, selectedId, onSelect, userLocation]);
+  }, [centers, selectedId, onSelect, userLocation, editableCenterId, onLocationChange]);
 
   // Reset view flag when centers list itself changes so new data re-fits.
   const centersKeyRef = useRef("");
