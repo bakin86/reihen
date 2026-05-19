@@ -39,6 +39,8 @@ interface CenterInfo {
   images: CenterImage[] | string[];
   district: string;
   address: string;
+  lat: number | null;
+  lng: number | null;
   description: string | null;
   rating: number;
   reviewCount: number;
@@ -436,6 +438,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
   const occupancyPct = seats.length > 0 ? Math.round(((seats.length - openCount) / seats.length) * 100) : 0;
   const hasLayout = seats.some((s) => s.posX !== null && s.posY !== null);
   const primarySeatTypes = center.seatTypes.slice(0, 3).map((t) => t.name).join(" / ");
+  const mapSrc = center.lat != null && center.lng != null ? getOsmEmbedUrl(center.lat, center.lng, 16) : null;
 
   return (
     <main className="ui-page-dark text-white">
@@ -579,6 +582,35 @@ export default function CenterPage({ params }: { params: { id: string } }) {
       )}
 
       {/* ─── SEAT TYPES PRICING ─── */}
+      {mapSrc && center.lat != null && center.lng != null && (
+        <section className="border-b border-white/10 bg-[#0a0a0a]">
+          <div className="grid grid-cols-1 md:grid-cols-[360px_1fr]">
+            <div className="border-white/10 p-6 md:border-r md:p-8">
+              <p className="text-[9px] uppercase tracking-[0.28em] text-white/25">Location</p>
+              <h2 className="display mt-3 text-3xl text-white">MAP</h2>
+              <p className="mt-4 text-sm leading-relaxed text-white/45">{center.address}</p>
+              <a
+                href={getGoogleMapsUrl(center.lat, center.lng)}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-6 inline-flex rounded-full border border-white/15 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/55 transition-colors hover:border-white hover:text-white"
+              >
+                Open in Google Maps
+              </a>
+            </div>
+            <div className="relative h-[340px] overflow-hidden bg-white/[0.03] md:h-[420px]">
+              <iframe
+                title={`${center.name} map`}
+                src={mapSrc}
+                className="absolute inset-0 h-full w-full border-0 grayscale"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
       {center.seatTypes.length > 0 && (
         <section className="anim-fade-up border-b border-white/10 bg-[#0d0d0d] p-4 md:p-6">
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -1170,6 +1202,21 @@ export default function CenterPage({ params }: { params: { id: string } }) {
       )}
     </main>
   );
+}
+
+function getOsmEmbedUrl(lat: number, lng: number, zoom: number) {
+  const delta = zoom >= 16 ? 0.006 : 0.018;
+  const bbox = [
+    lng - delta,
+    lat - delta,
+    lng + delta,
+    lat + delta,
+  ].map((value) => value.toFixed(6)).join("%2C");
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat.toFixed(6)}%2C${lng.toFixed(6)}`;
+}
+
+function getGoogleMapsUrl(lat: number, lng: number) {
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
 }
 
 function GalleryStrip({

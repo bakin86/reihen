@@ -88,6 +88,9 @@ export default function CentersPage() {
   const selected = sorted.find((c) => c.id === selectedId) ?? sorted[0] ?? null;
   const plotted = sorted.filter((c) => typeof c.lat === "number" && typeof c.lng === "number");
   const bounds = getBounds(plotted);
+  const selectedMapSrc = selected?.lat != null && selected.lng != null
+    ? getOsmEmbedUrl(selected.lat, selected.lng, 15)
+    : null;
 
   const useMyLocation = () => {
     if (!navigator.geolocation) return;
@@ -143,7 +146,17 @@ export default function CentersPage() {
 
       <section className="grid min-h-[calc(100vh-220px)] grid-cols-1 border-y border-black/[0.07] lg:grid-cols-[minmax(0,1fr)_460px]">
         <div className="relative min-h-[420px] overflow-hidden bg-[#f3f2ef]">
-          <div className="absolute inset-0 opacity-[0.35]">
+          {selectedMapSrc ? (
+            <iframe
+              key={selected?.id}
+              title={`${selected?.name ?? "Selected center"} map`}
+              src={selectedMapSrc}
+              className="absolute inset-0 h-full w-full border-0 grayscale"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          ) : null}
+          <div className={`absolute inset-0 ${selectedMapSrc ? "bg-white/25" : "opacity-[0.35]"}`}>
             <div className="h-full w-full bg-[linear-gradient(to_right,rgba(0,0,0,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.08)_1px,transparent_1px)] bg-[size:56px_56px]" />
           </div>
           <div className="absolute left-6 top-6 z-10 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/35 backdrop-blur">
@@ -194,6 +207,16 @@ export default function CentersPage() {
                   Book
                 </Link>
               </div>
+              {selected.lat != null && selected.lng != null && (
+                <a
+                  href={getGoogleMapsUrl(selected.lat, selected.lng)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-flex rounded-full border border-black/10 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-black/45 transition-colors hover:border-black hover:text-black"
+                >
+                  Open in Google Maps
+                </a>
+              )}
             </div>
           )}
         </div>
@@ -357,4 +380,19 @@ function projectPoint(center: Center, bounds: ReturnType<typeof getBounds>) {
   const x = 12 + (((center.lng as number) - bounds.minLng) / lngRange) * 76;
   const y = 12 + ((bounds.maxLat - (center.lat as number)) / latRange) * 76;
   return { x, y };
+}
+
+function getOsmEmbedUrl(lat: number, lng: number, zoom: number) {
+  const delta = zoom >= 16 ? 0.006 : 0.018;
+  const bbox = [
+    lng - delta,
+    lat - delta,
+    lng + delta,
+    lat + delta,
+  ].map((value) => value.toFixed(6)).join("%2C");
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat.toFixed(6)}%2C${lng.toFixed(6)}`;
+}
+
+function getGoogleMapsUrl(lat: number, lng: number) {
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
 }
