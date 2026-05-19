@@ -64,8 +64,17 @@ export function LocationPickerMap({
         onChangeRef.current(formattedLat, formattedLng);
       });
 
+      const createCustomIcon = () => {
+        return L.divIcon({
+          className: "leaflet-picker-marker",
+          html: `<div style="width: 20px; height: 20px; background: #000; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.3);"></div>`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
+        });
+      };
+
       if (lat != null && lng != null) {
-        markerRef.current = L.marker([lat, lng]).addTo(map);
+        markerRef.current = L.marker([lat, lng], { icon: createCustomIcon() }).addTo(map);
       }
     }
 
@@ -89,9 +98,18 @@ export function LocationPickerMap({
       const L = await import("leaflet");
       if (cancelled || !mapRef.current) return;
 
+      const createCustomIcon = () => {
+        return L.divIcon({
+          className: "leaflet-picker-marker",
+          html: `<div style="width: 20px; height: 20px; background: #000; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.3);"></div>`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
+        });
+      };
+
       if (lat != null && lng != null) {
         if (!markerRef.current) {
-          markerRef.current = L.marker([lat, lng]).addTo(mapRef.current);
+          markerRef.current = L.marker([lat, lng], { icon: createCustomIcon() }).addTo(mapRef.current);
           mapRef.current.setView([lat, lng], 15);
         } else {
           markerRef.current.setLatLng([lat, lng]);
