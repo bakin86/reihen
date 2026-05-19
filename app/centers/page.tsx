@@ -168,30 +168,6 @@ export default function CentersPage() {
             </div>
           ) : null}
 
-          {selected && (
-            <div className="absolute bottom-6 left-6 right-6 z-30 max-w-xl border border-black/10 bg-white/88 p-4 backdrop-blur-md">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-black/30">{selected.district}</p>
-                  <h2 className="mt-1 truncate text-2xl font-black uppercase">{selected.name}</h2>
-                  <p className="mt-1 truncate text-xs text-black/45">{selected.address}</p>
-                </div>
-                <Link href={`/centers/${selected.id}`} className="shrink-0 rounded-full bg-black px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
-                  Book
-                </Link>
-              </div>
-              {selected.lat != null && selected.lng != null && (
-                <a
-                  href={getGoogleMapsUrl(selected.lat, selected.lng)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-3 inline-flex rounded-full border border-black/10 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-black/45 transition-colors hover:border-black hover:text-black"
-                >
-                  Open in Google Maps
-                </a>
-              )}
-            </div>
-          )}
         </div>
 
         <aside className="border-t border-black/[0.07] bg-white lg:border-l lg:border-t-0">
@@ -336,6 +312,3 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function getGoogleMapsUrl(lat: number, lng: number) {
-  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-}
