@@ -142,9 +142,14 @@ export function LeafletCentersMap({
       } else {
         map.fitBounds(L.latLngBounds(latLngs).pad(0.25), { animate: false });
       }
+
+      // After setting the view, force tiles to load for the correct viewport.
+      // On first client-side navigation the map may have had 0×0 size when
+      // the tile layer was added, so tiles were never fetched.
+      map.invalidateSize();
     }
 
-    const timer = window.setTimeout(renderMarkers, 0);
+    const timer = window.setTimeout(renderMarkers, 150);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
