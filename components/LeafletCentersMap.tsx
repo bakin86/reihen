@@ -34,6 +34,7 @@ export function LeafletCentersMap({
 
   useEffect(() => {
     let cancelled = false;
+    let resizeObserver: ResizeObserver | null = null;
 
     async function setup() {
       if (!containerRef.current || mapRef.current) return;
@@ -52,12 +53,31 @@ export function LeafletCentersMap({
       }).addTo(map);
 
       mapRef.current = map;
+
+      // Fix for blank map on client-side navigation:
+      // Leaflet reads container dimensions at init time; if CSS hasn't painted
+      // yet the size is 0×0. Invalidate after a frame and watch for resizes.
+      requestAnimationFrame(() => {
+        if (!cancelled && mapRef.current) {
+          mapRef.current.invalidateSize();
+        }
+      });
+
+      if (containerRef.current && typeof ResizeObserver !== "undefined") {
+        resizeObserver = new ResizeObserver(() => {
+          if (mapRef.current) {
+            mapRef.current.invalidateSize();
+          }
+        });
+        resizeObserver.observe(containerRef.current);
+      }
     }
 
     setup();
 
     return () => {
       cancelled = true;
+      resizeObserver?.disconnect();
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
