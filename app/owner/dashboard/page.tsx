@@ -124,11 +124,11 @@ export default function OwnerDashboard() {
     : [];
 
   const loadDashboard = useCallback(() => {
-    if (!token) return;
-    apiFetch<DashData>("/api/owner/dashboard", { token })
+    if (!token || !activeCenterId) return;
+    apiFetch<DashData>(`/api/owner/dashboard?centerId=${encodeURIComponent(activeCenterId)}`, { token })
       .then(setDash)
       .catch(() => {});
-  }, [token]);
+  }, [token, activeCenterId]);
 
   const refreshDashboardSoon = useCallback(() => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
@@ -138,14 +138,14 @@ export default function OwnerDashboard() {
   }, [loadDashboard]);
 
   useEffect(() => {
-    loadDashboard();
-  }, [loadDashboard]);
+    if (activeCenterId) loadDashboard();
+  }, [activeCenterId, loadDashboard]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !activeCenterId) return;
     const interval = setInterval(loadDashboard, 4_000);
     return () => clearInterval(interval);
-  }, [token, loadDashboard]);
+  }, [token, activeCenterId, loadDashboard]);
 
   useEffect(() => {
     if (!token) return;

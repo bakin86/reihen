@@ -31,7 +31,19 @@ export async function GET(req: Request) {
 
     const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 3_600_000);
 
-    const [income, bookingCount, openSeats, totalSeats, statusCounts, hourlyRaw, recent, riskRaw, auditLogs] = await Promise.all([
+    const [
+      income,
+      bookingCount,
+      openSeats,
+      totalSeats,
+      statusCounts,
+      hourlyRaw,
+      recent,
+      riskRaw,
+      auditLogs,
+      paidToday,
+      noShowToday,
+    ] = await Promise.all([
       prisma.booking.aggregate({
         _sum: { totalPrice: true },
         where: {
@@ -88,22 +100,21 @@ export async function GET(req: Request) {
         take: 12,
         include: { actor: { select: { id: true, name: true, role: true } } },
       }).catch(() => []),
+      prisma.booking.count({
+        where: {
+          centerId: { in: centerIds },
+          paymentStatus: "PAID",
+          createdAt: { gte: start, lt: end },
+        },
+      }),
+      prisma.booking.count({
+        where: {
+          centerId: { in: centerIds },
+          status: "NOSHOW",
+          updatedAt: { gte: start, lt: end },
+        },
+      }),
     ]);
-
-    const paidToday = await prisma.booking.count({
-      where: {
-        centerId: { in: centerIds },
-        paymentStatus: "PAID",
-        createdAt: { gte: start, lt: end },
-      },
-    });
-    const noShowToday = await prisma.booking.count({
-      where: {
-        centerId: { in: centerIds },
-        status: "NOSHOW",
-        updatedAt: { gte: start, lt: end },
-      },
-    });
 
     const peakHours = Array.from({ length: 24 }, (_, h) => ({ hour: h, count: 0, income: 0 }));
     for (const row of hourlyRaw) {
