@@ -76,6 +76,11 @@ function printResult(label, result) {
   console.log(`${mark} ${status} ${time}  ${label}${cache}`);
 }
 
+function centerName(center) {
+  const idTail = String(center.id || "").slice(-6);
+  return `${center.name || center.id}${idTail ? ` #${idTail}` : ""}`;
+}
+
 async function main() {
   console.log(`Warming ${baseUrl}`);
   console.log(`Centers: ${centerLimit}, concurrency: ${concurrency}, timeout: ${timeoutMs}ms`);
@@ -113,9 +118,9 @@ async function main() {
 
     const centerRequests = centers.flatMap((center) => [
       { label: `GET  /centers/${center.id}`, path: `/centers/${center.id}` },
-      { label: `GET  seats ${center.name || center.id}`, path: `/api/centers/${center.id}/seats` },
-      { label: `GET  reviews ${center.name || center.id}`, path: `/api/centers/${center.id}/reviews` },
-      { label: `GET  tournaments ${center.name || center.id}`, path: `/api/centers/${center.id}/tournaments` },
+      { label: `GET  seats ${centerName(center)}`, path: `/api/centers/${center.id}/seats` },
+      { label: `GET  reviews ${centerName(center)}`, path: `/api/centers/${center.id}/reviews` },
+      { label: `GET  tournaments ${centerName(center)}`, path: `/api/centers/${center.id}/tournaments` },
     ]);
 
     const centerResults = await runQueue(centerRequests, async (item) => {
@@ -149,6 +154,24 @@ async function main() {
         return result;
       });
     }
+
+    const cacheVerifyRequests = [
+      { label: "VERIFY /api/centers", path: "/api/centers?limit=50" },
+      { label: "VERIFY /api/events", path: "/api/events" },
+      ...centers.map((center) => ({
+        label: `VERIFY seats ${centerName(center)}`,
+        path: `/api/centers/${center.id}/seats`,
+      })),
+    ];
+
+    console.log("");
+    console.log("Verifying Redis cache hits");
+    await sleep(600);
+    await runQueue(cacheVerifyRequests, async (item) => {
+      const result = await fetchWithTimeout(item.path);
+      printResult(item.label, result);
+      return result;
+    });
   }
 
   console.log("");
