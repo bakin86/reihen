@@ -563,6 +563,7 @@ async function main() {
     const d = new Date(); d.setHours(hour, 0, 0, 0); return d;
   };
   const todayBookings: { userId: string; ci: number; startHour: number; h: number; status: "CONFIRMED" | "CANCELLED" | "NOSHOW"; method: "QPAY" | "BALANCE" }[] = [
+    // owner1 centers
     { userId: players[0].id, ci: 0, startHour:  9, h: 2, status: "CONFIRMED", method: "BALANCE" },
     { userId: players[1].id, ci: 0, startHour: 10, h: 3, status: "CONFIRMED", method: "QPAY"    },
     { userId: players[2].id, ci: 0, startHour: 11, h: 2, status: "CONFIRMED", method: "BALANCE" },
@@ -574,8 +575,20 @@ async function main() {
     { userId: players[8].id, ci: 2, startHour: 11, h: 2, status: "CONFIRMED", method: "QPAY"    },
     { userId: players[9].id, ci: 2, startHour: 15, h: 3, status: "CONFIRMED", method: "BALANCE" },
     { userId: players[0].id, ci: 4, startHour: 12, h: 2, status: "CONFIRMED", method: "QPAY"    },
-    { userId: players[1].id, ci: 7, startHour: 10, h: 3, status: "CONFIRMED", method: "BALANCE" },
+    { userId: players[1].id, ci: 4, startHour: 14, h: 3, status: "CONFIRMED", method: "BALANCE" },
     { userId: players[2].id, ci: 3, startHour: 13, h: 2, status: "NOSHOW",    method: "QPAY"    },
+    // owner2 centers
+    { userId: players[3].id, ci:  7, startHour: 10, h: 3, status: "CONFIRMED", method: "BALANCE" },
+    { userId: players[4].id, ci:  7, startHour: 13, h: 2, status: "CONFIRMED", method: "QPAY"    },
+    { userId: players[5].id, ci:  7, startHour: 15, h: 4, status: "CONFIRMED", method: "BALANCE" },
+    { userId: players[6].id, ci:  8, startHour: 11, h: 2, status: "CONFIRMED", method: "QPAY"    },
+    { userId: players[7].id, ci:  8, startHour: 14, h: 3, status: "CONFIRMED", method: "BALANCE" },
+    { userId: players[8].id, ci:  9, startHour: 12, h: 2, status: "CONFIRMED", method: "QPAY"    },
+    { userId: players[9].id, ci:  9, startHour: 14, h: 2, status: "CANCELLED", method: "BALANCE" },
+    { userId: players[0].id, ci: 10, startHour:  9, h: 3, status: "CONFIRMED", method: "QPAY"    },
+    { userId: players[1].id, ci: 10, startHour: 11, h: 2, status: "CONFIRMED", method: "BALANCE" },
+    { userId: players[2].id, ci: 10, startHour: 13, h: 4, status: "CONFIRMED", method: "QPAY"    },
+    { userId: players[3].id, ci: 10, startHour: 15, h: 2, status: "NOSHOW",    method: "QPAY"    },
   ];
 
   for (const b of todayBookings) {
@@ -955,7 +968,7 @@ async function main() {
   console.log("━".repeat(62));
   console.log(`  ${centers.length} centers · ${totalSeats} seats · ${bookingSeq} bookings · ${completedBks.length} reviews`);
   console.log("  Demo player: 6 months history · unreviewed booking · 3 favorites · 1 live tournament");
-  console.log("  Today: 13 bookings across 5 centers · 2 PENDING QPay bookings");
+  console.log("  Today: bookings across all 11 centers · 2 PENDING QPay bookings");
   console.log("━".repeat(62) + "\n");
 }
 

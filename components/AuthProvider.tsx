@@ -227,10 +227,14 @@ function ClerkAuthSync({
 
     async function syncClerkUser() {
       if (!isSignedIn) {
-        clerkSessionRef.current = false;
-        clearTimer();
-        setUser(null);
-        setToken(null);
+        // Only wipe the session if it was established via Clerk.
+        // Legacy-auth users (e.g. admin) are not Clerk users — don't clear them.
+        if (clerkSessionRef.current) {
+          clerkSessionRef.current = false;
+          clearTimer();
+          setUser(null);
+          setToken(null);
+        }
         setLoading(false);
         return;
       }
