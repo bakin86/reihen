@@ -63,7 +63,7 @@ export default function EventsPage() {
 
   return (
     <main className="ui-page-dark text-white">
-      <NavBar />
+      <NavBar dark />
 
       <section className="relative overflow-hidden border-b border-white/10 px-6 pb-10 pt-32 md:px-12 md:pb-14">
         <Link
