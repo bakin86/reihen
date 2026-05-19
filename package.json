@@ -9,6 +9,7 @@
     "start": "node .next/standalone/server.js",
     "lint": "next lint",
     "smoke": "node scripts/smoke-test.js",
+    "warmup:prod": "node scripts/warmup-production.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",
