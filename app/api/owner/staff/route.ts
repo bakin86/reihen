@@ -94,13 +94,33 @@ export async function POST(req: Request) {
       where: { OR: [{ phone }, ...(data.email ? [{ email: data.email }] : [])] },
       select: { id: true, name: true, email: true, phone: true, role: true },
     });
+    const shouldReplaceClerkPhone =
+      !!existingUser &&
+      !!data.email &&
+      existingUser.email === data.email &&
+      existingUser.phone.startsWith("clerk_") &&
+      existingUser.phone !== phone;
+
+    if (shouldReplaceClerkPhone) {
+      const phoneOwner = await prisma.user.findUnique({
+        where: { phone },
+        select: { id: true },
+      });
+      if (phoneOwner && phoneOwner.id !== existingUser.id) {
+        return NextResponse.json({ error: "Phone already in use" }, { status: 409 });
+      }
+    }
 
     if (existingUser && !data.centerId) {
-      await prisma.user.update({
+      const user = await prisma.user.update({
         where: { id: existingUser.id },
-        data: { role: existingUser.role === "PLAYER" ? "STAFF" : existingUser.role },
+        data: {
+          role: existingUser.role === "PLAYER" ? "STAFF" : existingUser.role,
+          ...(shouldReplaceClerkPhone ? { phone } : {}),
+        },
+        select: { id: true, name: true, email: true, phone: true, role: true },
       });
-      return NextResponse.json({ added: true, user: existingUser });
+      return NextResponse.json({ added: true, user });
     }
 
     if (existingUser) {
@@ -127,11 +147,13 @@ export async function POST(req: Request) {
             canViewBookings: data.canViewBookings,
           },
         });
-        // Promote role if PLAYER
-        if (existingUser.role === "PLAYER") {
+        if (existingUser.role === "PLAYER" || shouldReplaceClerkPhone) {
           await tx.user.update({
             where: { id: existingUser.id },
-            data: { role: "STAFF" },
+            data: {
+              ...(existingUser.role === "PLAYER" ? { role: "STAFF" } : {}),
+              ...(shouldReplaceClerkPhone ? { phone } : {}),
+            },
           });
         }
       });
