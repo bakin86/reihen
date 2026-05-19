@@ -11,6 +11,10 @@ import { apiFetch } from "@/lib/api";
 import { getMainImage, getImagesByTag, IMAGE_TAGS, type CenterImage, type ImageTag } from "@/lib/image-types";
 
 const Confetti = dynamic(() => import("@/components/Confetti").then((m) => m.Confetti), { ssr: false });
+const LeafletCentersMap = dynamic(
+  () => import("@/components/LeafletCentersMap").then((m) => ({ default: m.LeafletCentersMap })),
+  { ssr: false }
+);
 
 interface SeatData {
   id: string;
@@ -44,7 +48,7 @@ interface CenterInfo {
   description: string | null;
   rating: number;
   reviewCount: number;
-  seatTypes: { id: string; name: string; pricePerHour: number; peakHourPrice: number | null }[];
+  seatTypes: { id: string; name: string; pricePerHour: number; peakHourPrice: number | null; description: string | null }[];
   maxSeatsPerBooking: number;
   noShowMinutes: number;
   cancelMinutes: number;
@@ -438,7 +442,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
   const occupancyPct = seats.length > 0 ? Math.round(((seats.length - openCount) / seats.length) * 100) : 0;
   const hasLayout = seats.some((s) => s.posX !== null && s.posY !== null);
   const primarySeatTypes = center.seatTypes.slice(0, 3).map((t) => t.name).join(" / ");
-  const mapSrc = center.lat != null && center.lng != null ? getOsmEmbedUrl(center.lat, center.lng, 16) : null;
+  const hasMap = center.lat != null && center.lng != null;
 
   return (
     <main className="ui-page-dark text-white">
@@ -582,7 +586,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
       )}
 
       {/* ─── SEAT TYPES PRICING ─── */}
-      {mapSrc && center.lat != null && center.lng != null && (
+      {hasMap && center.lat != null && center.lng != null && (
         <section className="border-b border-white/10 bg-[#0a0a0a]">
           <div className="grid grid-cols-1 md:grid-cols-[360px_1fr]">
             <div className="border-white/10 p-6 md:border-r md:p-8">
@@ -599,12 +603,20 @@ export default function CenterPage({ params }: { params: { id: string } }) {
               </a>
             </div>
             <div className="relative h-[340px] overflow-hidden bg-white/[0.03] md:h-[420px]">
-              <iframe
-                title={`${center.name} map`}
-                src={mapSrc}
-                className="absolute inset-0 h-full w-full border-0 grayscale"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
+              <LeafletCentersMap
+                centers={[{
+                  id: center.id,
+                  name: center.name,
+                  address: center.address,
+                  district: center.district,
+                  lat: center.lat,
+                  lng: center.lng,
+                  availableSeats: openCount,
+                  seatCount: seats.length,
+                }]}
+                selectedId={center.id}
+                className="absolute inset-0"
+                dark
               />
             </div>
           </div>
@@ -627,6 +639,9 @@ export default function CenterPage({ params }: { params: { id: string } }) {
                   <div className="mt-2 rounded-full bg-yellow-500/10 px-3 py-1 text-[10px] text-yellow-400 inline-block mx-auto">
                     PEAK: {t.peakHourPrice.toLocaleString()}₮
                   </div>
+                )}
+                {t.description && (
+                  <p className="mx-auto mt-3 max-w-xs text-xs leading-relaxed text-white/38">{t.description}</p>
                 )}
               </div>
             ))}
@@ -1202,17 +1217,6 @@ export default function CenterPage({ params }: { params: { id: string } }) {
       )}
     </main>
   );
-}
-
-function getOsmEmbedUrl(lat: number, lng: number, zoom: number) {
-  const delta = zoom >= 16 ? 0.006 : 0.018;
-  const bbox = [
-    lng - delta,
-    lat - delta,
-    lng + delta,
-    lat + delta,
-  ].map((value) => value.toFixed(6)).join("%2C");
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat.toFixed(6)}%2C${lng.toFixed(6)}`;
 }
 
 function getGoogleMapsUrl(lat: number, lng: number) {

@@ -17,6 +17,7 @@ interface Seat {
 }
 interface Center {
   id: string; name: string; address: string; district: string; description: string | null;
+  lat: number | null; lng: number | null;
   images: CenterImage[] | string[];
   floors: Floor[]; seatTypes: SeatType[]; seats: Seat[];
   cancelPolicy: { cancelMinutes: number; noShowMinutes: number; maxSeatsPerBooking: number; refundPolicy: string } | null;
@@ -36,6 +37,8 @@ export default function CenterManagePage({ params }: { params: { id: string } })
   const [address, setAddress] = useState("");
   const [district, setDistrict] = useState("");
   const [description, setDescription] = useState("");
+  const [lat, setLat] = useState("");
+  const [lng, setLng] = useState("");
   const [images, setImages] = useState<CenterImage[]>([]);
 
   // UI state
@@ -49,6 +52,7 @@ export default function CenterManagePage({ params }: { params: { id: string } })
   const [newFloorName, setNewFloorName] = useState("");
   const [newTypeName, setNewTypeName] = useState("");
   const [newTypePrice, setNewTypePrice] = useState(3500);
+  const [newTypeDescription, setNewTypeDescription] = useState("");
   const [bulkFloor, setBulkFloor] = useState("");
   const [bulkType, setBulkType] = useState("");
   const [bulkCount, setBulkCount] = useState(10);
@@ -70,6 +74,8 @@ export default function CenterManagePage({ params }: { params: { id: string } })
         setCenter(c);
         setName(c.name); setAddress(c.address); setDistrict(c.district);
         setDescription(c.description ?? "");
+        setLat(c.lat != null ? String(c.lat) : "");
+        setLng(c.lng != null ? String(c.lng) : "");
         // Support legacy string[] and new CenterImage[] formats
         if (Array.isArray(c.images)) {
           if (c.images.length === 0) setImages([]);
@@ -99,7 +105,15 @@ export default function CenterManagePage({ params }: { params: { id: string } })
     try {
       const { center: c } = await apiFetch<{ center: any }>(`/api/owner/centers/${params.id}`, {
         method: "PATCH", token,
-        body: JSON.stringify({ name, address, district, description: description || null, images }),
+        body: JSON.stringify({
+          name,
+          address,
+          district,
+          description: description || null,
+          images,
+          lat: lat.trim() ? Number(lat) : null,
+          lng: lng.trim() ? Number(lng) : null,
+        }),
       });
       setCenter((prev) => prev ? { ...prev, ...c } : prev);
       showToast("Center info saved");
@@ -153,10 +167,14 @@ export default function CenterManagePage({ params }: { params: { id: string } })
     try {
       const { seatType } = await apiFetch<{ seatType: SeatType }>(`/api/owner/centers/${params.id}/seat-types`, {
         method: "POST", token,
-        body: JSON.stringify({ name: newTypeName || "Standard", pricePerHour: newTypePrice }),
+        body: JSON.stringify({
+          name: newTypeName || "Standard",
+          pricePerHour: newTypePrice,
+          description: newTypeDescription.trim() || undefined,
+        }),
       });
       setCenter((c) => c ? { ...c, seatTypes: [...c.seatTypes, seatType] } : c);
-      setNewTypeName(""); setNewTypePrice(3500);
+      setNewTypeName(""); setNewTypePrice(3500); setNewTypeDescription("");
       showToast("Seat type added");
     } catch (e: any) {
       if (e instanceof ApiError && e.data?.redirectTo) { router.push(e.data.redirectTo); return; }
@@ -165,7 +183,7 @@ export default function CenterManagePage({ params }: { params: { id: string } })
     setSaving(false);
   };
 
-  const updateType = async (typeId: string, data: { name?: string; pricePerHour?: number }) => {
+  const updateType = async (typeId: string, data: { name?: string; pricePerHour?: number; description?: string | null }) => {
     if (!token) return;
     try {
       const { seatType } = await apiFetch<{ seatType: SeatType }>(`/api/owner/centers/${params.id}/seat-types`, {
@@ -348,6 +366,20 @@ export default function CenterManagePage({ params }: { params: { id: string } })
                   <input value={address} onChange={(e) => setAddress(e.target.value)}
                     className="mt-1 block w-full border-b-2 border-black bg-transparent pb-2 text-lg font-black outline-none" />
                 </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-[0.3em] text-gray">LATITUDE</label>
+                  <input value={lat} onChange={(e) => setLat(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="47.9189"
+                    className="mono mt-1 block w-full border-b-2 border-black bg-transparent pb-2 text-lg font-black outline-none placeholder:text-gray" />
+                </div>
+                <div>
+                  <label className="text-[10px] uppercase tracking-[0.3em] text-gray">LONGITUDE</label>
+                  <input value={lng} onChange={(e) => setLng(e.target.value)}
+                    inputMode="decimal"
+                    placeholder="106.9176"
+                    className="mono mt-1 block w-full border-b-2 border-black bg-transparent pb-2 text-lg font-black outline-none placeholder:text-gray" />
+                </div>
                 <div className="md:col-span-2">
                   <label className="text-[10px] uppercase tracking-[0.3em] text-gray">DESCRIPTION</label>
                   <textarea value={description} onChange={(e) => setDescription(e.target.value)}
@@ -421,9 +453,11 @@ export default function CenterManagePage({ params }: { params: { id: string } })
                 ))}
               </div>
               {/* Inline add */}
-              <div className="mt-4 flex items-end gap-3">
+              <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto_auto] md:items-end">
                 <input value={newTypeName} onChange={(e) => setNewTypeName(e.target.value)} placeholder="Type name"
                   onKeyDown={(e) => { if (e.key === "Enter") addType(); }}
+                  className="flex-1 border-b border-gray bg-transparent pb-2 text-sm outline-none placeholder:text-gray focus:border-black" />
+                <input value={newTypeDescription} onChange={(e) => setNewTypeDescription(e.target.value)} placeholder="RTX 4060, 240Hz, mechanical keyboard"
                   className="flex-1 border-b border-gray bg-transparent pb-2 text-sm outline-none placeholder:text-gray focus:border-black" />
                 <div className="flex items-end gap-1">
                   <input type="number" value={newTypePrice} onChange={(e) => setNewTypePrice(Number(e.target.value))} min={0}
@@ -695,34 +729,39 @@ function FloorRow({ floor, seatCount, onRename, onDelete }: {
 }
 
 function TypeRow({ type, seatCount, onUpdate, onDelete }: {
-  type: { id: string; name: string; pricePerHour: number };
+  type: { id: string; name: string; pricePerHour: number; description: string | null };
   seatCount: number;
-  onUpdate: (data: { name?: string; pricePerHour?: number }) => void;
+  onUpdate: (data: { name?: string; pricePerHour?: number; description?: string | null }) => void;
   onDelete: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(type.name);
   const [price, setPrice] = useState(type.pricePerHour);
+  const [typeDescription, setTypeDescription] = useState(type.description ?? "");
   return (
     <div className="flex items-center gap-4 border-b border-gray/30 py-3">
       {editing ? (
         <>
           <input value={name} onChange={(e) => setName(e.target.value)} autoFocus
             className="flex-1 border-b border-black bg-transparent pb-1 text-sm font-black outline-none" />
+          <input value={typeDescription} onChange={(e) => setTypeDescription(e.target.value)}
+            placeholder="RTX 4060, 240Hz, mechanical keyboard"
+            className="flex-1 border-b border-black bg-transparent pb-1 text-sm outline-none placeholder:text-gray" />
           <div className="flex items-end gap-1">
             <input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} min={0}
               className="mono w-20 border-b border-black bg-transparent pb-1 text-right text-sm font-black outline-none" />
             <span className="text-[10px] text-gray">₮/h</span>
           </div>
-          <button onClick={() => { onUpdate({ name, pricePerHour: price }); setEditing(false); }}
+          <button onClick={() => { onUpdate({ name, pricePerHour: price, description: typeDescription.trim() || null }); setEditing(false); }}
             className="text-[10px] uppercase tracking-[0.3em] hover:underline">SAVE</button>
-          <button onClick={() => { setName(type.name); setPrice(type.pricePerHour); setEditing(false); }}
+          <button onClick={() => { setName(type.name); setPrice(type.pricePerHour); setTypeDescription(type.description ?? ""); setEditing(false); }}
             className="text-[10px] uppercase tracking-[0.3em] text-gray">CANCEL</button>
         </>
       ) : (
         <>
-          <button onClick={() => setEditing(true)} className="flex-1 text-left text-sm font-black hover:underline">
-            {type.name}
+          <button onClick={() => setEditing(true)} className="min-w-0 flex-1 text-left hover:underline">
+            <span className="block text-sm font-black">{type.name}</span>
+            {type.description && <span className="mt-1 block truncate text-xs font-normal text-gray">{type.description}</span>}
           </button>
           <span className="mono text-xs text-gray">{type.pricePerHour.toLocaleString()}₮/h</span>
           <span className="mono text-[10px] text-gray">{seatCount} seats</span>

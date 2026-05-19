@@ -23,7 +23,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     select: {
       id: true, name: true, images: true, district: true,
       address: true, description: true, rating: true, lat: true, lng: true,
-      seatTypes: { select: { id: true, name: true, pricePerHour: true, peakHourPrice: true } },
+      seatTypes: { select: { id: true, name: true, pricePerHour: true, peakHourPrice: true, description: true } },
       cancelPolicy: { select: { maxSeatsPerBooking: true, noShowMinutes: true, cancelMinutes: true } },
       _count: { select: { reviews: true } },
     },

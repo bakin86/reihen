@@ -4,12 +4,23 @@ import { prisma } from "@/lib/prisma";
 import { authErrorResponse, requireOwner } from "@/lib/auth";
 import { assertCenterOwner } from "@/lib/owner-guard";
 
+const imageSchema = z.union([
+  z.string(),
+  z.object({
+    url: z.string(),
+    tag: z.string().optional(),
+    caption: z.string().optional(),
+  }),
+]);
+
 const schema = z.object({
   name: z.string().min(2).max(128).optional(),
   address: z.string().min(2).max(255).optional(),
   district: z.string().min(1).max(64).optional(),
   description: z.string().max(2000).nullish(),
-  images: z.array(z.string()).optional(),
+  images: z.array(imageSchema).optional(),
+  lat: z.number().min(-90).max(90).nullish(),
+  lng: z.number().min(-180).max(180).nullish(),
 });
 
 // PATCH /api/owner/centers/:id — update center info

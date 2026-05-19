@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NavBar } from "@/components/NavBar";
@@ -9,6 +10,11 @@ import { CenterRowSkeleton } from "@/components/Skeleton";
 import { apiFetch } from "@/lib/api";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { getMainImage } from "@/lib/image-types";
+
+const LeafletCentersMap = dynamic(
+  () => import("@/components/LeafletCentersMap").then((m) => ({ default: m.LeafletCentersMap })),
+  { ssr: false }
+);
 
 type SortKey = "nearest" | "open" | "price" | "rating";
 
@@ -87,7 +93,6 @@ export default function CentersPage() {
 
   const selected = sorted.find((c) => c.id === selectedId) ?? sorted[0] ?? null;
   const plotted = sorted.filter((c) => typeof c.lat === "number" && typeof c.lng === "number");
-  const tileMap = useMemo(() => getTileMap(plotted), [plotted]);
 
   const useMyLocation = () => {
     if (!navigator.geolocation) return;
@@ -143,26 +148,12 @@ export default function CentersPage() {
 
       <section className="grid min-h-[calc(100vh-220px)] grid-cols-1 border-y border-black/[0.07] lg:grid-cols-[minmax(0,1fr)_460px]">
         <div className="relative min-h-[420px] overflow-hidden bg-[#f3f2ef]">
-          {tileMap ? (
-            <div className="absolute inset-0 grayscale">
-              {tileMap.tiles.map((tile) => (
-                <div
-                  key={`${tile.x}-${tile.y}`}
-                  className="absolute bg-cover bg-center"
-                  style={{
-                    left: `${tile.left}%`,
-                    top: `${tile.top}%`,
-                    width: `${tile.width}%`,
-                    height: `${tile.height}%`,
-                    backgroundImage: `url(${tile.url})`,
-                  }}
-                />
-              ))}
-            </div>
-          ) : null}
-          <div className={`absolute inset-0 ${tileMap ? "bg-white/20" : "opacity-[0.35]"}`}>
-            <div className="h-full w-full bg-[linear-gradient(to_right,rgba(0,0,0,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.08)_1px,transparent_1px)] bg-[size:56px_56px]" />
-          </div>
+          <LeafletCentersMap
+            centers={plotted}
+            selectedId={selected?.id}
+            onSelect={setSelectedId}
+            className="absolute inset-0"
+          />
           <div className="absolute left-6 top-6 z-10 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/35 backdrop-blur">
             {plotted.length} mapped / {sorted.length} centers
           </div>
@@ -173,31 +164,7 @@ export default function CentersPage() {
                 Add latitude and longitude to centers to show them on this map.
               </p>
             </div>
-          ) : (
-            plotted.map((center, index) => {
-              const point = tileMap ? projectTilePoint(center, tileMap) : { x: 50, y: 50 };
-              const active = selected?.id === center.id;
-              return (
-                <button
-                  key={center.id}
-                  type="button"
-                  onClick={() => setSelectedId(center.id)}
-                  className={`absolute z-20 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full border px-3 py-2 text-left shadow-[0_10px_30px_rgba(0,0,0,0.10)] transition-all ${
-                    active
-                      ? "border-black bg-black text-white"
-                      : "border-black/10 bg-white/85 text-black hover:border-black/25 hover:bg-white"
-                  }`}
-                  style={{ left: `${point.x}%`, top: `${point.y}%` }}
-                  aria-label={`Select ${center.name}`}
-                >
-                  <span className={`h-2 w-2 rounded-full ${center.availableSeats > 0 ? "bg-green-400" : "bg-black/20"}`} />
-                  <span className="max-w-32 truncate text-[10px] font-black uppercase tracking-[0.08em]">
-                    {index + 1}. {center.name}
-                  </span>
-                </button>
-              );
-            })
-          )}
+          ) : null}
 
           {selected && (
             <div className="absolute bottom-6 left-6 right-6 z-30 max-w-xl border border-black/10 bg-white/88 p-4 backdrop-blur-md">
@@ -365,78 +332,6 @@ function Metric({ label, value }: { label: string; value: string }) {
       <p className="mt-0.5 text-[7px] font-semibold uppercase tracking-[0.16em] text-black/24">{label}</p>
     </div>
   );
-}
-
-interface TileMap {
-  zoom: number;
-  minX: number;
-  minY: number;
-  cols: number;
-  rows: number;
-  tiles: {
-    x: number;
-    y: number;
-    left: number;
-    top: number;
-    width: number;
-    height: number;
-    url: string;
-  }[];
-}
-
-function getTileMap(centers: Center[]): TileMap | null {
-  if (centers.length === 0) return null;
-
-  const lats = centers.map((center) => center.lat as number);
-  const lngs = centers.map((center) => center.lng as number);
-  const latSpan = Math.max(...lats) - Math.min(...lats);
-  const lngSpan = Math.max(...lngs) - Math.min(...lngs);
-  const span = Math.max(latSpan, lngSpan);
-  const zoom = span < 0.02 ? 14 : span < 0.06 ? 13 : span < 0.14 ? 12 : 11;
-
-  const xs = centers.map((center) => lngToTileX(center.lng as number, zoom));
-  const ys = centers.map((center) => latToTileY(center.lat as number, zoom));
-  const minX = Math.floor(Math.min(...xs)) - 1;
-  const maxX = Math.floor(Math.max(...xs)) + 1;
-  const minY = Math.floor(Math.min(...ys)) - 1;
-  const maxY = Math.floor(Math.max(...ys)) + 1;
-  const cols = Math.max(1, maxX - minX + 1);
-  const rows = Math.max(1, maxY - minY + 1);
-  const tiles: TileMap["tiles"] = [];
-
-  for (let y = minY; y <= maxY; y += 1) {
-    for (let x = minX; x <= maxX; x += 1) {
-      tiles.push({
-        x,
-        y,
-        left: ((x - minX) / cols) * 100,
-        top: ((y - minY) / rows) * 100,
-        width: 100 / cols,
-        height: 100 / rows,
-        url: `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`,
-      });
-    }
-  }
-
-  return { zoom, minX, minY, cols, rows, tiles };
-}
-
-function projectTilePoint(center: Center, tileMap: TileMap) {
-  const tileX = lngToTileX(center.lng as number, tileMap.zoom);
-  const tileY = latToTileY(center.lat as number, tileMap.zoom);
-  return {
-    x: ((tileX - tileMap.minX) / tileMap.cols) * 100,
-    y: ((tileY - tileMap.minY) / tileMap.rows) * 100,
-  };
-}
-
-function lngToTileX(lng: number, zoom: number) {
-  return ((lng + 180) / 360) * 2 ** zoom;
-}
-
-function latToTileY(lat: number, zoom: number) {
-  const rad = (lat * Math.PI) / 180;
-  return ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * 2 ** zoom;
 }
 
 function getGoogleMapsUrl(lat: number, lng: number) {
