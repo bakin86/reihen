@@ -70,15 +70,24 @@ export function ProfilePopover({
   if (!rendered || !user) return null;
 
   return (
-    <div
-      ref={panelRef}
-      className={`fixed left-4 right-4 top-16 z-[70] max-h-[calc(100vh-5rem)] overflow-y-auto rounded-2xl border border-black/10 bg-white/88 p-3 text-black shadow-[0_24px_80px_rgba(0,0,0,0.20)] backdrop-blur-2xl sm:absolute sm:left-auto sm:right-0 sm:top-10 sm:w-[min(22rem,calc(100vw-2rem))] ${
-        open ? "profile-popover-enter" : "profile-popover-exit"
-      }`}
-      role="dialog"
-      aria-label="Profile summary"
-    >
-      <div className="profile-popover-item rounded-xl border border-black/[0.06] bg-white/72 p-4" style={{ animationDelay: "40ms" }}>
+    <div className="fixed inset-0 z-[80] pointer-events-none sm:absolute sm:inset-auto sm:right-0 sm:top-10 sm:z-[70]">
+      <button
+        type="button"
+        aria-label="Close profile menu"
+        onClick={onClose}
+        className={`pointer-events-auto fixed inset-0 bg-black/10 backdrop-blur-[1px] transition-opacity duration-180 sm:hidden ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      <div
+        ref={panelRef}
+        className={`pointer-events-auto fixed left-3 right-3 top-[calc(env(safe-area-inset-top)+4.75rem)] z-[81] max-h-[min(78dvh,34rem)] overflow-y-auto rounded-2xl border border-black/10 bg-white/94 p-3 text-black shadow-[0_24px_80px_rgba(0,0,0,0.24)] backdrop-blur-2xl sm:absolute sm:left-auto sm:right-0 sm:top-0 sm:z-[71] sm:w-[min(22rem,calc(100vw-2rem))] sm:max-h-[calc(100vh-5rem)] ${
+          open ? "profile-popover-enter" : "profile-popover-exit"
+        }`}
+        role="dialog"
+        aria-label="Profile summary"
+      >
+        <div className="profile-popover-item rounded-xl border border-black/[0.06] bg-white/72 p-4" style={{ animationDelay: "40ms" }}>
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-black text-sm font-black text-white">
             {user.name.charAt(0).toUpperCase()}
@@ -169,6 +178,7 @@ export function ProfilePopover({
           Logout
         </button>
       </div>
+    </div>
     </div>
   );
 }
