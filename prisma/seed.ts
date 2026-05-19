@@ -203,7 +203,7 @@ async function main() {
         { name: "VIP",        price: 6_000, peak: 8_000, desc: "RTX 4080, 240Hz, Herman Miller, private booth" },
         { name: "Streaming",  price: 9_000, peak:12_000, desc: "RTX 4090, dual 4K, capture card, soundproof cabin" },
       ],
-      cancelMins: 30, noShowMins: 60, refund: "FULL", maxSeats: 6,
+      cancelMins: 30, noShowMins: 60, refund: "FULL", maxSeats: 10,
     },
     {
       name: "Nexus Gaming Hub",
@@ -231,7 +231,7 @@ async function main() {
         { name: "Standard", price: 3_000, peak: 4_000, desc: "RTX 4060 Ti, 144Hz, HyperX Cloud" },
         { name: "Pro",      price: 5_500, peak: 7_000, desc: "RTX 4080, 240Hz, Steelseries Prime setup" },
       ],
-      cancelMins: 30, noShowMins: 60, refund: "FULL", maxSeats: 6,
+      cancelMins: 30, noShowMins: 60, refund: "FULL", maxSeats: 10,
     },
     {
       name: "Cyber Base",
@@ -245,7 +245,7 @@ async function main() {
         { name: "Standard", price: 2_800, peak: 3_500, desc: "RTX 3070, 144Hz, mechanical keyboard" },
         { name: "Elite",    price: 5_000, peak: 6_500, desc: "RTX 4070, 165Hz, ultrawide monitor" },
       ],
-      cancelMins: 20, noShowMins: 45, refund: "PARTIAL", maxSeats: 5,
+      cancelMins: 20, noShowMins: 45, refund: "PARTIAL", maxSeats: 10,
     },
     {
       name: "Zero Latency",
@@ -259,7 +259,7 @@ async function main() {
         { name: "Amateur", price: 3_500, peak: 4_500, desc: "RTX 4070, 240Hz, low-latency setup" },
         { name: "Pro",     price: 8_000, peak:10_000, desc: "RTX 4090, 360Hz, 0.1ms, Finalmouse, Artisan pad" },
       ],
-      cancelMins: 15, noShowMins: 30, refund: "PARTIAL", maxSeats: 8,
+      cancelMins: 15, noShowMins: 30, refund: "PARTIAL", maxSeats: 10,
     },
     {
       name: "Storm Center",
@@ -273,7 +273,7 @@ async function main() {
         { name: "Standard", price: 3_000, peak: 4_000, desc: "RTX 4060, 144Hz, ring light included" },
         { name: "Streamer", price: 7_000, peak: 9_000, desc: "RTX 4090, capture card, green screen, 4K webcam" },
       ],
-      cancelMins: 30, noShowMins: 60, refund: "FULL", maxSeats: 4,
+      cancelMins: 30, noShowMins: 60, refund: "FULL", maxSeats: 10,
     },
     {
       name: "Pixel District",
@@ -287,7 +287,7 @@ async function main() {
         { name: "Standard", price: 2_500, peak: 3_200, desc: "RTX 3070, 144Hz, RGB full setup" },
         { name: "Premium",  price: 4_500, peak: 5_800, desc: "RTX 4070, 165Hz, 32\" curved" },
       ],
-      cancelMins: 30, noShowMins: 60, refund: "FULL", maxSeats: 4,
+      cancelMins: 30, noShowMins: 60, refund: "FULL", maxSeats: 10,
     },
 
     // ── owner2: 4 centers ───────────────────────────────────────────────────
@@ -303,7 +303,7 @@ async function main() {
         { name: "Cinema",  price: 4_500, peak: 6_000, desc: "RTX 4070 Ti, 165Hz, 7.1 surround sound" },
         { name: "VIP Box", price: 9_000, peak:12_000, desc: "Private 4-seat room, RTX 4080 ×4, mini bar" },
       ],
-      cancelMins: 30, noShowMins: 60, refund: "PARTIAL", maxSeats: 8,
+      cancelMins: 30, noShowMins: 60, refund: "PARTIAL", maxSeats: 10,
     },
     {
       name: "Alpha Station",
@@ -317,7 +317,7 @@ async function main() {
         { name: "Standard", price: 2_500, peak: 3_000, desc: "RTX 3060, 144Hz, comfortable chair" },
         { name: "Premium",  price: 3_800, peak: 4_800, desc: "RTX 4060, 165Hz, wide screen" },
       ],
-      cancelMins: 30, noShowMins: 60, refund: "FULL", maxSeats: 4,
+      cancelMins: 30, noShowMins: 60, refund: "FULL", maxSeats: 10,
     },
     {
       name: "Voltage Gaming",
@@ -330,7 +330,7 @@ async function main() {
       types: [
         { name: "Standard", price: 2_800, peak: 3_500, desc: "RTX 3070, 144Hz, student-friendly" },
       ],
-      cancelMins: 60, noShowMins: 90, refund: "FULL", maxSeats: 3,
+      cancelMins: 60, noShowMins: 90, refund: "FULL", maxSeats: 10,
     },
     {
       name: "Pro Station",
@@ -344,7 +344,7 @@ async function main() {
         { name: "Standard", price: 2_500, peak: 3_000, desc: "RTX 3060 Ti, 144Hz" },
         { name: "Premium",  price: 4_000, peak: 5_000, desc: "RTX 4060 Ti, 165Hz, bigger desk" },
       ],
-      cancelMins: 45, noShowMins: 75, refund: "FULL", maxSeats: 4,
+      cancelMins: 45, noShowMins: 75, refund: "FULL", maxSeats: 10,
     },
   ];
 
@@ -455,8 +455,15 @@ async function main() {
 
   const getSeat = (centerId: string, idx = 0) => seatMap.get(centerId)?.[idx % (seatMap.get(centerId)?.length ?? 1)] ?? "";
 
-  let bookingSeq = 1000;
-  const code = () => `#BK${String(bookingSeq++).padStart(4, "0")}`;
+  let bookingSeq = 0;
+  const CHARSET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const code = () => {
+    bookingSeq++;
+    // Use timestamp + sequence for guaranteed uniqueness in seed
+    const ts = Date.now().toString(36).toUpperCase().slice(-4);
+    const seq = String(bookingSeq).padStart(3, "0");
+    return `#BK-${ts}${seq}`;
+  };
 
   // Demo player monthly bookings — spread across 6 months for chart
   type BookingSpec = { dAgo: number; h: number; ci: number; status: "CONFIRMED" | "CANCELLED" | "NOSHOW"; method?: "QPAY" | "BALANCE" };
@@ -550,7 +557,7 @@ async function main() {
     });
   }
 
-  console.log(`  ${bookingSeq - 1000} bookings created`);
+  console.log(`  ${bookingSeq} bookings created`);
 
   // Update totalPlayHours + noShowCount on users
   const [noshows, playhrs] = await Promise.all([
@@ -863,7 +870,7 @@ async function main() {
   console.log("  Demo       demo@reihen.mn              demo123    ← main demo account");
   console.log("  Player     munkhbat@gmail.com          player123");
   console.log("━".repeat(62));
-  console.log(`  ${centers.length} centers · ${totalSeats} seats · ${bookingSeq - 1000} bookings · ${completedBks.length} reviews`);
+  console.log(`  ${centers.length} centers · ${totalSeats} seats · ${bookingSeq} bookings · ${completedBks.length} reviews`);
   console.log("  Demo player: 6 months booking history · 3 favorites · 1 live tournament");
   console.log("━".repeat(62) + "\n");
 }

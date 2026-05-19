@@ -65,7 +65,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         : { ok: true, reference: "no-refund", method: booking.paymentMethod, amount: 0 };
 
     const seatIds = booking.bookingSeats.map((bs) => bs.seatId);
-    const wasActive = booking.startTime <= new Date() && booking.endTime > new Date();
 
     await prisma.$transaction(async (tx) => {
       await tx.booking.update({
@@ -76,26 +75,21 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
           cancelReason: parsed.data.reason,
         },
       });
-      // Release seats that are currently OCCUPIED (booking in progress).
-      // Future bookings don't change seat.status (it stays OPEN until check-in),
-      // so we only update if the booking was already active.
-      if (wasActive) {
-        await tx.seat.updateMany({
-          where: { id: { in: seatIds } },
-          data: { status: "OPEN", freeAt: null },
-        });
-      }
+      // Release seats that were set to WAITING or OCCUPIED by this booking.
+      // This covers both future bookings (WAITING) and active sessions (OCCUPIED).
+      await tx.seat.updateMany({
+        where: { id: { in: seatIds }, status: { in: ["WAITING", "OCCUPIED"] } },
+        data: { status: "OPEN", freeAt: null },
+      });
     });
 
-    if (wasActive) {
-      cacheDel(seatsCacheKey(booking.centerId)).catch(() => {});
-      for (const bs of booking.bookingSeats) {
-        emitSeatUpdate(booking.centerId, {
-          id: bs.seatId,
-          status: "OPEN",
-          code: bs.seat.number,
-        });
-      }
+    cacheDel(seatsCacheKey(booking.centerId)).catch(() => {});
+    for (const bs of booking.bookingSeats) {
+      emitSeatUpdate(booking.centerId, {
+        id: bs.seatId,
+        status: "OPEN",
+        code: bs.seat.number,
+      });
     }
 
     sendPushToUser(booking.center.ownerId, {
