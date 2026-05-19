@@ -67,6 +67,7 @@ export function NavBar() {
 
           {/* Links — desktop */}
           <div className="hidden items-center gap-0.5 md:flex">
+            <NavLink href="/centers">Centers</NavLink>
             <NavLink href="/events">Events</NavLink>
             {roleLinks.map((link) => (
               <NavLink key={link.href} href={link.href}>{link.label}</NavLink>
@@ -144,6 +145,7 @@ export function NavBar() {
         {open && (
           <div className="nav-menu-enter mt-2 overflow-hidden rounded-2xl border border-black/[0.08] bg-white/92 shadow-[0_8px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl">
             <div className="grid gap-0.5 p-2">
+              <MobileNavLink href="/centers" label="Centers" onClick={() => { setOpen(false); setProfileOpen(false); }} active={pathname.startsWith("/centers")} />
               <MobileNavLink href="/events"  label="Events"  onClick={() => { setOpen(false); setProfileOpen(false); }} active={pathname.startsWith("/events")} />
               {roleLinks.map((link) => (
                 <MobileNavLink

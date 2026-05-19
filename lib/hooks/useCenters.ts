@@ -2,6 +2,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 
+interface CenterSeatType {
+  id: string;
+  name: string;
+  pricePerHour: number;
+  peakHourPrice: number | null;
+  description?: string | null;
+}
+
 interface Center {
   id: string;
   name: string;
@@ -18,6 +26,7 @@ interface Center {
   lat?: number | null;
   lng?: number | null;
   distance?: number | null;
+  seatTypes: CenterSeatType[];
 }
 
 interface CentersResponse {

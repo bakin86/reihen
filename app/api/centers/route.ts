@@ -55,7 +55,7 @@ export async function GET(req: Request) {
   const centers = await prisma.pCCenter.findMany({
     where,
     include: {
-      seatTypes: { select: { id: true, name: true, pricePerHour: true, peakHourPrice: true } },
+      seatTypes: { select: { id: true, name: true, pricePerHour: true, peakHourPrice: true, description: true } },
       _count: { select: { seats: true, reviews: true } },
     },
     orderBy: [{ isVerified: "desc" }, { rating: "desc" }],
