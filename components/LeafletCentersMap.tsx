@@ -45,6 +45,7 @@ export function LeafletCentersMap({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const viewInitRef = useRef(false); // true once we've set the initial bounds
 
   useEffect(() => {
     let cancelled = false;
@@ -146,7 +147,7 @@ export function LeafletCentersMap({
         const isFull = hasSeats && center.availableSeats === 0;
 
         const seatsBadge = hasSeats
-          ? `<em class="lcm-seats${isFull ? " full" : ""}">${center.availableSeats}</em>`
+          ? `<em class="lcm-seats${isFull ? " full" : ""}">${isFull ? "FULL" : `${center.availableSeats} open`}</em>`
           : "";
 
         const marker = L.marker(latLng, {
@@ -175,10 +176,15 @@ export function LeafletCentersMap({
         markersRef.current.push(marker);
       });
 
-      if (latLngs.length === 1) {
-        map.setView(latLngs[0], 15);
-      } else {
-        map.fitBounds(L.latLngBounds(latLngs).pad(0.25), { animate: false });
+      // Only fit bounds when centers first load — not on every selectedId
+      // change, which would zoom out every time the user clicks a marker.
+      if (!viewInitRef.current) {
+        if (latLngs.length === 1) {
+          map.setView(latLngs[0], 15);
+        } else {
+          map.fitBounds(L.latLngBounds(latLngs).pad(0.25), { animate: false });
+        }
+        viewInitRef.current = true;
       }
 
       map.invalidateSize(false);
@@ -191,6 +197,14 @@ export function LeafletCentersMap({
       if (retryTimer) clearTimeout(retryTimer);
     };
   }, [centers, selectedId, onSelect]);
+
+  // Reset view flag when the centers list itself changes so new data re-fits.
+  const centersKeyRef = useRef("");
+  const centersKey = centers.map((c) => c.id).join(",");
+  if (centersKey !== centersKeyRef.current) {
+    centersKeyRef.current = centersKey;
+    viewInitRef.current = false;
+  }
 
   return (
     <div
