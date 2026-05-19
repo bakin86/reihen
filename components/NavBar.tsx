@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ProfilePopover } from "@/components/ProfilePopover";
 import { useAuth } from "@/lib/useAuth";
 
@@ -33,6 +33,7 @@ function NavLink({
 export function NavBar() {
   const { user, loading } = useAuth();
   const pathname          = usePathname();
+  const router            = useRouter();
   const profileActive     = pathname === "/profile";
   const [open, setOpen]   = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -87,6 +88,11 @@ export function NavBar() {
                   type="button"
                   onClick={() => {
                     setOpen(false);
+                    if (window.matchMedia("(max-width: 639px)").matches) {
+                      setProfileOpen(false);
+                      router.push("/profile");
+                      return;
+                    }
                     setProfileOpen((v) => !v);
                   }}
                   className={`profile-avatar-button flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold ${
