@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     const status = searchParams.get("status") as BookingStatus | null;
 
     // Cache per user+page+status for 30s
-    const cacheKey = `user:history:${session.sub}:${page}:${status ?? "ALL"}`;
+    const cacheKey = `user:history:${session.sub}:${page}:${limit}:${status ?? "ALL"}`;
     const cached = await cacheGet<object>(cacheKey);
     if (cached) {
       const res = NextResponse.json(cached);

@@ -156,7 +156,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const ownerId = booking.bookingSeats[0]?.seat.center.ownerId ?? "";
 
     for (const bs of booking.bookingSeats) {
-      emitSeatUpdate(booking.centerId, { id: bs.seatId, status: "OCCUPIED", code: bs.seat.number });
+      emitSeatUpdate(booking.centerId, {
+        id: bs.seatId,
+        status: bs.seat.status as "WAITING" | "OCCUPIED",
+        code: bs.seat.number,
+        freeAt: newEnd.toISOString(),
+      });
     }
     cacheDel(seatsCacheKey(booking.centerId)).catch(() => {});
     sendPushToUser(ownerId, {

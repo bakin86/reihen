@@ -33,15 +33,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const seatIds = booking.bookingSeats.map((bs) => bs.seatId);
 
     const updated = await prisma.$transaction(async (tx) => {
-      const b = await tx.booking.update({
-        where: { id: booking.id },
-        data: { status: "CONFIRMED" },
-      });
       await tx.seat.updateMany({
         where: { id: { in: seatIds } },
         data: { status: "OCCUPIED", freeAt: booking.endTime },
       });
-      return b;
+      return booking;
     });
 
     const seatNumbers = booking.bookingSeats.map((bs) => bs.seat.number).join(", ");

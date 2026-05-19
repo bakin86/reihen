@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, authErrorResponse } from "@/lib/auth";
 import { cacheGet, cacheSet } from "@/lib/redis";
+import { getMainImage } from "@/lib/image-types";
 
 // GET /api/me/stats — aggregated user stats
 export async function GET(req: Request) {
@@ -65,7 +66,7 @@ export async function GET(req: Request) {
     const topCentersWithNames = topCenters.map((tc) => ({
       centerId: tc.centerId,
       name: centerMap.get(tc.centerId)?.name ?? "Unknown",
-      image: (centerMap.get(tc.centerId)?.images as string[])?.[0] ?? null,
+      image: getMainImage(centerMap.get(tc.centerId)?.images),
       hours: tc._sum.hours ?? 0,
       spent: tc._sum.totalPrice ?? 0,
       visits: tc._count,
