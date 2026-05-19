@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { cacheGet, cacheSet, isRedisConfigured } from "@/lib/redis";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,11 +16,20 @@ async function checkDb() {
 export async function GET() {
   try {
     const dbMs = await checkDb();
+    let cacheStatus: "disabled" | "ok" | "miss" = isRedisConfigured ? "miss" : "disabled";
+    if (isRedisConfigured) {
+      const key = "health:cache";
+      const stamp = Date.now();
+      await cacheSet(key, { stamp }, 30);
+      const cached = await cacheGet<{ stamp: number }>(key);
+      cacheStatus = cached?.stamp === stamp ? "ok" : "miss";
+    }
 
     return NextResponse.json(
       {
         status: "ok",
         db: { status: "ok", latencyMs: dbMs },
+        cache: { provider: "upstash", configured: isRedisConfigured, status: cacheStatus },
         uptime: Math.floor(process.uptime()),
         version: process.env.npm_package_version ?? "unknown",
         ts: new Date().toISOString(),

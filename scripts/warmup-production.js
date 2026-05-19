@@ -43,7 +43,7 @@ async function fetchWithTimeout(path, options = {}) {
         body = text;
       }
     }
-    return { path, ok: res.ok, status: res.status, ms, body };
+    return { path, ok: res.ok, status: res.status, ms, body, xCache: res.headers.get("x-cache") || "" };
   } catch (error) {
     return { path, ok: false, status: "ERR", ms: Date.now() - started, error: error.message };
   } finally {
@@ -72,7 +72,8 @@ function printResult(label, result) {
   const status = String(result.status).padEnd(3, " ");
   const time = `${result.ms}ms`.padStart(7, " ");
   const mark = result.ok ? "OK " : "BAD";
-  console.log(`${mark} ${status} ${time}  ${label}`);
+  const cache = result.xCache ? `  cache=${result.xCache}` : "";
+  console.log(`${mark} ${status} ${time}  ${label}${cache}`);
 }
 
 async function main() {
