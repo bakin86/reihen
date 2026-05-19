@@ -83,7 +83,7 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 60;
+  z-index: 30;
   opacity: 0.035;
   background-image:
     repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(0,0,0,0.45) 3px),

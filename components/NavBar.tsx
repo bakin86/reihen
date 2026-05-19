@@ -47,7 +47,7 @@ export function NavBar() {
     : [];
 
   return (
-    <header className="anim-fade-down fixed left-0 right-0 top-3 z-50 flex justify-center px-4 pointer-events-none">
+    <header className="anim-fade-down fixed left-0 right-0 top-3 z-[120] isolate flex justify-center px-4 pointer-events-none">
       <div className="pointer-events-auto w-fit max-w-[calc(100vw-2rem)]">
         <nav className="flex max-w-full items-center gap-0.5 rounded-full border border-black/[0.09] bg-white/90 px-2 py-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.10)] backdrop-blur-xl">
 
