@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // GET /api/health — liveness + readiness check
 // Used by load balancers, container orchestrators, and uptime monitors.
 export async function GET() {
