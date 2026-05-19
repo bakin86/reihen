@@ -87,10 +87,7 @@ export default function CentersPage() {
 
   const selected = sorted.find((c) => c.id === selectedId) ?? sorted[0] ?? null;
   const plotted = sorted.filter((c) => typeof c.lat === "number" && typeof c.lng === "number");
-  const bounds = getBounds(plotted);
-  const selectedMapSrc = selected?.lat != null && selected.lng != null
-    ? getOsmEmbedUrl(selected.lat, selected.lng, 15)
-    : null;
+  const tileMap = useMemo(() => getTileMap(plotted), [plotted]);
 
   const useMyLocation = () => {
     if (!navigator.geolocation) return;
@@ -146,17 +143,24 @@ export default function CentersPage() {
 
       <section className="grid min-h-[calc(100vh-220px)] grid-cols-1 border-y border-black/[0.07] lg:grid-cols-[minmax(0,1fr)_460px]">
         <div className="relative min-h-[420px] overflow-hidden bg-[#f3f2ef]">
-          {selectedMapSrc ? (
-            <iframe
-              key={selected?.id}
-              title={`${selected?.name ?? "Selected center"} map`}
-              src={selectedMapSrc}
-              className="absolute inset-0 h-full w-full border-0 grayscale"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
+          {tileMap ? (
+            <div className="absolute inset-0 grayscale">
+              {tileMap.tiles.map((tile) => (
+                <div
+                  key={`${tile.x}-${tile.y}`}
+                  className="absolute bg-cover bg-center"
+                  style={{
+                    left: `${tile.left}%`,
+                    top: `${tile.top}%`,
+                    width: `${tile.width}%`,
+                    height: `${tile.height}%`,
+                    backgroundImage: `url(${tile.url})`,
+                  }}
+                />
+              ))}
+            </div>
           ) : null}
-          <div className={`absolute inset-0 ${selectedMapSrc ? "bg-white/25" : "opacity-[0.35]"}`}>
+          <div className={`absolute inset-0 ${tileMap ? "bg-white/20" : "opacity-[0.35]"}`}>
             <div className="h-full w-full bg-[linear-gradient(to_right,rgba(0,0,0,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.08)_1px,transparent_1px)] bg-[size:56px_56px]" />
           </div>
           <div className="absolute left-6 top-6 z-10 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/35 backdrop-blur">
@@ -171,7 +175,7 @@ export default function CentersPage() {
             </div>
           ) : (
             plotted.map((center, index) => {
-              const point = projectPoint(center, bounds);
+              const point = tileMap ? projectTilePoint(center, tileMap) : { x: 50, y: 50 };
               const active = selected?.id === center.id;
               return (
                 <button
@@ -363,34 +367,76 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function getBounds(centers: Center[]) {
-  const lats = centers.map((c) => c.lat as number);
-  const lngs = centers.map((c) => c.lng as number);
+interface TileMap {
+  zoom: number;
+  minX: number;
+  minY: number;
+  cols: number;
+  rows: number;
+  tiles: {
+    x: number;
+    y: number;
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    url: string;
+  }[];
+}
+
+function getTileMap(centers: Center[]): TileMap | null {
+  if (centers.length === 0) return null;
+
+  const lats = centers.map((center) => center.lat as number);
+  const lngs = centers.map((center) => center.lng as number);
+  const latSpan = Math.max(...lats) - Math.min(...lats);
+  const lngSpan = Math.max(...lngs) - Math.min(...lngs);
+  const span = Math.max(latSpan, lngSpan);
+  const zoom = span < 0.02 ? 14 : span < 0.06 ? 13 : span < 0.14 ? 12 : 11;
+
+  const xs = centers.map((center) => lngToTileX(center.lng as number, zoom));
+  const ys = centers.map((center) => latToTileY(center.lat as number, zoom));
+  const minX = Math.floor(Math.min(...xs)) - 1;
+  const maxX = Math.floor(Math.max(...xs)) + 1;
+  const minY = Math.floor(Math.min(...ys)) - 1;
+  const maxY = Math.floor(Math.max(...ys)) + 1;
+  const cols = Math.max(1, maxX - minX + 1);
+  const rows = Math.max(1, maxY - minY + 1);
+  const tiles: TileMap["tiles"] = [];
+
+  for (let y = minY; y <= maxY; y += 1) {
+    for (let x = minX; x <= maxX; x += 1) {
+      tiles.push({
+        x,
+        y,
+        left: ((x - minX) / cols) * 100,
+        top: ((y - minY) / rows) * 100,
+        width: 100 / cols,
+        height: 100 / rows,
+        url: `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`,
+      });
+    }
+  }
+
+  return { zoom, minX, minY, cols, rows, tiles };
+}
+
+function projectTilePoint(center: Center, tileMap: TileMap) {
+  const tileX = lngToTileX(center.lng as number, tileMap.zoom);
+  const tileY = latToTileY(center.lat as number, tileMap.zoom);
   return {
-    minLat: Math.min(...lats),
-    maxLat: Math.max(...lats),
-    minLng: Math.min(...lngs),
-    maxLng: Math.max(...lngs),
+    x: ((tileX - tileMap.minX) / tileMap.cols) * 100,
+    y: ((tileY - tileMap.minY) / tileMap.rows) * 100,
   };
 }
 
-function projectPoint(center: Center, bounds: ReturnType<typeof getBounds>) {
-  const latRange = bounds.maxLat - bounds.minLat || 0.01;
-  const lngRange = bounds.maxLng - bounds.minLng || 0.01;
-  const x = 12 + (((center.lng as number) - bounds.minLng) / lngRange) * 76;
-  const y = 12 + ((bounds.maxLat - (center.lat as number)) / latRange) * 76;
-  return { x, y };
+function lngToTileX(lng: number, zoom: number) {
+  return ((lng + 180) / 360) * 2 ** zoom;
 }
 
-function getOsmEmbedUrl(lat: number, lng: number, zoom: number) {
-  const delta = zoom >= 16 ? 0.006 : 0.018;
-  const bbox = [
-    lng - delta,
-    lat - delta,
-    lng + delta,
-    lat + delta,
-  ].map((value) => value.toFixed(6)).join("%2C");
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat.toFixed(6)}%2C${lng.toFixed(6)}`;
+function latToTileY(lat: number, zoom: number) {
+  const rad = (lat * Math.PI) / 180;
+  return ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * 2 ** zoom;
 }
 
 function getGoogleMapsUrl(lat: number, lng: number) {
