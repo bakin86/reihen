@@ -320,7 +320,7 @@ export default function TournamentPage({
                   placeholder={t.teamSize === 1 ? "Нэр / IGN" : "Багийн нэр"}
                   value={teamName}
                   onChange={(e) => setTeamName(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition-all duration-200 focus:border-white/25 focus:bg-black/50"
+                  className="w-full rounded-xl border border-white/10 !bg-[#1a1a1a] px-4 py-3 text-sm !text-white placeholder:text-white/30 outline-none transition-all duration-200 focus:border-white/25"
                   maxLength={64}
                 />
                 <textarea
@@ -328,7 +328,7 @@ export default function TournamentPage({
                   value={playerNamesText}
                   onChange={(e) => setPlayerNamesText(e.target.value)}
                   rows={Math.min(Math.max(t.teamSize, 2), 5)}
-                  className="w-full resize-none rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition-all duration-200 focus:border-white/25 focus:bg-black/50"
+                  className="w-full resize-none rounded-xl border border-white/10 !bg-[#1a1a1a] px-4 py-3 text-sm !text-white placeholder:text-white/30 outline-none transition-all duration-200 focus:border-white/25"
                   maxLength={400}
                 />
 

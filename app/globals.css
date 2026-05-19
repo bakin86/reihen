@@ -285,6 +285,18 @@ button, a, input, select, textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Prevent Chrome autofill from overriding dark input backgrounds */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #1a1a1a inset !important;
+  -webkit-text-fill-color: #fff !important;
+  caret-color: #fff;
+}
+
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
