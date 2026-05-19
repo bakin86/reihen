@@ -21,7 +21,7 @@ export async function GET(req: Request) {
   try {
     const session = await requireOwner(req);
     const centers = await prisma.pCCenter.findMany({
-      where: { ownerId: session.sub },
+      where: session.role === "ADMIN" ? {} : { ownerId: session.sub },
       select: { id: true, name: true },
     });
     const centerIds = centers.map((c) => c.id);
