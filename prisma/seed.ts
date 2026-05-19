@@ -528,7 +528,7 @@ async function main() {
     });
   }
 
-  // C) Other players — a handful of past bookings to populate the system
+  // C) Other players — past bookings to populate the system
   const otherBkDefs: { playerIdx: number; ci: number; dAgo: number; h: number; status: "CONFIRMED" | "CANCELLED" | "NOSHOW" }[] = [
     { playerIdx: 0, ci: 0, dAgo: 5,  h: 2, status: "CONFIRMED" },
     { playerIdx: 1, ci: 1, dAgo: 7,  h: 3, status: "CONFIRMED" },
@@ -554,6 +554,89 @@ async function main() {
     await createBooking({
       code: code(), userId: players[b.playerIdx].id, centerId: c.id, seatId: sid,
       startTime: daysAgo(b.dAgo, 16), hours: b.h, status: b.status,
+    });
+  }
+
+  // D) Today's bookings — spread across the day so owner dashboard shows real activity
+  //    startTime relative to today's date at various hours
+  const todayH = (hour: number) => {
+    const d = new Date(); d.setHours(hour, 0, 0, 0); return d;
+  };
+  const todayBookings: { userId: string; ci: number; startHour: number; h: number; status: "CONFIRMED" | "CANCELLED" | "NOSHOW"; method: "QPAY" | "BALANCE" }[] = [
+    { userId: players[0].id, ci: 0, startHour:  9, h: 2, status: "CONFIRMED", method: "BALANCE" },
+    { userId: players[1].id, ci: 0, startHour: 10, h: 3, status: "CONFIRMED", method: "QPAY"    },
+    { userId: players[2].id, ci: 0, startHour: 11, h: 2, status: "CONFIRMED", method: "BALANCE" },
+    { userId: players[3].id, ci: 0, startHour: 13, h: 4, status: "CONFIRMED", method: "QPAY"    },
+    { userId: players[4].id, ci: 0, startHour: 14, h: 2, status: "CANCELLED", method: "QPAY"    },
+    { userId: players[5].id, ci: 1, startHour: 10, h: 3, status: "CONFIRMED", method: "BALANCE" },
+    { userId: players[6].id, ci: 1, startHour: 12, h: 2, status: "CONFIRMED", method: "QPAY"    },
+    { userId: players[7].id, ci: 1, startHour: 14, h: 4, status: "CONFIRMED", method: "BALANCE" },
+    { userId: players[8].id, ci: 2, startHour: 11, h: 2, status: "CONFIRMED", method: "QPAY"    },
+    { userId: players[9].id, ci: 2, startHour: 15, h: 3, status: "CONFIRMED", method: "BALANCE" },
+    { userId: players[0].id, ci: 4, startHour: 12, h: 2, status: "CONFIRMED", method: "QPAY"    },
+    { userId: players[1].id, ci: 7, startHour: 10, h: 3, status: "CONFIRMED", method: "BALANCE" },
+    { userId: players[2].id, ci: 3, startHour: 13, h: 2, status: "NOSHOW",    method: "QPAY"    },
+  ];
+
+  for (const b of todayBookings) {
+    const c   = centers[b.ci];
+    const sid = getSeat(c.id, (todayBookings.indexOf(b) + 3) % 8);
+    if (!sid) continue;
+    const st = todayH(b.startHour);
+    const endTime = new Date(st.getTime() + b.h * 3_600_000);
+    const seat = await prisma.seat.findUnique({ where: { id: sid }, select: { typeId: true } });
+    const price = (typePrice.get(seat!.typeId) ?? 3_000) * b.h;
+    await prisma.booking.create({
+      data: {
+        code: code(), userId: b.userId, centerId: c.id,
+        startTime: st, endTime, hours: b.h, totalPrice: price,
+        status: b.status, paymentMethod: b.method, paymentStatus: "PAID",
+        cancelledAt:  b.status === "CANCELLED" ? new Date(st.getTime() - 1_800_000) : null,
+        cancelReason: b.status === "CANCELLED" ? "Тоглогч цуцалсан" : null,
+        bookingSeats: { create: [{ seatId: sid }] },
+      },
+    });
+  }
+
+  // E) Unreviewed completed booking for demo player (so review prompt shows on center page)
+  const unreviewedSeat = getSeat(centers[1].id, 7);
+  if (unreviewedSeat) {
+    await prisma.booking.create({
+      data: {
+        code: code(), userId: demo.id, centerId: centers[1].id,
+        startTime: daysAgo(1, 16), endTime: daysAgo(1, 19),
+        hours: 3, totalPrice: 3_500 * 3, status: "CONFIRMED",
+        paymentMethod: "BALANCE", paymentStatus: "PAID",
+        bookingSeats: { create: [{ seatId: unreviewedSeat }] },
+      },
+    });
+  }
+
+  // F) PENDING bookings (awaiting QPay payment) — visible in owner dashboard
+  const pendingSeat0 = getSeat(centers[0].id, 8);
+  const pendingSeat1 = getSeat(centers[1].id, 9);
+  if (pendingSeat0) {
+    const st = new Date(Date.now() + 30 * 60_000); // 30 min from now
+    await prisma.booking.create({
+      data: {
+        code: code(), userId: players[5].id, centerId: centers[0].id,
+        startTime: st, endTime: new Date(st.getTime() + 2 * 3_600_000),
+        hours: 2, totalPrice: 3_500 * 2, status: "PENDING",
+        paymentMethod: "QPAY", paymentStatus: "UNPAID",
+        bookingSeats: { create: [{ seatId: pendingSeat0 }] },
+      },
+    });
+  }
+  if (pendingSeat1) {
+    const st = new Date(Date.now() + 60 * 60_000); // 1h from now
+    await prisma.booking.create({
+      data: {
+        code: code(), userId: players[8].id, centerId: centers[1].id,
+        startTime: st, endTime: new Date(st.getTime() + 3 * 3_600_000),
+        hours: 3, totalPrice: 3_500 * 3, status: "PENDING",
+        paymentMethod: "QPAY", paymentStatus: "UNPAID",
+        bookingSeats: { create: [{ seatId: pendingSeat1 }] },
+      },
     });
   }
 
@@ -854,7 +937,7 @@ async function main() {
     },
   });
 
-  console.log("  6 tournaments seeded (1 LIVE · 3 UPCOMING · 1 REGISTRATION_CLOSED · 1 COMPLETED)");
+  console.log("  6 tournaments seeded (1 LIVE · 3 UPCOMING · 1 REGISTRATION_CLOSED · 1 pending-round)");
 
   // ── Summary ───────────────────────────────────────────────────────────────
 
@@ -871,7 +954,8 @@ async function main() {
   console.log("  Player     munkhbat@gmail.com          player123");
   console.log("━".repeat(62));
   console.log(`  ${centers.length} centers · ${totalSeats} seats · ${bookingSeq} bookings · ${completedBks.length} reviews`);
-  console.log("  Demo player: 6 months booking history · 3 favorites · 1 live tournament");
+  console.log("  Demo player: 6 months history · unreviewed booking · 3 favorites · 1 live tournament");
+  console.log("  Today: 13 bookings across 5 centers · 2 PENDING QPay bookings");
   console.log("━".repeat(62) + "\n");
 }
 

@@ -62,10 +62,11 @@ export default function CenterPage({ params }: { params: { id: string } }) {
   const [isFav, setIsFav] = useState(false);
   const [recentlyUpdatedSeats, setRecentlyUpdatedSeats] = useState<Set<string>>(new Set());
 
-  // Star rating
+  // Star rating + comment
   const [myUnreviewedBookingId, setMyUnreviewedBookingId] = useState<string | null>(null);
   const [hoverStar, setHoverStar] = useState(0);
   const [selectedRating, setSelectedRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [ratingPending, setRatingPending] = useState(false);
   const [ratingError, setRatingError] = useState("");
@@ -215,25 +216,28 @@ export default function CenterPage({ params }: { params: { id: string } }) {
     });
   };
 
-  const submitStarRating = async (rating: number) => {
-    if (!myUnreviewedBookingId || ratingPending) return;
-    setSelectedRating(rating);
+  const submitReview = async () => {
+    if (!myUnreviewedBookingId || ratingPending || selectedRating === 0) return;
     setRatingPending(true);
     setRatingError("");
     try {
       await apiFetch("/api/reviews", {
         method: "POST",
         token,
-        body: JSON.stringify({ bookingId: myUnreviewedBookingId, rating }),
+        body: JSON.stringify({
+          bookingId: myUnreviewedBookingId,
+          rating: selectedRating,
+          ...(reviewComment.trim() ? { comment: reviewComment.trim() } : {}),
+        }),
       });
       setRatingSubmitted(true);
       setMyUnreviewedBookingId(null);
+      setReviewComment("");
       setCenter((c) =>
-        c ? { ...c, reviewCount: c.reviewCount + 1, rating: parseFloat(((c.rating * reviews.length + rating) / (reviews.length + 1)).toFixed(2)) } : c
+        c ? { ...c, reviewCount: c.reviewCount + 1, rating: parseFloat(((c.rating * reviews.length + selectedRating) / (reviews.length + 1)).toFixed(2)) } : c
       );
     } catch (err: any) {
       setRatingError(err.message ?? "Үнэлгээ илгээж чадсангүй");
-      setSelectedRating(0);
     } finally {
       setRatingPending(false);
     }
@@ -961,45 +965,59 @@ export default function CenterPage({ params }: { params: { id: string } }) {
           )}
         </div>
 
-        {/* Star rating widget — only for users with unreviewed completed bookings */}
+        {/* Review widget — only for users with unreviewed completed bookings */}
         {myUnreviewedBookingId && !ratingSubmitted && (
           <div className="mx-4 mb-4 rounded-2xl border border-yellow-400/20 bg-yellow-400/[0.06] px-5 py-5 md:mx-8">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-yellow-200/70">Үнэлгээ өгөх</div>
-                <p className="mt-1 text-xs text-white/45">Сэтгэгдэл бичих шаардлагагүй. Зүгээр л одоо сонго.</p>
-              </div>
-              <div className="flex items-center gap-1" aria-label="Star rating">
-                {[1, 2, 3, 4, 5].map((s) => {
-                  const active = s <= (hoverStar || selectedRating);
-                  return (
-                    <button
-                      key={s}
-                      type="button"
-                      disabled={ratingPending}
-                      onMouseEnter={() => setHoverStar(s)}
-                      onMouseLeave={() => setHoverStar(0)}
-                      onFocus={() => setHoverStar(s)}
-                      onBlur={() => setHoverStar(0)}
-                      onClick={() => submitStarRating(s)}
-                      aria-label={`${s} од өгөх`}
-                      className={`flex h-11 w-11 items-center justify-center rounded-xl text-3xl transition-all duration-200 disabled:cursor-wait disabled:opacity-55 ${
-                        active
-                          ? "bg-yellow-400/12 text-yellow-300 shadow-[0_0_24px_rgba(250,204,21,0.10)]"
-                          : "text-white/18 hover:bg-white/[0.05] hover:text-yellow-300/70"
-                      }`}
-                    >
-                      ★
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-yellow-200/70 mb-3">Үнэлгээ өгөх</div>
+            <div className="flex items-center gap-1 mb-4" aria-label="Star rating">
+              {[1, 2, 3, 4, 5].map((s) => {
+                const active = s <= (hoverStar || selectedRating);
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    disabled={ratingPending}
+                    onMouseEnter={() => setHoverStar(s)}
+                    onMouseLeave={() => setHoverStar(0)}
+                    onFocus={() => setHoverStar(s)}
+                    onBlur={() => setHoverStar(0)}
+                    onClick={() => setSelectedRating(s)}
+                    aria-label={`${s} од өгөх`}
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl text-3xl transition-all duration-200 disabled:cursor-wait disabled:opacity-55 ${
+                      active
+                        ? "bg-yellow-400/12 text-yellow-300 shadow-[0_0_24px_rgba(250,204,21,0.10)]"
+                        : "text-white/18 hover:bg-white/[0.05] hover:text-yellow-300/70"
+                    }`}
+                  >
+                    ★
+                  </button>
+                );
+              })}
             </div>
-            {(ratingPending || ratingError) && (
-              <div className={`mt-3 text-[10px] uppercase tracking-[0.18em] ${ratingError ? "text-red-300" : "text-yellow-200/45"}`}>
-                {ratingError || "Илгээж байна..."}
-              </div>
-            )}
+            <textarea
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+              disabled={ratingPending}
+              maxLength={500}
+              placeholder="Сэтгэгдэл бичнэ үү... (заавал биш)"
+              rows={3}
+              className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/80 placeholder-white/25 outline-none focus:border-yellow-400/30 focus:ring-0 disabled:opacity-50 mb-3"
+            />
+            <div className="flex items-center justify-between gap-3">
+              {ratingError ? (
+                <span className="text-[10px] uppercase tracking-[0.18em] text-red-300">{ratingError}</span>
+              ) : (
+                <span className="text-[10px] text-white/30">{reviewComment.length}/500</span>
+              )}
+              <button
+                type="button"
+                onClick={submitReview}
+                disabled={ratingPending || selectedRating === 0}
+                className="rounded-xl bg-yellow-400/15 px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-yellow-300 transition-all hover:bg-yellow-400/25 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {ratingPending ? "Илгээж байна..." : "Илгээх"}
+              </button>
+            </div>
           </div>
         )}
         {ratingSubmitted && (
