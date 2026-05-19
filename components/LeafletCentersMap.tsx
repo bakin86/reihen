@@ -122,12 +122,19 @@ export function LeafletCentersMap({
         const latLng = L.latLng(center.lat as number, center.lng as number);
         latLngs.push(latLng);
 
+        const hasSeats = typeof center.availableSeats === "number" && typeof center.seatCount === "number";
+        const seatsLabel = hasSeats ? `${center.availableSeats}/${center.seatCount}` : "";
+        const isFull = hasSeats && center.availableSeats === 0;
+
         const marker = L.marker(latLng, {
           icon: L.divIcon({
             className: "",
             html: `
-              <button class="leaflet-center-marker ${active ? "active" : ""}" type="button">
-                <span></span>
+              <button class="leaflet-center-marker ${active ? "active" : ""} ${isFull ? "full" : ""}" type="button">
+                ${hasSeats
+                  ? `<span class="leaflet-center-marker-seats ${isFull ? "full" : ""}">${seatsLabel}</span>`
+                  : `<span></span>`
+                }
                 <strong>${index + 1}. ${escapeHtml(center.name)}</strong>
               </button>
             `,

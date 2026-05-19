@@ -104,6 +104,49 @@
   background: #4ade80;
 }
 
+.leaflet-center-marker-seats {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  height: 18px;
+  min-width: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #4ade80;
+  color: #000;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.leaflet-center-marker-seats.full {
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+}
+
+.leaflet-center-marker.active .leaflet-center-marker-seats {
+  background: #4ade80;
+  color: #000;
+}
+
+.leaflet-center-marker.active .leaflet-center-marker-seats.full {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* dark map overrides */
+.leaflet-map-dark .leaflet-center-marker-seats.full {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.leaflet-map-dark .leaflet-center-marker.active .leaflet-center-marker-seats {
+  background: #4ade80;
+  color: #000;
+}
+
 .leaflet-center-marker strong {
   display: block;
   overflow: hidden;
