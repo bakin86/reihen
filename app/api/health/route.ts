@@ -4,15 +4,17 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+async function checkDb() {
+  const start = Date.now();
+  await prisma.$queryRaw`SELECT 1`;
+  return Date.now() - start;
+}
+
 // GET /api/health — liveness + readiness check
 // Used by load balancers, container orchestrators, and uptime monitors.
 export async function GET() {
-  const start = Date.now();
-
   try {
-    // Check DB connectivity with a lightweight query
-    await prisma.$queryRaw`SELECT 1`;
-    const dbMs = Date.now() - start;
+    const dbMs = await checkDb();
 
     return NextResponse.json(
       {
@@ -40,5 +42,22 @@ export async function GET() {
         headers: { "Cache-Control": "no-store" },
       }
     );
+  }
+}
+
+// Some uptime monitors use HEAD by default. Keep this warm-up path valid too.
+export async function HEAD() {
+  try {
+    await checkDb();
+    return new Response(null, {
+      status: 200,
+      headers: { "Cache-Control": "no-store" },
+    });
+  } catch (e) {
+    console.error("[health] HEAD DB check failed:", e);
+    return new Response(null, {
+      status: 503,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 }
