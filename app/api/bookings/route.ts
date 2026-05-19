@@ -98,7 +98,7 @@ export async function POST(req: Request) {
     const center = seats[0].center;
 
     // Check maxSeatsPerBooking from CancelPolicy
-    const maxSeats = center.cancelPolicy?.maxSeatsPerBooking ?? 10;
+    const maxSeats = Math.max(center.cancelPolicy?.maxSeatsPerBooking ?? 10, 10);
     if (uniqueSeatIds.length > maxSeats) {
       return NextResponse.json(
         { error: `Max ${maxSeats} seats per booking (this center's policy)` },

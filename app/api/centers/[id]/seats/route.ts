@@ -9,6 +9,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const cacheKey = seatsCacheKey(params.id);
   const cached = await cacheGet<any>(cacheKey);
   if (cached) {
+    if (cached.center) {
+      cached.center.maxSeatsPerBooking = Math.max(cached.center.maxSeatsPerBooking ?? 10, 10);
+    }
     const res = NextResponse.json(cached);
     res.headers.set("Cache-Control", "public, max-age=10, stale-while-revalidate=30");
     res.headers.set("X-Cache", "HIT");
@@ -85,11 +88,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   });
 
   const { _count, cancelPolicy, ...centerData } = center;
+  const effectiveMaxSeatsPerBooking = Math.max(cancelPolicy?.maxSeatsPerBooking ?? 10, 10);
   const payload = {
     center: {
       ...centerData,
       reviewCount: _count.reviews,
-      maxSeatsPerBooking: cancelPolicy?.maxSeatsPerBooking ?? 10,
+      maxSeatsPerBooking: effectiveMaxSeatsPerBooking,
       noShowMinutes: cancelPolicy?.noShowMinutes ?? 15,
       cancelMinutes: cancelPolicy?.cancelMinutes ?? 30,
     },
