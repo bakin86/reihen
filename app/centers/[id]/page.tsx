@@ -80,6 +80,7 @@ export default function CenterPage({ params }: { params: { id: string } }) {
   const [showWarning, setShowWarning] = useState(false);
   const [error, setError] = useState("");
   const [bookingCode, setBookingCode] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   // QPay payment pending state
   const [qpayPending, setQpayPending] = useState<{
@@ -91,19 +92,20 @@ export default function CenterPage({ params }: { params: { id: string } }) {
     invoiceId?: string;
   } | null>(null);
 
-  const loadCenterSeats = useCallback(() => {
+  const loadCenterSeats = useCallback((isInitial = false) => {
     apiFetch<{ center: CenterInfo; seats: SeatData[]; qpaySurchargePct: number }>(`/api/centers/${params.id}/seats`)
       .then(({ center: c, seats: s, qpaySurchargePct: pct }) => {
         setCenter(c);
         setSeats(s);
         setQpaySurchargePct(pct ?? 1);
+        setLoadFailed(false);
         if (s.length) setFloor(s[0].floor.floorNumber);
       })
-      .catch(() => {});
+      .catch(() => { if (isInitial) setLoadFailed(true); });
   }, [params.id]);
 
   useEffect(() => {
-    loadCenterSeats();
+    loadCenterSeats(true);
     apiFetch<{ reviews: Review[]; myUnreviewedBookingId: string | null }>(`/api/centers/${params.id}/reviews`, { token: token ?? undefined })
       .then(({ reviews: r, myUnreviewedBookingId: bid }) => {
         setReviews(r);
@@ -309,14 +311,30 @@ export default function CenterPage({ params }: { params: { id: string } }) {
     return () => clearInterval(interval);
   }, [qpayPending, token]);
 
+  // Error state
+  if (loadFailed && !center) {
+    return (
+      <main className="ui-page-dark flex min-h-screen flex-col items-center justify-center gap-6 text-white">
+        <Link href="/" className="text-[10px] uppercase tracking-[0.3em] text-white/30 hover:text-white transition-colors">← HOME</Link>
+        <p className="display text-3xl text-white/60">CENTER NOT FOUND</p>
+        <button
+          onClick={() => { setLoadFailed(false); loadCenterSeats(true); }}
+          className="border border-white/20 px-6 py-2.5 text-[10px] uppercase tracking-[0.3em] text-white/50 hover:border-white/40 hover:text-white transition-colors"
+        >
+          RETRY
+        </button>
+      </main>
+    );
+  }
+
   // Loading state
   if (!center) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
+      <main className="ui-page-dark flex min-h-screen items-center justify-center text-white">
         <div className="space-y-3 text-center">
-          <div className="display text-2xl animate-pulse">LOADING...</div>
-          <div className="h-1 w-24 mx-auto bg-black/10 overflow-hidden">
-            <div className="h-full w-1/2 bg-black animate-[ticker_1s_linear_infinite]" />
+          <div className="display text-2xl animate-pulse text-white/70">LOADING...</div>
+          <div className="h-px w-24 mx-auto bg-white/10 overflow-hidden">
+            <div className="h-full w-1/2 bg-white/40 animate-[ticker_1s_linear_infinite]" />
           </div>
         </div>
       </main>
