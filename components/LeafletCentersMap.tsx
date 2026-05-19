@@ -134,6 +134,7 @@ export function LeafletCentersMap({
         userMarkerRef.current = null;
       }
 
+      if (!userLocation) return;
       const { lat, lng } = userLocation;
       const userLatLng = L.latLng(lat, lng);
 

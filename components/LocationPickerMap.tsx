@@ -88,7 +88,8 @@ export function LocationPickerMap({
       }
       markerRef.current = null;
     };
-  }, []); // Initialize only once
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Initialize only once — lat/lng updates handled by the effect below
 
   // Update marker when lat/lng change from outside (or from clicking)
   useEffect(() => {
