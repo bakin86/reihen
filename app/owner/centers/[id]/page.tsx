@@ -6,6 +6,7 @@ import { apiFetch, ApiError } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { SeatCell, type SeatStatus } from "@/components/SeatCell";
 import { ImageUpload } from "@/components/ImageUpload";
+import { LocationPickerMap } from "@/components/LocationPickerMap";
 import type { CenterImage } from "@/lib/image-types";
 
 interface Floor { id: string; floorNumber: number; name: string }
@@ -366,19 +367,34 @@ export default function CenterManagePage({ params }: { params: { id: string } })
                   <input value={address} onChange={(e) => setAddress(e.target.value)}
                     className="mt-1 block w-full border-b-2 border-black bg-transparent pb-2 text-lg font-black outline-none" />
                 </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-[0.3em] text-gray">LATITUDE</label>
-                  <input value={lat} onChange={(e) => setLat(e.target.value)}
-                    inputMode="decimal"
-                    placeholder="47.9189"
-                    className="mono mt-1 block w-full border-b-2 border-black bg-transparent pb-2 text-lg font-black outline-none placeholder:text-gray" />
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-[0.3em] text-gray">LONGITUDE</label>
-                  <input value={lng} onChange={(e) => setLng(e.target.value)}
-                    inputMode="decimal"
-                    placeholder="106.9176"
-                    className="mono mt-1 block w-full border-b-2 border-black bg-transparent pb-2 text-lg font-black outline-none placeholder:text-gray" />
+                <div className="md:col-span-2">
+                  <label className="text-[10px] uppercase tracking-[0.3em] text-gray mb-2 block">LOCATION MAP</label>
+                  <div className="h-64 w-full mb-3">
+                    <LocationPickerMap
+                      lat={lat ? Number(lat) : null}
+                      lng={lng ? Number(lng) : null}
+                      onChange={(newLat, newLng) => {
+                        setLat(String(newLat));
+                        setLng(String(newLng));
+                      }}
+                    />
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="text-[10px] uppercase tracking-[0.3em] text-gray">LATITUDE</label>
+                      <input value={lat} onChange={(e) => setLat(e.target.value)}
+                        inputMode="decimal"
+                        placeholder="47.9189"
+                        className="mono mt-1 block w-full border-b-2 border-black bg-transparent pb-2 text-lg font-black outline-none placeholder:text-gray" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-[10px] uppercase tracking-[0.3em] text-gray">LONGITUDE</label>
+                      <input value={lng} onChange={(e) => setLng(e.target.value)}
+                        inputMode="decimal"
+                        placeholder="106.9176"
+                        className="mono mt-1 block w-full border-b-2 border-black bg-transparent pb-2 text-lg font-black outline-none placeholder:text-gray" />
+                    </div>
+                  </div>
                 </div>
                 <div className="md:col-span-2">
                   <label className="text-[10px] uppercase tracking-[0.3em] text-gray">DESCRIPTION</label>

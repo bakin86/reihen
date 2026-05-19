@@ -12,7 +12,7 @@ module.exports = {
   apps: [
     {
       name: "reihen-web",
-      script: ".next/standalone/server.js",
+      script: "scripts/start-standalone.js",
       cwd: "./",
       instances: 1,           // increase for multi-core (requires Redis rate limiter)
       exec_mode: "fork",      // use "cluster" if instances > 1
