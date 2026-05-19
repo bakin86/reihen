@@ -12,10 +12,65 @@
   background: #eeeeec;
 }
 
-.leaflet-map-dark .leaflet-tile {
-  filter: grayscale(1) invert(1) brightness(0.72) contrast(1.05);
+/* Dark map — uses CartoDB Dark Matter tiles, no invert needed */
+.leaflet-map-dark {
+  background: #0f0f0f;
 }
 
+.leaflet-map-dark .leaflet-control-zoom a {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.leaflet-map-dark .leaflet-control-zoom a:hover {
+  background: #2a2a2a;
+}
+.leaflet-map-dark .leaflet-control-attribution {
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.35);
+}
+.leaflet-map-dark .leaflet-control-attribution a {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* Dark mode markers */
+.leaflet-map-dark .leaflet-center-marker {
+  background: rgba(20, 20, 20, 0.92);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.leaflet-map-dark .leaflet-center-marker.active {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+}
+.leaflet-map-dark .leaflet-center-marker.active span {
+  background: #4ade80;
+}
+
+/* Dark mode popup */
+.leaflet-map-dark .leaflet-popup-content-wrapper {
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+.leaflet-map-dark .leaflet-popup-tip {
+  background: #1a1a1a;
+}
+.leaflet-map-dark .leaflet-center-popup strong {
+  color: #fff;
+}
+.leaflet-map-dark .leaflet-center-popup p {
+  color: rgba(255, 255, 255, 0.5);
+}
+.leaflet-map-dark .leaflet-center-popup small {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* ── Shared marker styles ── */
 .leaflet-center-marker {
   display: inline-flex;
   align-items: center;

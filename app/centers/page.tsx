@@ -153,6 +153,7 @@ export default function CentersPage() {
             selectedId={selected?.id}
             onSelect={setSelectedId}
             className="absolute inset-0"
+            dark
           />
           <div className="absolute left-6 top-6 z-10 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-black/35 backdrop-blur">
             {plotted.length} mapped / {sorted.length} centers
