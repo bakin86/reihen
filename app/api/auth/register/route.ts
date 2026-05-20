@@ -12,7 +12,7 @@ import {
 import { normalizePhoneForAuth } from "@/lib/phone";
 
 const schema = z.object({
-  name: z.string().min(2).max(64),
+  name: z.string().min(2).max(64).transform(s => s.replace(/<[^>]*>/g, "").trim()),
   email: z.string().email().toLowerCase(),
   password: z.string().min(6).max(128),
   phone: z.string().transform(normalizePhoneForAuth).pipe(z.string().regex(/^\d{8,12}$/, "Invalid phone")),

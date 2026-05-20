@@ -5,7 +5,7 @@ const FROM = process.env.RESEND_FROM ?? "Reihen <noreply@reihen.mn>";
 export async function sendPasswordResetEmail(email: string, resetUrl: string): Promise<void> {
   if (!process.env.RESEND_API_KEY) {
     // Dev fallback — log to console
-    console.log(`[email:dev] password reset for ${email}: ${resetUrl}`);
+    console.log(`[email:dev] password reset email sent for ${email}`);
     return;
   }
 
